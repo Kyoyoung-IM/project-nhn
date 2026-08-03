@@ -151,7 +151,7 @@ func get_wave_monster_ids(wave_group: String) -> Array[String]:
 
 
 # ShopGacha 확률 누적 방식으로 지정 개수만큼 Tier 1 터렛 ID를 뽑는다.
-# 전달받은 고정 시드 RNG 덕분에 테스트와 영상 장면을 재현할 수 있다.
+# 호출자가 일반 플레이용 무작위 시드 또는 테스트·영상용 고정 시드를 선택해 전달한다.
 func roll_shop_turret_ids(rng: RandomNumberGenerator, count: int) -> Array[String]:
 	var result: Array[String] = []
 	if shop_rows.is_empty():
