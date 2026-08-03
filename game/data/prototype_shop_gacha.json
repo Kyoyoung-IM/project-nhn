@@ -1,13 +1,14 @@
 {
   "meta": {
     "status": "PLACEHOLDER",
-    "source": "game_table_specification_v3.pdf"
+    "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / shopGacha",
+    "note": "Read-only source snapshot."
   },
   "rows": [
-    {"turretIndex": "TURRET_MELEE_T1", "probability": 0.2},
-    {"turretIndex": "TURRET_DOT_T1", "probability": 0.2},
-    {"turretIndex": "TURRET_STUN_T1", "probability": 0.2},
-    {"turretIndex": "TURRET_SLOW_T1", "probability": 0.2},
-    {"turretIndex": "TURRET_RANGED_T1", "probability": 0.2}
+    {"turretIndex": "turretMelee1", "probability": 0.2},
+    {"turretIndex": "turretDot1", "probability": 0.2},
+    {"turretIndex": "turretStun1", "probability": 0.2},
+    {"turretIndex": "turretSlow1", "probability": 0.2},
+    {"turretIndex": "turretRanged1", "probability": 0.2}
   ]
 }

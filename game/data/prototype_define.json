@@ -1,18 +1,18 @@
 {
   "meta": {
     "status": "PLACEHOLDER",
-    "source": "game_table_specification_v3.pdf",
-    "note": "Values are for prototype structure validation and are not final balance. failAllowedMonster is intentionally unused."
+    "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / define",
+    "note": "Read-only snapshot. totalWaveCount is temporarily 4 because wave5 is missing; rerollPlusCost=5 is a local placeholder because the source field is missing. See REQUEST.md."
   },
   "values": {
     "prepareTimeSec": 20.0,
-    "totalWaveCount": 1.0,
+    "totalWaveCount": 4.0,
     "waveTimeSec": 50.0,
     "initialGold": 100.0,
     "rerollCost": 10.0,
     "rerollPlusCost": 5.0,
     "failAllowedMonster": 0.0,
-    "monsterSpawnInterval": 0.7
+    "monsterSpawnInterval": 0.4
   },
   "prototypeExtensions": {
     "shopCardCount": 5,

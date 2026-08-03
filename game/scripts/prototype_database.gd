@@ -1,7 +1,7 @@
 class_name PrototypeDatabase
 extends RefCounted
 
-# PDF의 Define/Turret/Monster/SpawnTable/ShopGacha를 로컬 JSON에서 읽는 전용 로더다.
+# 읽기 전용 Google Sheets의 Define/Turret/Monster/SpawnTable/ShopGacha 로컬 사본을 읽는 전용 로더다.
 # 원본 camelCase 컬럼은 데이터 파일에 보존하고, 게임에서 쓰기 쉬운 snake_case로 여기서만 변환한다.
 
 # 각 테이블의 res:// 경로다. 런타임 네트워크 호출 없이 Web 빌드 안에 함께 포함된다.
@@ -93,7 +93,9 @@ func get_turret_data(turret_id: String) -> Dictionary:
 	var raw: Dictionary = turrets_by_id[turret_id]
 	var extension: Dictionary = raw.get("prototypeExtensions", {})
 	var range_slots := float(raw.get("range", 0.0))
-	var range_px := float(raw.get("rangeValue", 0.0)) if range_slots <= 0.0 else range_slots * SLOT_SPACING_PX
+	# 원본 설명에 따라 range=0이면 rangeValue도 슬롯 간격 단위로 해석한다.
+	var effective_range_slots := float(raw.get("rangeValue", 0.0)) if range_slots <= 0.0 else range_slots
+	var range_px := effective_range_slots * SLOT_SPACING_PX
 	return {
 		"id": turret_id,
 		"display_name": str(extension.get("displayName", turret_id)),
@@ -106,7 +108,7 @@ func get_turret_data(turret_id: String) -> Dictionary:
 		"attack_interval_sec": float(raw.get("attackspeed", 1.0)),
 		"range_px": range_px,
 		"cc_duration": float(raw.get("ccDuration", 0.0)),
-		"cc_value": float(raw.get("ccValue", 0.0)),
+		"cc_value": _ratio_value(raw.get("ccValue", 0.0)),
 		"color_hex": str(extension.get("colorHex", "68d8c1")),
 		"tier": int(extension.get("tier", 1)),
 		"vfx_resource": str(raw.get("vfxResource", "")),
@@ -123,7 +125,7 @@ func get_monster_data(monster_id: String) -> Dictionary:
 	return {
 		"id": monster_id,
 		"display_name": str(extension.get("displayName", monster_id)),
-		"type": str(raw.get("type", "NORMAL")),
+		"type": str(raw.get("type", "NORMAL")).to_upper(),
 		"max_hp": float(raw.get("baseHp", 1.0)),
 		"move_speed_multiplier": float(raw.get("moveSpeed", 1.0)),
 		"move_speed_px_sec": 88.0 * float(raw.get("moveSpeed", 1.0)),
@@ -136,13 +138,21 @@ func get_monster_data(monster_id: String) -> Dictionary:
 	}
 
 
-# SpawnTable의 행을 spawnOrder 순으로 정렬하고 value만큼 실제 생성 ID를 펼친다.
+# SpawnTable의 value만큼 실제 생성 ID를 펼친다.
+# 순서가 고유한 웨이브는 spawnOrder로 정렬하고, 중복 순서가 있는 웨이브는 사용자 결정에 따라 원본 행 순서를 유지한다.
 func get_wave_monster_ids(wave_group: String) -> Array[String]:
 	var matching_rows: Array[Dictionary] = []
+	var used_orders: Dictionary = {}
+	var has_duplicate_order := false
 	for row in spawn_rows:
 		if str(row.get("waveGroup", "")) == wave_group:
 			matching_rows.append(row)
-	matching_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["spawnOrder"]) < int(b["spawnOrder"]))
+			var order := int(row.get("spawnOrder", -1))
+			if used_orders.has(order):
+				has_duplicate_order = true
+			used_orders[order] = true
+	if not has_duplicate_order:
+		matching_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["spawnOrder"]) < int(b["spawnOrder"]))
 	var monster_ids: Array[String] = []
 	for row in matching_rows:
 		for _index in maxi(0, int(row.get("value", 0))):
@@ -167,6 +177,14 @@ func roll_shop_turret_ids(rng: RandomNumberGenerator, count: int) -> Array[Strin
 				break
 		result.append(selected_id)
 	return result
+
+
+# 시트의 `50%` 형식과 숫자 비율을 모두 0~1 실수로 정규화한다.
+func _ratio_value(value: Variant) -> float:
+	var text := str(value).strip_edges()
+	if text.ends_with("%"):
+		return float(text.trim_suffix("%")) / 100.0
+	return float(value)
 
 
 # 자동 테스트가 상점 선택 없이 터렛을 배치할 때 사용할 안전한 기본 ID다.
@@ -243,7 +261,7 @@ func _load_monsters(rows: Array) -> void:
 		if monster_id.is_empty() or monsters_by_id.has(monster_id):
 			validation_errors.append("invalid or duplicate monsterId: %s" % monster_id)
 			continue
-		if str(row.get("type", "")) not in MONSTER_TYPES:
+		if str(row.get("type", "")).to_upper() not in MONSTER_TYPES:
 			validation_errors.append("invalid monster type: %s" % str(row.get("type", "")))
 		if float(row.get("baseHp", 0.0)) <= 0.0:
 			validation_errors.append("monster baseHp must be positive: %s" % monster_id)
@@ -312,8 +330,7 @@ func _validate_cross_references() -> void:
 		if not spawn_orders_by_wave.has(wave_group):
 			spawn_orders_by_wave[wave_group] = {}
 		var used_orders: Dictionary = spawn_orders_by_wave[wave_group]
-		if used_orders.has(order):
-			validation_errors.append("duplicate spawnOrder: %s order %d" % [wave_group, order])
+		# 중복 spawnOrder는 REQUEST.md의 결정에 따라 원본 행 순서를 유지하므로 오류로 처리하지 않는다.
 		used_orders[order] = true
 
 	var probability_sum := 0.0

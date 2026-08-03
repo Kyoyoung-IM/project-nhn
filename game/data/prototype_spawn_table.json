@@ -1,11 +1,35 @@
 {
   "meta": {
     "status": "PLACEHOLDER",
-    "source": "game_table_specification_v3.pdf"
+    "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / spawntable",
+    "note": "Read-only source snapshot. wave3 duplicate spawnOrder rows intentionally preserve source row order; wave5 is missing. See REQUEST.md."
   },
   "rows": [
-    {"waveGroup": "wave1", "monsterId": "MONSTER_NORMAL_01", "spawnOrder": 1, "value": 5},
-    {"waveGroup": "wave1", "monsterId": "MONSTER_SPEED_01", "spawnOrder": 2, "value": 2},
-    {"waveGroup": "wave1", "monsterId": "MONSTER_TANK_01", "spawnOrder": 3, "value": 1}
+    {"waveGroup": "wave1", "monsterId": "normal1", "spawnOrder": 1, "value": 2},
+    {"waveGroup": "wave1", "monsterId": "normal2", "spawnOrder": 2, "value": 2},
+    {"waveGroup": "wave1", "monsterId": "normal1", "spawnOrder": 3, "value": 4},
+    {"waveGroup": "wave1", "monsterId": "normal2", "spawnOrder": 4, "value": 2},
+    {"waveGroup": "wave1", "monsterId": "normal1", "spawnOrder": 5, "value": 4},
+    {"waveGroup": "wave1", "monsterId": "normal2", "spawnOrder": 6, "value": 2},
+
+    {"waveGroup": "wave2", "monsterId": "normal1", "spawnOrder": 3, "value": 1},
+    {"waveGroup": "wave2", "monsterId": "normal2", "spawnOrder": 5, "value": 1},
+    {"waveGroup": "wave2", "monsterId": "spped1", "spawnOrder": 4, "value": 1},
+    {"waveGroup": "wave2", "monsterId": "spped2", "spawnOrder": 6, "value": 1},
+    {"waveGroup": "wave2", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
+    {"waveGroup": "wave2", "monsterId": "tank2", "spawnOrder": 2, "value": 4},
+
+    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
+    {"waveGroup": "wave3", "monsterId": "spped1", "spawnOrder": 4, "value": 1},
+    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
+    {"waveGroup": "wave3", "monsterId": "spped1", "spawnOrder": 4, "value": 2},
+    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
+    {"waveGroup": "wave3", "monsterId": "spped1", "spawnOrder": 4, "value": 2},
+    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
+    {"waveGroup": "wave3", "monsterId": "spped1", "spawnOrder": 4, "value": 2},
+    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
+    {"waveGroup": "wave3", "monsterId": "spped1", "spawnOrder": 4, "value": 2},
+
+    {"waveGroup": "wave4", "monsterId": "boss1", "spawnOrder": 1, "value": 4}
   ]
 }

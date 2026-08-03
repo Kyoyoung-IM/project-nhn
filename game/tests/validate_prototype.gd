@@ -6,9 +6,9 @@ extends SceneTree
 # 실제 게임과 동일한 로더를 사용해야 테스트와 런타임 검증이 어긋나지 않는다.
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 
-# PDF 명세와 AGENTS에 정의된 필수 오브젝트 유형 목록이다.
-const EXPECTED_TURRET_TYPES := ["MELEE", "DOT", "STUN", "SLOW", "RANGED"]
-const EXPECTED_MONSTER_TYPES := ["NORMAL", "SPEED", "TANK", "BOSS"]
+# 읽기 전용 데이터 테이블의 대표 오브젝트 ID다. 원본 오탈자 spped1도 그대로 보존한다.
+const EXPECTED_TURRET_IDS := ["turretMelee1", "turretDot1", "turretStun1", "turretSlow1", "turretRanged1"]
+const EXPECTED_MONSTER_IDS := ["normal1", "spped1", "tank1", "boss1"]
 
 
 # 모든 테이블의 구문·참조를 검사하고 필수 프로토타입 오브젝트를 조회한다.
@@ -26,21 +26,39 @@ func _init() -> void:
 	if database.define_int("rerollPlusCost", -1) < 0:
 		_fail("rerollPlusCost must not be negative")
 		return
+	if database.define_int("totalWaveCount", -1) != 4:
+		_fail("prototype totalWaveCount must temporarily remain 4 until wave5 is supplied")
+		return
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
 		return
-	for turret_type in EXPECTED_TURRET_TYPES:
-		var turret_id := "TURRET_%s_T1" % turret_type
+	if database.get_wave_monster_ids("wave3").size() != 29:
+		_fail("wave3 must preserve all source rows and expand to 29 monsters")
+		return
+	var wave3 := database.get_wave_monster_ids("wave3")
+	if wave3[0] != "tank1" or wave3[4] != "spped1" or wave3[5] != "tank1":
+		_fail("wave3 duplicate spawnOrder rows must preserve source row order")
+		return
+	if database.get_wave_monster_ids("wave2")[0] != "tank1":
+		_fail("waves without duplicate spawnOrder must remain ordered by spawnOrder")
+		return
+	for turret_id in EXPECTED_TURRET_IDS:
 		var turret := database.get_turret_data(turret_id)
 		if turret.is_empty() or float(turret.get("max_hp", 0.0)) <= 0.0:
 			_fail("missing prototype turret object: %s" % turret_id)
 			return
-	for monster_type in EXPECTED_MONSTER_TYPES:
-		var monster_id := "MONSTER_%s_01" % monster_type
+	for monster_id in EXPECTED_MONSTER_IDS:
 		var monster := database.get_monster_data(monster_id)
 		if monster.is_empty() or float(monster.get("attack_damage", 0.0)) <= 0.0:
 			_fail("missing prototype monster object: %s" % monster_id)
 			return
+	if int(database.get_monster_data("boss1").get("reward_gold", 0)) != 555555:
+		_fail("boss1 rewardGold must match the read-only source value")
+		return
+	var dot_turret := database.get_turret_data("turretDot1")
+	if not is_equal_approx(float(dot_turret.get("cc_value", 0.0)), 0.5):
+		_fail("percentage ccValue must be normalized to a 0-1 ratio")
+		return
 
 	print("Prototype data validation passed.")
 	quit(0)

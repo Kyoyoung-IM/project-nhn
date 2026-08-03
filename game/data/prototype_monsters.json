@@ -1,44 +1,43 @@
 {
   "meta": {
     "status": "PLACEHOLDER",
-    "source": "game_table_specification_v3.pdf",
-    "note": "Attack fields, displayName and colorHex are prototype extensions required by the confirmed tower durability rule and UI."
+    "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / monster",
+    "note": "Read-only source snapshot. Attack fields, displayName and colorHex are local prototype extensions; source IDs including spped1/spped2 are preserved. See REQUEST.md."
   },
   "rows": [
     {
-      "monsterId": "MONSTER_NORMAL_01",
-      "type": "NORMAL",
-      "baseHp": 60,
-      "moveSpeed": 1.0,
-      "rewardGold": 5,
-      "prefabResource": "",
+      "monsterId": "normal1", "type": "normal", "baseHp": 100, "moveSpeed": 1.0, "rewardGold": 1,
+      "prefabResource": "prefab_normal1",
       "prototypeExtensions": {"displayName": "일반 몬스터", "attackDamage": 10.0, "attackIntervalSec": 1.0, "attackRange": 56.0, "colorHex": "d96772"}
     },
     {
-      "monsterId": "MONSTER_SPEED_01",
-      "type": "SPEED",
-      "baseHp": 42,
-      "moveSpeed": 1.55,
-      "rewardGold": 6,
-      "prefabResource": "",
+      "monsterId": "normal2", "type": "normal", "baseHp": 110, "moveSpeed": 1.0, "rewardGold": 1,
+      "prefabResource": "prefab_normal2",
+      "prototypeExtensions": {"displayName": "일반 몬스터 II", "attackDamage": 10.0, "attackIntervalSec": 1.0, "attackRange": 56.0, "colorHex": "d96772"}
+    },
+    {
+      "monsterId": "spped1", "type": "speed", "baseHp": 50, "moveSpeed": 2.0, "rewardGold": 2,
+      "prefabResource": "prefab_spped1",
       "prototypeExtensions": {"displayName": "고속 몬스터", "attackDamage": 8.0, "attackIntervalSec": 0.72, "attackRange": 52.0, "colorHex": "ffb65f"}
     },
     {
-      "monsterId": "MONSTER_TANK_01",
-      "type": "TANK",
-      "baseHp": 155,
-      "moveSpeed": 0.68,
-      "rewardGold": 12,
-      "prefabResource": "",
+      "monsterId": "spped2", "type": "speed", "baseHp": 55, "moveSpeed": 2.0, "rewardGold": 2,
+      "prefabResource": "prefab_spped2",
+      "prototypeExtensions": {"displayName": "고속 몬스터 II", "attackDamage": 8.0, "attackIntervalSec": 0.72, "attackRange": 52.0, "colorHex": "ffb65f"}
+    },
+    {
+      "monsterId": "tank1", "type": "tank", "baseHp": 200, "moveSpeed": 0.5, "rewardGold": 3,
+      "prefabResource": "prefab_tank1",
       "prototypeExtensions": {"displayName": "중장 몬스터", "attackDamage": 18.0, "attackIntervalSec": 1.2, "attackRange": 60.0, "colorHex": "a96f78"}
     },
     {
-      "monsterId": "MONSTER_BOSS_01",
-      "type": "BOSS",
-      "baseHp": 360,
-      "moveSpeed": 0.55,
-      "rewardGold": 30,
-      "prefabResource": "",
+      "monsterId": "tank2", "type": "tank", "baseHp": 220, "moveSpeed": 0.5, "rewardGold": 3,
+      "prefabResource": "prefab_tank2",
+      "prototypeExtensions": {"displayName": "중장 몬스터 II", "attackDamage": 18.0, "attackIntervalSec": 1.2, "attackRange": 60.0, "colorHex": "a96f78"}
+    },
+    {
+      "monsterId": "boss1", "type": "boss", "baseHp": 500, "moveSpeed": 1.0, "rewardGold": 555555,
+      "prefabResource": "prefab_boss1",
       "prototypeExtensions": {"displayName": "보스 몬스터", "attackDamage": 26.0, "attackIntervalSec": 1.0, "attackRange": 65.0, "colorHex": "8d405e"}
     }
   ]

@@ -661,10 +661,10 @@ func _start_automated_test() -> void:
 		_run_economy_automated_test()
 		return
 	if automated_test_expects_tower_destruction:
-		_place_tower(tower_slots[0], false, "TURRET_MELEE_T1")
+		_place_tower(tower_slots[0], false, "turretMelee1")
 	elif not automated_test_expects_defeat:
 		for slot_index in 5:
-			_place_tower(tower_slots[slot_index], false, "TURRET_RANGED_T1")
+			_place_tower(tower_slots[slot_index], false, "turretRanged1")
 	_start_wave()
 	if automated_test_expects_tower_destruction:
 		for tower in towers:
@@ -715,7 +715,7 @@ func _run_drag_automated_test() -> void:
 	var origin := tower_slots[0]
 	var same_floor_target := tower_slots[1]
 	var other_floor_target := tower_slots[5]
-	_place_tower(origin, false, "TURRET_MELEE_T1")
+	_place_tower(origin, false, "turretMelee1")
 	var tower := towers[0]
 	var cross_floor_rejected := not _relocate_tower(tower, other_floor_target)
 	var same_floor_moved := _relocate_tower(tower, same_floor_target)
