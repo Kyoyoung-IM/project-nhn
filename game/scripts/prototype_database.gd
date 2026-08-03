@@ -12,7 +12,7 @@ const SPAWN_TABLE_PATH := "res://data/prototype_spawn_table.json"
 const SHOP_GACHA_PATH := "res://data/prototype_shop_gacha.json"
 
 # PDF의 range는 슬롯 간격 단위이므로 현재 전장 슬롯 간격과 같은 픽셀값으로 환산한다.
-const SLOT_SPACING_PX := 200.0
+const SLOT_SPACING_PX := 180.0
 
 # 데이터 오탈자나 정의되지 않은 유형을 조기에 검출하기 위한 허용 목록이다.
 const TURRET_TYPES := ["MELEE", "DOT", "STUN", "SLOW", "RANGED"]
@@ -85,6 +85,11 @@ func extension_int(key: String, fallback: int = 0) -> int:
 	return int(define_extensions.get(key, fallback))
 
 
+# Spawn Order 간격처럼 원본 Define에 없는 프로토타입 전용 실수 값을 조회한다.
+func extension_float(key: String, fallback: float = 0.0) -> float:
+	return float(define_extensions.get(key, fallback))
+
+
 # Turret 원본 행을 런타임용 Dictionary로 정규화한다.
 # attackspeed는 초 단위 공격 간격으로, range는 픽셀 사거리로 변환한다.
 func get_turret_data(turret_id: String) -> Dictionary:
@@ -138,9 +143,42 @@ func get_monster_data(monster_id: String) -> Dictionary:
 	}
 
 
-# SpawnTable의 value만큼 실제 생성 ID를 펼친다.
-# 순서가 고유한 웨이브는 spawnOrder로 정렬하고, 중복 순서가 있는 웨이브는 사용자 결정에 따라 원본 행 순서를 유지한다.
+# SpawnTable을 실제 개체 단위로 펼치고 각 개체 뒤에 적용할 스폰 대기시간을 함께 반환한다.
+# 같은 Spawn Order 안에서는 원본 0.4초를, 서로 다른 Order로 넘어갈 때는 임시 확장값 10초를 사용한다.
+func get_wave_spawn_entries(wave_group: String) -> Array[Dictionary]:
+	var matching_rows := _ordered_spawn_rows(wave_group)
+	var individual_interval := define_float("monsterSpawnInterval", 0.4)
+	var order_interval := extension_float("spawnOrderIntervalSec", 10.0)
+	var entries: Array[Dictionary] = []
+	for row_index in matching_rows.size():
+		var row: Dictionary = matching_rows[row_index]
+		var monster_count := maxi(0, int(row.get("value", 0)))
+		var spawn_order := int(row.get("spawnOrder", -1))
+		for monster_index in monster_count:
+			var delay_after_sec := individual_interval
+			# 현재 행의 마지막 개체 뒤에서 다음 행의 Order가 달라질 때만 그룹 간 10초를 적용한다.
+			if monster_index == monster_count - 1 and row_index < matching_rows.size() - 1:
+				var next_order := int(matching_rows[row_index + 1].get("spawnOrder", -1))
+				if next_order != spawn_order:
+					delay_after_sec = order_interval
+			entries.append({
+				"monster_id": str(row.get("monsterId", "")),
+				"spawn_order": spawn_order,
+				"delay_after_sec": delay_after_sec,
+			})
+	return entries
+
+
+# 기존 호출부와 데이터 검증에서 사용할 수 있도록 스폰 일정에서 ID 배열만 추출한다.
 func get_wave_monster_ids(wave_group: String) -> Array[String]:
+	var monster_ids: Array[String] = []
+	for entry in get_wave_spawn_entries(wave_group):
+		monster_ids.append(str(entry.get("monster_id", "")))
+	return monster_ids
+
+
+# 순서가 고유한 웨이브는 spawnOrder로 정렬하고, 중복 순서가 있으면 확정 규칙대로 원본 행 순서를 유지한다.
+func _ordered_spawn_rows(wave_group: String) -> Array[Dictionary]:
 	var matching_rows: Array[Dictionary] = []
 	var used_orders: Dictionary = {}
 	var has_duplicate_order := false
@@ -153,11 +191,7 @@ func get_wave_monster_ids(wave_group: String) -> Array[String]:
 			used_orders[order] = true
 	if not has_duplicate_order:
 		matching_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["spawnOrder"]) < int(b["spawnOrder"]))
-	var monster_ids: Array[String] = []
-	for row in matching_rows:
-		for _index in maxi(0, int(row.get("value", 0))):
-			monster_ids.append(str(row.get("monsterId", "")))
-	return monster_ids
+	return matching_rows
 
 
 # ShopGacha 확률 누적 방식으로 지정 개수만큼 Tier 1 터렛 ID를 뽑는다.
@@ -306,6 +340,8 @@ func _validate_define() -> void:
 		validation_errors.append("reroll costs must not be negative")
 	if extension_int("shopCardCount", 0) != 5:
 		validation_errors.append("prototype shopCardCount must remain 5")
+	if extension_float("spawnOrderIntervalSec", 0.0) <= 0.0:
+		validation_errors.append("prototype spawnOrderIntervalSec must be positive")
 
 
 # 머지 트리, 몬스터 참조, 스폰 순서, 상점 확률 합계, 웨이브 누락을 검사한다.

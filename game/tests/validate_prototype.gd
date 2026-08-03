@@ -29,6 +29,9 @@ func _init() -> void:
 	if database.define_int("totalWaveCount", -1) != 4:
 		_fail("prototype totalWaveCount must temporarily remain 4 until wave5 is supplied")
 		return
+	if not is_equal_approx(database.extension_float("spawnOrderIntervalSec", -1.0), 10.0):
+		_fail("prototype spawnOrderIntervalSec must temporarily remain 10 seconds")
+		return
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
 		return
@@ -41,6 +44,10 @@ func _init() -> void:
 		return
 	if database.get_wave_monster_ids("wave2")[0] != "tank1":
 		_fail("waves without duplicate spawnOrder must remain ordered by spawnOrder")
+		return
+	var wave1_schedule := database.get_wave_spawn_entries("wave1")
+	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[1].get("delay_after_sec", -1.0)), 10.0):
+		_fail("spawn entries must use 0.4 seconds inside an order and 10 seconds between orders")
 		return
 	for turret_id in EXPECTED_TURRET_IDS:
 		var turret := database.get_turret_data(turret_id)

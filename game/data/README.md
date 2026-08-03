@@ -15,7 +15,7 @@
 
 - 터렛: `displayName`, `maxHp`, `colorHex`, `tier`
 - 몬스터: `displayName`, `attackDamage`, `attackIntervalSec`, `attackRange`, `colorHex`
-- Define: `shopCardCount`, `rngSeed` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용)
+- Define: `shopCardCount`, `rngSeed`, `spawnOrderIntervalSec` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용하며, `spawnOrderIntervalSec=10`은 기획 확정 전 임시값)
 
 `failAllowedMonster`는 원본 컬럼 호환을 위해 보존하지만 현재 게임 오버 판정에는 사용하지 않는다.
 

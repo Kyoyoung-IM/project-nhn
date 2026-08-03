@@ -22,12 +22,12 @@ const GROUND_LANE_Y := 150.0
 const FLOOR_TOP_Y := [190.0, 380.0, 570.0]
 const COMBAT_LANE_Y := [350.0, 540.0, 730.0]
 const TOWER_SLOT_Y := [295.0, 485.0, 675.0]
-# 오른쪽에서 등장하는 몬스터가 진입할 여백 35%를 비우고, 왼쪽 65%에만 슬롯을 둔다.
-const TOWER_DEPLOYMENT_RATIO := 0.65
+# 오른쪽에서 등장하는 몬스터가 진입할 여백 40%를 비우고, 왼쪽 60%에만 슬롯을 둔다.
+const TOWER_DEPLOYMENT_RATIO := 0.60
 const TOWER_DEPLOYMENT_RIGHT_X := PATH_LEFT_X + (PATH_RIGHT_X - PATH_LEFT_X) * TOWER_DEPLOYMENT_RATIO
-# 인접 슬롯은 데이터의 사거리 1칸 환산값과 같은 200px 간격으로 배치해 전투 구간을 연계한다.
-const TOWER_SLOT_GAP_PX := 200.0
-const TOWER_SLOT_X := [300.0, 500.0, 700.0, 900.0, 1100.0]
+# 인접 슬롯은 데이터의 사거리 1칸 환산값과 같은 180px 간격을 사용한다.
+const TOWER_SLOT_GAP_PX := 180.0
+const TOWER_SLOT_X := [300.0, 480.0, 660.0, 840.0, 1020.0]
 # 4개 임시 웨이브 전체를 시간 가속 상태에서 끝낼 수 있도록 헤드리스 테스트 제한을 넉넉히 둔다.
 const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 
@@ -62,9 +62,9 @@ var shop_card_available: Array[bool] = []
 var shop_turret_ids: Array[String] = []
 var selected_shop_card: int = -1
 
-# 현재 웨이브의 SpawnTable 전개 결과와 생성/처치 진행도다.
+# 현재 웨이브의 SpawnTable 전개 결과에는 개체 ID, Spawn Order와 다음 생성 전 대기시간이 함께 들어 있다.
 var current_wave_number: int = 1
-var current_wave_monster_ids: Array[String] = []
+var current_wave_spawn_entries: Array[Dictionary] = []
 var next_spawn_index: int = 0
 var spawned_count: int = 0
 var defeated_count: int = 0
@@ -148,7 +148,7 @@ func _process(delta: float) -> void:
 		automated_test_elapsed_sec += delta
 		if automated_test_elapsed_sec > AUTOMATED_TEST_TIMEOUT_SEC:
 			# 실패 지점에서 웨이브·스폰·잔존 수를 남겨 데이터 변경에 따른 회귀 원인을 바로 찾는다.
-			push_error("Automated wave test timed out: wave=%d spawned=%d/%d active=%d defeated=%d phase=%d" % [current_wave_number, spawned_count, current_wave_monster_ids.size(), monsters.size(), defeated_count, phase])
+			push_error("Automated wave test timed out: wave=%d spawned=%d/%d active=%d defeated=%d phase=%d" % [current_wave_number, spawned_count, current_wave_spawn_entries.size(), monsters.size(), defeated_count, phase])
 			Engine.time_scale = 1.0
 			get_tree().quit(1)
 			return
@@ -166,12 +166,13 @@ func _process(delta: float) -> void:
 	if phase != Phase.WAVE:
 		return
 
-	var total := current_wave_monster_ids.size()
+	var total := current_wave_spawn_entries.size()
 	if spawned_count < total:
 		spawn_cooldown_sec -= delta
 		if spawn_cooldown_sec <= 0.0:
-			_spawn_monster()
-			spawn_cooldown_sec += database.define_float("monsterSpawnInterval", 0.7)
+			var next_delay_sec := _spawn_monster()
+			# 전체 진행 테스트는 시간값 자체를 데이터 테스트에서 검증하고, 실행 시간은 개체 간격으로 단축한다.
+			spawn_cooldown_sec += minf(next_delay_sec, database.define_float("monsterSpawnInterval", 0.4)) if automated_test_mode else next_delay_sec
 
 	if spawned_count >= total and monsters.is_empty():
 		_complete_wave()
@@ -637,7 +638,7 @@ func _on_tower_destroyed(tower: PrototypeTower) -> void:
 
 # 현재 SpawnTable이 유효한지 확인하고 카운터/터렛 쿨다운을 초기화해 전투를 시작한다.
 func _start_wave() -> void:
-	if current_wave_monster_ids.is_empty():
+	if current_wave_spawn_entries.is_empty():
 		push_error("Current wave has no SpawnTable entries: wave%d" % current_wave_number)
 		return
 	_clear_monsters()
@@ -737,7 +738,7 @@ func _run_drag_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
-# 슬롯 5개가 왼쪽 65% 배치 영역 안에 있고 실제 사거리 환산과 동일한 간격인지 회귀 검증한다.
+# 슬롯 5개가 왼쪽 60% 배치 영역 안에 있고 실제 사거리 환산과 동일한 간격인지 회귀 검증한다.
 func _tower_slot_layout_is_valid() -> bool:
 	if TOWER_SLOT_X.size() != 5:
 		return false
@@ -771,16 +772,18 @@ func _run_economy_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
-# 펼쳐진 SpawnTable 순서에서 다음 ID를 꺼내 데이터 기반 몬스터를 생성한다.
-func _spawn_monster() -> void:
-	if next_spawn_index >= current_wave_monster_ids.size():
-		return
-	var monster_id := current_wave_monster_ids[next_spawn_index]
+# 펼쳐진 SpawnTable 일정에서 다음 개체를 생성하고, 그 뒤에 적용할 개체/Order 간격을 반환한다.
+func _spawn_monster() -> float:
+	var fallback_interval := database.define_float("monsterSpawnInterval", 0.4)
+	if next_spawn_index >= current_wave_spawn_entries.size():
+		return fallback_interval
+	var spawn_entry: Dictionary = current_wave_spawn_entries[next_spawn_index]
+	var monster_id := str(spawn_entry.get("monster_id", ""))
 	next_spawn_index += 1
 	var monster_data := database.get_monster_data(monster_id)
 	if monster_data.is_empty():
 		push_error("Cannot spawn unknown monster: %s" % monster_id)
-		return
+		return float(spawn_entry.get("delay_after_sec", fallback_interval))
 	var monster := MonsterScript.new() as PrototypeMonster
 	monster.setup(monster_data, movement_path)
 	monster.defeated.connect(_on_monster_defeated)
@@ -789,6 +792,7 @@ func _spawn_monster() -> void:
 	monsters.append(monster)
 	spawned_count += 1
 	_update_interface()
+	return float(spawn_entry.get("delay_after_sec", fallback_interval))
 
 
 # 처치된 몬스터를 목록에서 제거하고 Monster.rewardGold를 지급한다.
@@ -888,7 +892,7 @@ func _begin_preparation(reset_run: bool) -> void:
 		gold = database.define_int("initialGold", 100)
 	reroll_count = 0
 	preparation_remaining_sec = database.define_float("prepareTimeSec", 20.0)
-	current_wave_monster_ids = database.get_wave_monster_ids("wave%d" % current_wave_number)
+	current_wave_spawn_entries = database.get_wave_spawn_entries("wave%d" % current_wave_number)
 	selected_shop_card = -1
 	_set_phase(Phase.READY)
 	_refresh_shop_cards()
@@ -944,7 +948,7 @@ func _update_shop_cards() -> void:
 func _update_interface() -> void:
 	if wave_label == null:
 		return
-	var wave_total := current_wave_monster_ids.size()
+	var wave_total := current_wave_spawn_entries.size()
 	var total_wave_count := database.define_int("totalWaveCount", 1)
 	wave_label.text = "WAVE  %d / %d" % [current_wave_number, total_wave_count]
 	gold_label.text = "GOLD  %d" % gold

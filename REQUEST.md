@@ -52,3 +52,11 @@
 - 영향: 보스 처치 시 프로토타입 경제가 사실상 무제한 상태가 된다.
 - 상태: `기획 확인 요청`
 
+## REQ-DATA-006 · Spawn Order 그룹 간 시간 간격 누락
+
+- 발견 위치: PDF `Define`, `Spawntable` 명세 및 데이터 테이블 `define`, `spawnTable`
+- 이슈: `monsterSpawnInterval=0.4`는 같은 Spawn Order 안에서 생성되는 개체 간 간격으로 정의되어 있지만, 서로 다른 Spawn Order 그룹 사이의 대기시간은 별도 필드나 설명으로 제공되지 않았다.
+- 기획자 요청: Spawn Order 그룹 사이의 확정 간격과 이 값이 기존 개체 간격을 대체하는지 추가되는지 명시하고, 필요하면 `define`에 `spawnOrderIntervalSec` 필드를 추가해 달라. 또한 그룹 대기시간만으로 `waveTimeSec=50`을 넘을 수 있으므로 `waveTimeSec`이 강제 종료 제한인지 단순 목표 시간인지 확정해 달라.
+- 현재 임시 처리: 로컬 `prototypeExtensions.spawnOrderIntervalSec=10`을 사용한다. 같은 Spawn Order 내부 개체는 0.4초 간격으로 생성하고, 다음 행의 `spawnOrder` 값이 달라질 때는 마지막 개체 이후 10초 뒤 다음 그룹을 시작한다.
+- 영향: 웨이브의 전체 진행 시간이 길어지며, 원본 행 순서를 유지하는 `wave3`은 `spawnOrder=1`과 `4`가 바뀔 때마다 10초 간격이 반복 적용된다. 현재 프로토타입은 모든 스폰과 전투가 끝날 때까지 웨이브를 진행하며 `waveTimeSec`으로 강제 종료하지 않는다.
+- 상태: `기획 확인 요청` — 2026-08-03 사용자 지시로 임시 10초 적용
