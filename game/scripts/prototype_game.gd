@@ -86,6 +86,7 @@ var automated_test_economy: bool = false
 var automated_test_drag: bool = false
 var automated_test_shop_drag: bool = false
 var automated_test_wave_shop: bool = false
+var automated_test_melee_attack: bool = false
 var automated_test_tower_was_destroyed: bool = false
 var automated_test_elapsed_sec: float = 0.0
 
@@ -116,13 +117,14 @@ var shop_drag_target_slot: PrototypeTowerSlot = null
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-wave-shop" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args
 	automated_test_expects_tower_destruction = "--auto-test-tower-destruction" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args or automated_test_expects_tower_destruction
 	automated_test_economy = "--auto-test-economy" in user_args
 	automated_test_drag = "--auto-test-drag" in user_args
 	automated_test_shop_drag = "--auto-test-shop-drag" in user_args
 	automated_test_wave_shop = "--auto-test-wave-shop" in user_args
+	automated_test_melee_attack = "--auto-test-melee-attack" in user_args
 	database = DatabaseScript.new() as PrototypeDatabase
 	if database == null or not database.load_all():
 		push_error("Prototype database could not be loaded.")
@@ -657,6 +659,9 @@ func _start_wave() -> void:
 
 # 테스트 종류에 필요한 터렛을 자동 배치한 뒤 정비 시간을 건너뛰고 웨이브를 시작한다.
 func _start_automated_test() -> void:
+	if automated_test_melee_attack:
+		_run_melee_attack_automated_test()
+		return
 	if automated_test_wave_shop:
 		_run_wave_shop_automated_test()
 		return
@@ -679,6 +684,32 @@ func _start_automated_test() -> void:
 	if automated_test_expects_tower_destruction:
 		for tower in towers:
 			tower.enabled = false
+
+
+# 경로와 수직으로 떨어진 근접 포탑이 같은 층·수평 사거리 안의 적을 찾아 실제 피해를 주는지 검증한다.
+func _run_melee_attack_automated_test() -> void:
+	_place_tower(tower_slots[0], false, "turretMelee1")
+	var melee_tower := towers[0]
+	var monster_data := database.get_monster_data("normal1")
+	var target_monster := MonsterScript.new() as PrototypeMonster
+	target_monster.setup(monster_data, movement_path)
+	add_child(target_monster)
+	# 포탑과 X좌표는 같고 Y좌표는 실제 전투 경로에 두어 수평 거리 판정을 직접 검증한다.
+	target_monster.position = Vector2(melee_tower.position.x, COMBAT_LANE_Y[0])
+	target_monster.path_index = 2
+	target_monster.move_state = PrototypeMonster.MoveState.WALKING
+	target_monster.scale = Vector2.ONE
+	monsters.append(target_monster)
+	var initial_hp := target_monster.hp
+	var selected_target := melee_tower.call("_select_target") as PrototypeMonster
+	melee_tower._process(melee_tower.attack_interval_sec)
+	var passed := selected_target == target_monster and is_equal_approx(target_monster.hp, initial_hp - melee_tower.damage)
+	if passed:
+		print("Automated melee attack test passed: HORIZONTAL_RANGE_DAMAGE")
+	else:
+		push_error("Automated melee attack test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
 
 
 # 잘못된 드롭은 무상 취소되고 유효한 빈 슬롯 드롭만 결제·설치되는지 검증한다.

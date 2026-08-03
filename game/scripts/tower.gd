@@ -100,8 +100,8 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-# 같은 전투층에서 코어 진행도가 가장 높은 몬스터를 선택한다.
-# progress_score를 사용하므로 단순 x좌표 비교보다 층간 이동에 안전하다.
+# 같은 전투층에서 수평 사거리 안에 있으며 코어 진행도가 가장 높은 몬스터를 선택한다.
+# 포탑과 경로의 수직 좌표 차이는 화면 연출용이므로 사거리 계산에서 제외한다.
 func _select_target() -> PrototypeMonster:
 	var selected: PrototypeMonster = null
 	var best_progress := -INF
@@ -111,7 +111,8 @@ func _select_target() -> PrototypeMonster:
 			continue
 		if monster.current_combat_floor() != floor_index:
 			continue
-		if global_position.distance_to(monster.global_position) > attack_range_px:
+		var horizontal_distance := absf(global_position.x - monster.global_position.x)
+		if horizontal_distance > attack_range_px:
 			continue
 		var progress := monster.progress_score()
 		if progress > best_progress:
