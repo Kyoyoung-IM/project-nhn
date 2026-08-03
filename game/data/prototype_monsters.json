@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "status": "PLACEHOLDER",
+    "source": "game_table_specification_v3.pdf",
+    "note": "Attack fields, displayName and colorHex are prototype extensions required by the confirmed tower durability rule and UI."
+  },
+  "rows": [
+    {
+      "monsterId": "MONSTER_NORMAL_01",
+      "type": "NORMAL",
+      "baseHp": 60,
+      "moveSpeed": 1.0,
+      "rewardGold": 5,
+      "prefabResource": "",
+      "prototypeExtensions": {"displayName": "일반 몬스터", "attackDamage": 10.0, "attackIntervalSec": 1.0, "attackRange": 56.0, "colorHex": "d96772"}
+    },
+    {
+      "monsterId": "MONSTER_SPEED_01",
+      "type": "SPEED",
+      "baseHp": 42,
+      "moveSpeed": 1.55,
+      "rewardGold": 6,
+      "prefabResource": "",
+      "prototypeExtensions": {"displayName": "고속 몬스터", "attackDamage": 8.0, "attackIntervalSec": 0.72, "attackRange": 52.0, "colorHex": "ffb65f"}
+    },
+    {
+      "monsterId": "MONSTER_TANK_01",
+      "type": "TANK",
+      "baseHp": 155,
+      "moveSpeed": 0.68,
+      "rewardGold": 12,
+      "prefabResource": "",
+      "prototypeExtensions": {"displayName": "중장 몬스터", "attackDamage": 18.0, "attackIntervalSec": 1.2, "attackRange": 60.0, "colorHex": "a96f78"}
+    },
+    {
+      "monsterId": "MONSTER_BOSS_01",
+      "type": "BOSS",
+      "baseHp": 360,
+      "moveSpeed": 0.55,
+      "rewardGold": 30,
+      "prefabResource": "",
+      "prototypeExtensions": {"displayName": "보스 몬스터", "attackDamage": 26.0, "attackIntervalSec": 1.0, "attackRange": 65.0, "colorHex": "8d405e"}
+    }
+  ]
+}

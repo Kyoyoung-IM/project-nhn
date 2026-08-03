@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "status": "PLACEHOLDER",
+    "source": "game_table_specification_v3.pdf"
+  },
+  "rows": [
+    {"turretIndex": "TURRET_MELEE_T1", "probability": 0.2},
+    {"turretIndex": "TURRET_DOT_T1", "probability": 0.2},
+    {"turretIndex": "TURRET_STUN_T1", "probability": 0.2},
+    {"turretIndex": "TURRET_SLOW_T1", "probability": 0.2},
+    {"turretIndex": "TURRET_RANGED_T1", "probability": 0.2}
+  ]
+}
