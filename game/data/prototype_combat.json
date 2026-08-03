@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "status": "PLACEHOLDER",
+    "purpose": "Core loop structure validation only; all combat values are intentionally replaceable."
+  },
+  "monster": {
+    "id": "PLACEHOLDER_NORMAL_01",
+    "max_hp": 52.0,
+    "move_speed_px_sec": 88.0,
+    "attack_damage": 12.0,
+    "attack_interval_sec": 0.8,
+    "attack_range_px": 58.0,
+    "reward_gold": 5
+  },
+  "tower": {
+    "id": "PLACEHOLDER_RANGED_01",
+    "display_name": "더미 포탑",
+    "max_hp": 100.0,
+    "damage": 22.0,
+    "attack_interval_sec": 0.35,
+    "range_px": 285.0
+  },
+  "economy": {
+    "starting_gold": 250,
+    "tower_cost": 10,
+    "reroll_cost": 10,
+    "shop_card_count": 5
+  },
+  "wave": {
+    "id": "PLACEHOLDER_WAVE_01",
+    "monster_count": 8,
+    "spawn_interval_sec": 0.9
+  }
+}
