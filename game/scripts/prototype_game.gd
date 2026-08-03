@@ -28,6 +28,8 @@ const TOWER_DEPLOYMENT_RIGHT_X := PATH_LEFT_X + (PATH_RIGHT_X - PATH_LEFT_X) * T
 # 인접 슬롯은 데이터의 사거리 1칸 환산값과 같은 180px 간격을 사용한다.
 const TOWER_SLOT_GAP_PX := 180.0
 const TOWER_SLOT_X := [300.0, 480.0, 660.0, 840.0, 1020.0]
+# 플레이어가 전투 중 선택할 수 있는 게임 진행 배속이다.
+const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
 # 4개 임시 웨이브 전체를 시간 가속 상태에서 끝낼 수 있도록 헤드리스 테스트 제한을 넉넉히 둔다.
 const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 
@@ -74,6 +76,7 @@ var gold: int = 0
 var preparation_remaining_sec: float = 0.0
 var reroll_count: int = 0
 var spawn_cooldown_sec: float = 0.0
+var game_speed_multiplier: int = 1
 
 # 일반 플레이에서는 무작위화하고 자동 테스트·디버그 시드에서는 재현 가능한 상점 RNG다.
 var shop_rng := RandomNumberGenerator.new()
@@ -87,6 +90,7 @@ var automated_test_drag: bool = false
 var automated_test_shop_drag: bool = false
 var automated_test_wave_shop: bool = false
 var automated_test_melee_attack: bool = false
+var automated_test_wave_features: bool = false
 var automated_test_tower_was_destroyed: bool = false
 var automated_test_elapsed_sec: float = 0.0
 
@@ -97,6 +101,7 @@ var gold_label: Label
 var status_label: Label
 var action_button: Button
 var reroll_button: Button
+var speed_buttons: Array[Button] = []
 
 # CanvasLayer는 Node2D 변환을 상속하지 않으므로 별도로 보관해 전장과 같은 중앙 오프셋을 적용한다.
 var interface_canvas: CanvasLayer
@@ -117,7 +122,7 @@ var shop_drag_target_slot: PrototypeTowerSlot = null
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-wave-features" in user_args
 	automated_test_expects_tower_destruction = "--auto-test-tower-destruction" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args or automated_test_expects_tower_destruction
 	automated_test_economy = "--auto-test-economy" in user_args
@@ -125,6 +130,7 @@ func _ready() -> void:
 	automated_test_shop_drag = "--auto-test-shop-drag" in user_args
 	automated_test_wave_shop = "--auto-test-wave-shop" in user_args
 	automated_test_melee_attack = "--auto-test-melee-attack" in user_args
+	automated_test_wave_features = "--auto-test-wave-features" in user_args
 	database = DatabaseScript.new() as PrototypeDatabase
 	if database == null or not database.load_all():
 		push_error("Prototype database could not be loaded.")
@@ -476,6 +482,7 @@ func _build_interface() -> void:
 	action_button.add_theme_color_override("font_color", Color("2e2819"))
 	action_button.pressed.connect(_on_action_button_pressed)
 	interface_canvas.add_child(action_button)
+	_create_speed_controls(interface_canvas)
 
 	reroll_button = Button.new()
 	reroll_button.position = Vector2(42.0, 888.0)
@@ -496,6 +503,50 @@ func _build_interface() -> void:
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
 	interface_canvas.add_child(reroll_button)
 	_create_shop_cards(interface_canvas)
+
+
+# 웨이브 시작 버튼 왼쪽에 전투 중에만 보이는 ×1/×2/×3 속도 버튼을 만든다.
+func _create_speed_controls(parent: Node) -> void:
+	for speed_index in GAME_SPEED_MULTIPLIERS.size():
+		var multiplier := int(GAME_SPEED_MULTIPLIERS[speed_index])
+		var speed_button := Button.new()
+		speed_button.position = Vector2(1260.0 + speed_index * 90.0, 38.0)
+		speed_button.size = Vector2(80.0, 52.0)
+		speed_button.text = "×%d" % multiplier
+		speed_button.focus_mode = Control.FOCUS_NONE
+		speed_button.add_theme_font_override("font", GAME_FONT)
+		speed_button.add_theme_font_size_override("font_size", 23)
+		speed_button.pressed.connect(_on_speed_button_pressed.bind(multiplier))
+		parent.add_child(speed_button)
+		speed_buttons.append(speed_button)
+	_update_speed_controls()
+
+
+# 일반 플레이의 웨이브 중에만 선택 배속을 엔진 시간 배율에 반영한다.
+func _on_speed_button_pressed(multiplier: int) -> void:
+	if phase != Phase.WAVE or automated_test_mode or multiplier not in GAME_SPEED_MULTIPLIERS:
+		return
+	game_speed_multiplier = multiplier
+	Engine.time_scale = float(game_speed_multiplier)
+	_update_speed_controls()
+
+
+# 현재 단계와 선택값에 맞춰 속도 버튼 노출, 입력 가능 상태와 강조색을 갱신한다.
+func _update_speed_controls() -> void:
+	for speed_index in speed_buttons.size():
+		var speed_button := speed_buttons[speed_index]
+		var multiplier := int(GAME_SPEED_MULTIPLIERS[speed_index])
+		var selected := multiplier == game_speed_multiplier
+		speed_button.visible = phase == Phase.WAVE
+		speed_button.disabled = phase != Phase.WAVE or automated_test_mode
+		var normal_color := Color("d8aa3c") if selected else Color("29384f")
+		var border_color := Color("ffe69a") if selected else Color("60738d")
+		speed_button.add_theme_stylebox_override("normal", _make_button_style(normal_color, border_color))
+		speed_button.add_theme_stylebox_override("hover", _make_button_style(Color("e8be55"), Color("fff0b8")))
+		speed_button.add_theme_stylebox_override("pressed", _make_button_style(Color("b88929"), Color("ffe69a")))
+		speed_button.add_theme_color_override("font_color", Color("2e2819") if selected else Color.WHITE)
+		speed_button.add_theme_color_override("font_hover_color", Color("2e2819"))
+		speed_button.add_theme_color_override("font_pressed_color", Color("2e2819"))
 
 
 # Web 캔버스가 넓거나 높아질 때 1920×1080 게임 영역을 남는 축의 중앙으로 이동한다.
@@ -659,6 +710,9 @@ func _start_wave() -> void:
 
 # 테스트 종류에 필요한 터렛을 자동 배치한 뒤 정비 시간을 건너뛰고 웨이브를 시작한다.
 func _start_automated_test() -> void:
+	if automated_test_wave_features:
+		_run_wave_features_automated_test()
+		return
 	if automated_test_melee_attack:
 		_run_melee_attack_automated_test()
 		return
@@ -708,6 +762,30 @@ func _run_melee_attack_automated_test() -> void:
 		print("Automated melee attack test passed: HORIZONTAL_RANGE_DAMAGE")
 	else:
 		push_error("Automated melee attack test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
+# 웨이브 클리어가 생존 터렛을 완전 회복하고 선택한 배속을 ×1로 초기화하는지 검증한다.
+func _run_wave_features_automated_test() -> void:
+	_place_tower(tower_slots[0], false, "turretMelee1")
+	var test_tower := towers[0]
+	test_tower.take_damage(test_tower.max_hp * 0.5)
+	var tower_was_damaged := test_tower.hp < test_tower.max_hp
+	# 이 테스트에서만 일반 플레이 배속 분기를 실행하고, 종료 전 자동 테스트 상태를 복원한다.
+	automated_test_mode = false
+	_set_phase(Phase.WAVE)
+	_on_speed_button_pressed(3)
+	var triple_speed_applied := game_speed_multiplier == 3 and is_equal_approx(Engine.time_scale, 3.0) and speed_buttons[2].visible
+	_complete_wave()
+	var tower_fully_restored := is_equal_approx(test_tower.hp, test_tower.max_hp)
+	var speed_reset := game_speed_multiplier == 1 and is_equal_approx(Engine.time_scale, 1.0) and not speed_buttons[0].visible
+	var passed := tower_was_damaged and triple_speed_applied and tower_fully_restored and speed_reset and phase == Phase.READY
+	automated_test_mode = true
+	if passed:
+		print("Automated wave feature test passed: TOWER_HEAL_AND_SPEED_CONTROLS")
+	else:
+		push_error("Automated wave feature test failed.")
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -841,16 +919,26 @@ func _on_monster_reached_deepest_floor(monster: PrototypeMonster) -> void:
 		_set_phase(Phase.DEFEAT)
 
 
-# 다음 웨이브가 있으면 정비 단계로 돌아가고 마지막 웨이브면 승리한다.
+# 웨이브 클리어 보상으로 생존 터렛을 모두 회복한 뒤 다음 정비 또는 최종 승리로 전환한다.
 func _complete_wave() -> void:
+	_restore_all_towers()
 	if current_wave_number >= database.define_int("totalWaveCount", 1):
 		_set_phase(Phase.VICTORY)
 		return
 	current_wave_number += 1
 	_begin_preparation(false)
+	status_label.text = "웨이브 클리어 · 모든 터렛 체력 회복"
+	_update_interface()
 	# 헤드리스 전체 승리 테스트는 사용자 입력이 없으므로 다음 정비 단계를 즉시 건너뛴다.
 	if automated_test_mode:
 		call_deferred("_start_wave")
+
+
+# 파괴되지 않고 현재 설치된 모든 터렛에 완전 회복을 적용한다.
+func _restore_all_towers() -> void:
+	for tower in towers:
+		if is_instance_valid(tower):
+			tower.restore_full_health()
 
 
 # 단계에 맞춰 터렛 공격, 슬롯 입력, 몬스터 진행, HUD를 일괄 전환한다.
@@ -865,6 +953,14 @@ func _set_phase(next_phase: Phase) -> void:
 			tower.enabled = phase == Phase.WAVE
 	for slot in tower_slots:
 		slot.interaction_enabled = phase == Phase.READY
+	# 자동 테스트의 12배 가속은 유지하고, 일반 플레이만 웨이브 선택 배속을 사용한다.
+	if not automated_test_mode:
+		if phase == Phase.WAVE:
+			Engine.time_scale = float(game_speed_multiplier)
+		else:
+			game_speed_multiplier = 1
+			Engine.time_scale = 1.0
+	_update_speed_controls()
 	_update_shop_cards()
 	if phase == Phase.DEFEAT:
 		for monster in monsters:

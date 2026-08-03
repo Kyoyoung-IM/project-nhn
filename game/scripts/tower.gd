@@ -56,11 +56,17 @@ func setup(config: Dictionary, assigned_floor_index: int) -> void:
 
 
 # 새 웨이브 시작 시 공격 가능 상태와 시각 효과 타이머를 초기화한다.
-# 체력은 웨이브 사이에 자동 회복하지 않는다.
+# 체력 회복은 웨이브 클리어 시점에 게임 컨트롤러가 별도로 요청한다.
 func reset_for_wave() -> void:
 	enabled = true
 	cooldown_sec = 0.0
 	beam_visible_sec = 0.0
+	queue_redraw()
+
+
+# 웨이브 클리어 보상으로 생존 터렛의 체력을 최대치까지 회복한다.
+func restore_full_health() -> void:
+	hp = max_hp
 	queue_redraw()
 
 

@@ -10,3 +10,6 @@ Thumbs.db
 
 # Generated local distribution archives (the Pages-ready files live in build/web/)
 build/*.zip
+
+# Local-only contest submission drafts and AI development records
+submission/ai-usage/development-log/
