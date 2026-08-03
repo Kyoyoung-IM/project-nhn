@@ -10,9 +10,18 @@ const TowerSlotScript := preload("res://scripts/tower_slot.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const GAME_FONT := preload("res://assets/fonts/NotoSansKR.ttf")
 
-# 모든 전투 좌표와 UI 배치는 이 논리 해상도를 기준으로 작성한다.
+# 모든 전투 좌표와 UI 배치는 16:9 Full HD 논리 해상도를 기준으로 작성한다.
 # Web 창의 가로세로 비율이 달라져도 이 영역 전체가 보이도록 Godot 스트레치가 먼저 배율을 정한다.
-const REFERENCE_VIEWPORT_SIZE := Vector2(960.0, 860.0)
+const REFERENCE_VIEWPORT_SIZE := Vector2(1920.0, 1080.0)
+
+# 전장 도형, 이동 경로, 슬롯이 같은 층 좌표를 공유하도록 화면 기준값을 한곳에 모은다.
+const PATH_LEFT_X := 140.0
+const PATH_RIGHT_X := 1770.0
+const GROUND_LANE_Y := 150.0
+const FLOOR_TOP_Y := [190.0, 380.0, 570.0]
+const COMBAT_LANE_Y := [350.0, 540.0, 730.0]
+const TOWER_SLOT_Y := [295.0, 485.0, 675.0]
+const TOWER_SLOT_X := [400.0, 680.0, 960.0, 1240.0, 1520.0]
 
 # READY는 정비, WAVE는 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
@@ -20,14 +29,14 @@ enum Phase { READY, WAVE, VICTORY, DEFEAT }
 # 지상 오른쪽→왼쪽, B1~B3 각각 오른쪽→왼쪽으로 이어지는 고정 웨이포인트다.
 # 홀수 인덱스의 왼쪽 출구에서 다음 짝수 인덱스의 오른쪽 입구로 하강한다.
 var movement_path := PackedVector2Array([
-	Vector2(880.0, 135.0),
-	Vector2(90.0, 135.0),
-	Vector2(870.0, 255.0),
-	Vector2(90.0, 255.0),
-	Vector2(870.0, 390.0),
-	Vector2(90.0, 390.0),
-	Vector2(870.0, 525.0),
-	Vector2(90.0, 525.0),
+	Vector2(PATH_RIGHT_X + 10.0, GROUND_LANE_Y),
+	Vector2(PATH_LEFT_X, GROUND_LANE_Y),
+	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[0]),
+	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[0]),
+	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[1]),
+	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[1]),
+	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[2]),
+	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]),
 ])
 
 # 로드된 데이터베이스와 현재 장면 단계다.
@@ -146,22 +155,22 @@ func _build_interface() -> void:
 	interface_canvas = CanvasLayer.new()
 	add_child(interface_canvas)
 
-	phase_label = _make_label(interface_canvas, Vector2(36.0, 26.0), Vector2(430.0, 38.0), 24)
-	phase_label.text = "지상 진입 구간 · 전투 없음"
+	phase_label = _make_label(interface_canvas, Vector2(50.0, 34.0), Vector2(900.0, 48.0), 34)
+	phase_label.text = ""
 
-	wave_label = _make_label(interface_canvas, Vector2(36.0, 78.0), Vector2(190.0, 34.0), 20)
-	gold_label = _make_label(interface_canvas, Vector2(242.0, 78.0), Vector2(190.0, 34.0), 20)
+	wave_label = _make_label(interface_canvas, Vector2(50.0, 92.0), Vector2(280.0, 42.0), 27)
+	gold_label = _make_label(interface_canvas, Vector2(350.0, 92.0), Vector2(280.0, 42.0), 27)
 
-	status_label = _make_label(interface_canvas, Vector2(20.0, 625.0), Vector2(245.0, 42.0), 19)
+	status_label = _make_label(interface_canvas, Vector2(40.0, 792.0), Vector2(700.0, 56.0), 26)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	action_button = Button.new()
-	action_button.position = Vector2(746.0, 624.0)
-	action_button.size = Vector2(194.0, 44.0)
+	action_button.position = Vector2(1530.0, 790.0)
+	action_button.size = Vector2(350.0, 60.0)
 	action_button.text = "1 웨이브 시작"
 	action_button.focus_mode = Control.FOCUS_NONE
 	action_button.add_theme_font_override("font", GAME_FONT)
-	action_button.add_theme_font_size_override("font_size", 20)
+	action_button.add_theme_font_size_override("font_size", 26)
 	var normal_style := StyleBoxFlat.new()
 	normal_style.bg_color = Color("f3c95f")
 	normal_style.corner_radius_top_left = 9
@@ -173,23 +182,19 @@ func _build_interface() -> void:
 	action_button.pressed.connect(_on_action_button_pressed)
 	interface_canvas.add_child(action_button)
 
-	var shop_title := _make_label(interface_canvas, Vector2(267.0, 626.0), Vector2(305.0, 38.0), 19)
-	shop_title.text = "터렛 상점 · 카드 → 슬롯"
-	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
 	reroll_button = Button.new()
-	reroll_button.position = Vector2(580.0, 624.0)
-	reroll_button.size = Vector2(155.0, 44.0)
+	reroll_button.position = Vector2(1230.0, 790.0)
+	reroll_button.size = Vector2(270.0, 60.0)
 	reroll_button.text = "새로고침  %d G" % _current_reroll_cost()
 	reroll_button.focus_mode = Control.FOCUS_NONE
 	reroll_button.add_theme_font_override("font", GAME_FONT)
-	reroll_button.add_theme_font_size_override("font_size", 17)
+	reroll_button.add_theme_font_size_override("font_size", 24)
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
 	interface_canvas.add_child(reroll_button)
 	_create_shop_cards(interface_canvas)
 
 
-# Web 캔버스가 넓거나 높아질 때 960×860 게임 영역을 남는 축의 중앙으로 이동한다.
+# Web 캔버스가 넓거나 높아질 때 1920×1080 게임 영역을 남는 축의 중앙으로 이동한다.
 # 실제 확대·축소는 project.godot의 canvas_items + expand 설정이 담당하므로 여기서는 왜곡 없이 위치만 맞춘다.
 func _update_responsive_layout() -> void:
 	var visible_size := get_viewport_rect().size
@@ -216,12 +221,10 @@ func _make_label(parent: Node, label_position: Vector2, label_size: Vector2, fon
 
 # B1~B3 각 5개, 총 15개의 고정 터렛 슬롯을 만든다.
 func _create_tower_slots() -> void:
-	var floor_y := [218.0, 353.0, 488.0]
-	var slot_x := [190.0, 335.0, 480.0, 625.0, 770.0]
 	for floor_index in 3:
 		for slot_index in 5:
 			var slot := TowerSlotScript.new() as PrototypeTowerSlot
-			slot.position = Vector2(slot_x[slot_index], floor_y[floor_index])
+			slot.position = Vector2(TOWER_SLOT_X[slot_index], TOWER_SLOT_Y[floor_index])
 			slot.setup(floor_index, slot_index)
 			slot.pressed.connect(_on_tower_slot_pressed)
 			add_child(slot)
@@ -234,12 +237,12 @@ func _create_shop_cards(canvas: CanvasLayer) -> void:
 	var card_count := database.extension_int("shopCardCount", 5)
 	for card_index in card_count:
 		var card := Button.new()
-		card.position = Vector2(20.0 + card_index * 185.0, 690.0)
-		card.size = Vector2(180.0, 150.0)
+		card.position = Vector2(32.0 + card_index * 376.0, 870.0)
+		card.size = Vector2(360.0, 190.0)
 		card.focus_mode = Control.FOCUS_NONE
 		card.add_theme_font_override("font", GAME_FONT)
 		card.text = "상점 준비 중"
-		card.add_theme_font_size_override("font_size", 16)
+		card.add_theme_font_size_override("font_size", 22)
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("34485a")
 		style.border_color = Color("7fd9ce")
@@ -566,12 +569,12 @@ func _update_interface() -> void:
 	gold_label.text = "GOLD  %d" % gold
 	match phase:
 		Phase.READY:
-			phase_label.text = "정비 시간  %d초 · 지상 진입 구간" % ceili(preparation_remaining_sec)
+			phase_label.text = "정비  %d초" % ceili(preparation_remaining_sec)
 			status_label.text = "터렛을 구매해 배치하세요"
 			action_button.text = "%d 웨이브 조기 시작" % current_wave_number
 			action_button.disabled = false
 		Phase.WAVE:
-			phase_label.text = "지상 진입 구간 · 전투는 지하 3개 층"
+			phase_label.text = "전투 진행"
 			status_label.text = "방어 중  %d / %d 처치" % [defeated_count, wave_total]
 			action_button.text = "웨이브 진행 중"
 			action_button.disabled = true
@@ -587,66 +590,41 @@ func _update_interface() -> void:
 			action_button.disabled = false
 
 
-# 외부 배경 에셋 없이 지상 구간, 지하 3층, 진입구, 코어, 상점 배경을 그린다.
+# 외부 배경 에셋 없이 1920×1080 지상 구간, 지하 3층, 진입구, 코어, 상점 배경을 그린다.
 func _draw() -> void:
 	# Header / ground staging area.
-	draw_rect(Rect2(18.0, 16.0, 924.0, 596.0), Color("253044"), true)
-	draw_rect(Rect2(24.0, 20.0, 912.0, 130.0), Color("6ca4cb"), true)
-	draw_rect(Rect2(24.0, 113.0, 912.0, 37.0), Color("759b60"), true)
-	draw_rect(Rect2(24.0, 142.0, 912.0, 12.0), Color("283342"), true)
+	draw_rect(Rect2(24.0, 20.0, 1872.0, 750.0), Color("253044"), true)
+	draw_rect(Rect2(32.0, 28.0, 1856.0, 152.0), Color("6ca4cb"), true)
+	draw_rect(Rect2(32.0, 142.0, 1856.0, 38.0), Color("759b60"), true)
+	draw_rect(Rect2(32.0, 174.0, 1856.0, 12.0), Color("283342"), true)
 
 	# Entrance skyline and the dedicated descent shaft.
-	draw_rect(Rect2(805.0, 82.0, 91.0, 60.0), Color("39465c"), true)
-	draw_rect(Rect2(827.0, 100.0, 47.0, 42.0), Color("182234"), true)
-	draw_rect(Rect2(58.0, 105.0, 64.0, 70.0), Color("171d2b"), true)
-	draw_rect(Rect2(73.0, 120.0, 34.0, 430.0), Color("202838"), true)
-	draw_line(Vector2(90.0, 145.0), Vector2(90.0, 525.0), Color("90a1b7"), 5.0)
+	draw_rect(Rect2(1690.0, 88.0, 150.0, 86.0), Color("39465c"), true)
+	draw_rect(Rect2(1728.0, 112.0, 74.0, 62.0), Color("182234"), true)
+	draw_rect(Rect2(94.0, 112.0, 92.0, 78.0), Color("171d2b"), true)
+	draw_rect(Rect2(116.0, 136.0, 48.0, 620.0), Color("202838"), true)
+	draw_line(Vector2(PATH_LEFT_X, 150.0), Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]), Color("90a1b7"), 7.0)
 
 	# Three playable underground floors.
 	var floor_colors := [Color("473f49"), Color("403943"), Color("39343f")]
-	var floor_y := [162.0, 297.0, 432.0]
 	for index in 3:
-		draw_rect(Rect2(24.0, floor_y[index], 912.0, 125.0), floor_colors[index], true)
-		draw_line(Vector2(26.0, floor_y[index] + 8.0), Vector2(934.0, floor_y[index] + 8.0), Color("655b65"), 4.0)
-		draw_line(Vector2(34.0, floor_y[index] + 94.0), Vector2(926.0, floor_y[index] + 94.0), Color("171b25"), 8.0)
+		draw_rect(Rect2(32.0, FLOOR_TOP_Y[index], 1856.0, 180.0), floor_colors[index], true)
+		draw_line(Vector2(36.0, FLOOR_TOP_Y[index] + 10.0), Vector2(1884.0, FLOOR_TOP_Y[index] + 10.0), Color("655b65"), 5.0)
+		draw_line(Vector2(48.0, COMBAT_LANE_Y[index]), Vector2(1872.0, COMBAT_LANE_Y[index]), Color("171b25"), 10.0)
 
 	# Each combat floor has a right-side entrance and a left-side transfer exit.
-	for lane_y in [255.0, 390.0, 525.0]:
-		draw_rect(Rect2(844.0, lane_y - 35.0, 50.0, 35.0), Color("202838"), true)
-	for lane_y in [255.0, 390.0]:
-		draw_rect(Rect2(70.0, lane_y - 35.0, 40.0, 35.0), Color("202838"), true)
-
-	# All three combat lanes move from right to left.
-	_draw_arrow(Vector2(835.0, 135.0), Vector2(145.0, 135.0), Color("d8e8f2"))
-	_draw_arrow(Vector2(810.0, 255.0), Vector2(145.0, 255.0), Color("7fd9ce"))
-	_draw_arrow(Vector2(810.0, 390.0), Vector2(145.0, 390.0), Color("7fd9ce"))
-	_draw_arrow(Vector2(810.0, 525.0), Vector2(145.0, 525.0), Color("7fd9ce"))
-
-	var font: Font = GAME_FONT
-	for index in 3:
-		draw_string(font, Vector2(34.0, 207.0 + index * 135.0), "B%d  전투층" % (index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 18, Color("d9d3dd"))
-	draw_string(font, Vector2(34.0, 585.0), "최심부", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 18, Color("ff9b9b"))
+	for lane_y in COMBAT_LANE_Y:
+		draw_rect(Rect2(1695.0, lane_y - 52.0, 90.0, 52.0), Color("202838"), true)
+	for lane_y in [COMBAT_LANE_Y[0], COMBAT_LANE_Y[1]]:
+		draw_rect(Rect2(108.0, lane_y - 52.0, 64.0, 52.0), Color("202838"), true)
 
 	# Deepest-floor breach core.
-	draw_circle(Vector2(90.0, 525.0), 27.0, Color("5b2432"))
-	draw_circle(Vector2(90.0, 525.0), 15.0, Color("ff6475"))
-	draw_line(Vector2(82.0, 517.0), Vector2(98.0, 533.0), Color.WHITE, 3.0)
-	draw_line(Vector2(98.0, 517.0), Vector2(82.0, 533.0), Color.WHITE, 3.0)
+	draw_circle(Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]), 36.0, Color("5b2432"))
+	draw_circle(Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]), 21.0, Color("ff6475"))
+	draw_line(Vector2(129.0, 719.0), Vector2(151.0, 741.0), Color.WHITE, 4.0)
+	draw_line(Vector2(151.0, 719.0), Vector2(129.0, 741.0), Color.WHITE, 4.0)
 
 	# Bottom preparation deck and TFT-style five-card shop.
-	draw_rect(Rect2(18.0, 612.0, 924.0, 248.0), Color("151c2a"), true)
-	draw_line(Vector2(18.0, 612.0), Vector2(942.0, 612.0), Color("60708a"), 2.0)
-	draw_line(Vector2(18.0, 680.0), Vector2(942.0, 680.0), Color("39475b"), 2.0)
-
-
-# 층별 오른쪽→왼쪽 진행 방향을 선과 삼각형 화살촉으로 표시한다.
-func _draw_arrow(from: Vector2, to: Vector2, color: Color) -> void:
-	draw_line(from, to, color, 3.0)
-	var direction := (to - from).normalized()
-	var side := direction.orthogonal()
-	var head := PackedVector2Array([
-		to,
-		to - direction * 18.0 + side * 9.0,
-		to - direction * 18.0 - side * 9.0,
-	])
-	draw_colored_polygon(head, color)
+	draw_rect(Rect2(24.0, 770.0, 1872.0, 310.0), Color("151c2a"), true)
+	draw_line(Vector2(24.0, 770.0), Vector2(1896.0, 770.0), Color("60708a"), 3.0)
+	draw_line(Vector2(24.0, 860.0), Vector2(1896.0, 860.0), Color("39475b"), 3.0)
