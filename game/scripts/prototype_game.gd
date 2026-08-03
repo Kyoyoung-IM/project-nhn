@@ -22,7 +22,14 @@ const GROUND_LANE_Y := 150.0
 const FLOOR_TOP_Y := [190.0, 380.0, 570.0]
 const COMBAT_LANE_Y := [350.0, 540.0, 730.0]
 const TOWER_SLOT_Y := [295.0, 485.0, 675.0]
-const TOWER_SLOT_X := [400.0, 680.0, 960.0, 1240.0, 1520.0]
+# 오른쪽에서 등장하는 몬스터가 진입할 여백 35%를 비우고, 왼쪽 65%에만 슬롯을 둔다.
+const TOWER_DEPLOYMENT_RATIO := 0.65
+const TOWER_DEPLOYMENT_RIGHT_X := PATH_LEFT_X + (PATH_RIGHT_X - PATH_LEFT_X) * TOWER_DEPLOYMENT_RATIO
+# 인접 슬롯은 데이터의 사거리 1칸 환산값과 같은 200px 간격으로 배치해 전투 구간을 연계한다.
+const TOWER_SLOT_GAP_PX := 200.0
+const TOWER_SLOT_X := [300.0, 500.0, 700.0, 900.0, 1100.0]
+# 4개 임시 웨이브 전체를 시간 가속 상태에서 끝낼 수 있도록 헤드리스 테스트 제한을 넉넉히 둔다.
+const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 
 # READY는 정비, WAVE는 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
@@ -139,8 +146,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if automated_test_mode:
 		automated_test_elapsed_sec += delta
-		if automated_test_elapsed_sec > 90.0:
-			push_error("Automated wave test timed out.")
+		if automated_test_elapsed_sec > AUTOMATED_TEST_TIMEOUT_SEC:
+			# 실패 지점에서 웨이브·스폰·잔존 수를 남겨 데이터 변경에 따른 회귀 원인을 바로 찾는다.
+			push_error("Automated wave test timed out: wave=%d spawned=%d/%d active=%d defeated=%d phase=%d" % [current_wave_number, spawned_count, current_wave_monster_ids.size(), monsters.size(), defeated_count, phase])
 			Engine.time_scale = 1.0
 			get_tree().quit(1)
 			return
@@ -663,8 +671,9 @@ func _start_automated_test() -> void:
 	if automated_test_expects_tower_destruction:
 		_place_tower(tower_slots[0], false, "turretMelee1")
 	elif not automated_test_expects_defeat:
-		for slot_index in 5:
-			_place_tower(tower_slots[slot_index], false, "turretRanged1")
+		# 승리 회귀 테스트는 밸런스 초안 변화와 무관하게 전체 진행을 검증하도록 모든 층에 최고 Tier 터렛을 배치한다.
+		for slot in tower_slots:
+			_place_tower(slot, false, "turretRanged4")
 	_start_wave()
 	if automated_test_expects_tower_destruction:
 		for tower in towers:
@@ -719,13 +728,26 @@ func _run_drag_automated_test() -> void:
 	var tower := towers[0]
 	var cross_floor_rejected := not _relocate_tower(tower, other_floor_target)
 	var same_floor_moved := _relocate_tower(tower, same_floor_target)
-	var passed := cross_floor_rejected and same_floor_moved and origin.is_empty() and same_floor_target.occupant == tower and tower.position == same_floor_target.position
+	var passed := _tower_slot_layout_is_valid() and cross_floor_rejected and same_floor_moved and origin.is_empty() and same_floor_target.occupant == tower and tower.position == same_floor_target.position
 	if passed:
 		print("Automated drag test passed: SAME_FLOOR_ONLY")
 	else:
 		push_error("Automated drag test failed.")
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
+
+
+# 슬롯 5개가 왼쪽 65% 배치 영역 안에 있고 실제 사거리 환산과 동일한 간격인지 회귀 검증한다.
+func _tower_slot_layout_is_valid() -> bool:
+	if TOWER_SLOT_X.size() != 5:
+		return false
+	for slot_index in TOWER_SLOT_X.size():
+		var slot_x := float(TOWER_SLOT_X[slot_index])
+		if slot_x < PATH_LEFT_X or slot_x > TOWER_DEPLOYMENT_RIGHT_X:
+			return false
+		if slot_index > 0 and not is_equal_approx(slot_x - float(TOWER_SLOT_X[slot_index - 1]), TOWER_SLOT_GAP_PX):
+			return false
+	return true
 
 
 # 리롤 비용 10→15 증가와 다음 정비 단계의 기본 비용 초기화를 검증한다.
@@ -791,6 +813,9 @@ func _complete_wave() -> void:
 		return
 	current_wave_number += 1
 	_begin_preparation(false)
+	# 헤드리스 전체 승리 테스트는 사용자 입력이 없으므로 다음 정비 단계를 즉시 건너뛴다.
+	if automated_test_mode:
+		call_deferred("_start_wave")
 
 
 # 단계에 맞춰 터렛 공격, 슬롯 입력, 몬스터 진행, HUD를 일괄 전환한다.

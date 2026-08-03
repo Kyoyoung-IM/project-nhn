@@ -11,8 +11,8 @@ const MONSTER_PATH := "res://data/prototype_monsters.json"
 const SPAWN_TABLE_PATH := "res://data/prototype_spawn_table.json"
 const SHOP_GACHA_PATH := "res://data/prototype_shop_gacha.json"
 
-# PDF의 range는 슬롯 간격 단위이므로 실제 화면 픽셀 사거리로 바꿀 때 사용하는 기준값이다.
-const SLOT_SPACING_PX := 145.0
+# PDF의 range는 슬롯 간격 단위이므로 현재 전장 슬롯 간격과 같은 픽셀값으로 환산한다.
+const SLOT_SPACING_PX := 200.0
 
 # 데이터 오탈자나 정의되지 않은 유형을 조기에 검출하기 위한 허용 목록이다.
 const TURRET_TYPES := ["MELEE", "DOT", "STUN", "SLOW", "RANGED"]
