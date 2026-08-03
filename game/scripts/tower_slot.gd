@@ -16,6 +16,10 @@ var occupant: PrototypeTower = null
 var interaction_enabled: bool = true
 var hovered: bool = false
 
+# 터렛 드래그 중 같은 층의 빈 슬롯인지, 현재 드롭 대상으로 선택됐는지 표시한다.
+var drag_eligible: bool = false
+var drag_targeted: bool = false
+
 
 # 슬롯 인덱스를 기록하고 마우스 판정용 사각 충돌 영역을 만든다.
 func setup(new_floor_index: int, new_slot_index: int) -> void:
@@ -49,6 +53,13 @@ func is_empty() -> bool:
 	return occupant == null or not is_instance_valid(occupant)
 
 
+# 드래그 가능한 같은 층 빈 슬롯과 현재 커서 아래 드롭 슬롯의 강조 상태를 갱신한다.
+func set_drag_state(eligible: bool, targeted: bool) -> void:
+	drag_eligible = eligible
+	drag_targeted = targeted
+	queue_redraw()
+
+
 # 정비 단계에서 왼쪽 클릭을 받으면 게임 컨트롤러에 슬롯을 전달한다.
 func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if not interaction_enabled:
@@ -73,9 +84,17 @@ func _on_mouse_exited() -> void:
 # 빈 슬롯의 + 기호, 점유 상태, 호버 테두리를 코드 도형으로 그린다.
 func _draw() -> void:
 	var fill := Color("314152") if is_empty() else Color("222b38")
-	var border := Color("9fe8dc") if hovered and interaction_enabled else Color("60778a")
+	if drag_eligible:
+		fill = Color("294b43")
+	var border := Color("60778a")
+	if drag_targeted:
+		border = Color("ffe278")
+	elif drag_eligible:
+		border = Color("7fe6a3")
+	elif hovered and interaction_enabled:
+		border = Color("9fe8dc")
 	draw_rect(Rect2(-41.0, -24.0, 82.0, 48.0), fill, true)
-	draw_rect(Rect2(-41.0, -24.0, 82.0, 48.0), border, false, 2.0)
+	draw_rect(Rect2(-41.0, -24.0, 82.0, 48.0), border, false, 4.0 if drag_targeted else 2.0)
 	if is_empty():
 		draw_line(Vector2(-9.0, 0.0), Vector2(9.0, 0.0), Color("8ca2b5"), 3.0)
 		draw_line(Vector2(0.0, -9.0), Vector2(0.0, 9.0), Color("8ca2b5"), 3.0)
