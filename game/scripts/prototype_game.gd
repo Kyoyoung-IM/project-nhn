@@ -77,6 +77,8 @@ var automated_test_expects_defeat: bool = false
 var automated_test_expects_tower_destruction: bool = false
 var automated_test_economy: bool = false
 var automated_test_drag: bool = false
+var automated_test_shop_drag: bool = false
+var automated_test_wave_shop: bool = false
 var automated_test_tower_was_destroyed: bool = false
 var automated_test_elapsed_sec: float = 0.0
 
@@ -98,15 +100,22 @@ var dragged_origin_slot: PrototypeTowerSlot = null
 var dragged_target_slot: PrototypeTowerSlot = null
 var drag_pointer_offset := Vector2.ZERO
 
+# 상점 카드 드래그 중 구매 예정 카드, 포인터를 따라가는 더미 터렛, 드롭 대상 슬롯을 추적한다.
+var dragged_shop_card_index: int = -1
+var shop_drag_preview: PrototypeTower = null
+var shop_drag_target_slot: PrototypeTowerSlot = null
+
 
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-wave-shop" in user_args
 	automated_test_expects_tower_destruction = "--auto-test-tower-destruction" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args or automated_test_expects_tower_destruction
 	automated_test_economy = "--auto-test-economy" in user_args
 	automated_test_drag = "--auto-test-drag" in user_args
+	automated_test_shop_drag = "--auto-test-shop-drag" in user_args
+	automated_test_wave_shop = "--auto-test-wave-shop" in user_args
 	database = DatabaseScript.new() as PrototypeDatabase
 	if database == null or not database.load_all():
 		push_error("Prototype database could not be loaded.")
@@ -174,26 +183,152 @@ func _configure_shop_rng() -> void:
 	shop_rng.randomize()
 
 
-# 정비 시간의 마우스 누름·이동·놓기를 설치 터렛의 슬롯 이동으로 변환한다.
+# 정비 시간의 마우스 누름·이동·놓기를 상점 구매 드래그 또는 설치 터렛 이동으로 변환한다.
 func _input(event: InputEvent) -> void:
-	if phase != Phase.READY:
+	if not _is_shop_available():
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		var local_pointer := to_local(event.position)
-		if event.pressed and dragged_tower == null:
+		if event.pressed and dragged_tower == null and dragged_shop_card_index < 0:
+			var shop_card_index := _shop_card_at_pointer(event.position)
+			if shop_card_index >= 0:
+				_begin_shop_card_drag(shop_card_index, local_pointer)
+				get_viewport().set_input_as_handled()
+				return
+			# 설치된 타워 이동은 정비 단계에서만 시작할 수 있다.
+			if phase != Phase.READY:
+				return
 			var tower := _tower_at_pointer(local_pointer)
 			if tower != null:
 				var origin := tower_slot_by_instance_id.get(tower.get_instance_id()) as PrototypeTowerSlot
 				if origin != null:
 					_begin_tower_drag(tower, origin, local_pointer)
 					get_viewport().set_input_as_handled()
+		elif not event.pressed and dragged_shop_card_index >= 0:
+			_update_shop_card_drag(local_pointer)
+			_finish_shop_card_drag()
+			get_viewport().set_input_as_handled()
 		elif not event.pressed and dragged_tower != null:
 			_update_tower_drag(local_pointer)
 			_finish_tower_drag()
 			get_viewport().set_input_as_handled()
-	elif event is InputEventMouseMotion and dragged_tower != null:
-		_update_tower_drag(to_local(event.position))
-		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion:
+		if dragged_shop_card_index >= 0:
+			_update_shop_card_drag(to_local(event.position))
+			get_viewport().set_input_as_handled()
+		elif dragged_tower != null:
+			_update_tower_drag(to_local(event.position))
+			get_viewport().set_input_as_handled()
+
+
+# CanvasLayer 오프셋을 고려해 포인터 아래에 있는 상점 카드 인덱스를 찾는다.
+func _shop_card_at_pointer(viewport_pointer: Vector2) -> int:
+	var canvas_pointer := viewport_pointer - interface_canvas.offset
+	for card_index in shop_cards.size():
+		var card := shop_cards[card_index]
+		if card.visible and Rect2(card.position, card.size).has_point(canvas_pointer):
+			return card_index
+	return -1
+
+
+# 구매 가능한 상점 카드의 더미 터렛을 생성하고 모든 빈 슬롯을 드롭 대상으로 표시한다.
+func _begin_shop_card_drag(card_index: int, local_pointer: Vector2) -> bool:
+	if not _is_shop_available() or card_index < 0 or card_index >= shop_cards.size() or not shop_card_available[card_index]:
+		return false
+	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+	var tower_cost := int(tower_data.get("base_price", -1))
+	if tower_data.is_empty() or gold < tower_cost:
+		status_label.text = "구매 골드가 부족합니다"
+		return false
+	dragged_shop_card_index = card_index
+	selected_shop_card = card_index
+	shop_drag_preview = TowerScript.new() as PrototypeTower
+	shop_drag_preview.setup(tower_data, -1)
+	shop_drag_preview.enabled = false
+	shop_drag_preview.set_process(false)
+	shop_drag_preview.position = local_pointer
+	shop_drag_preview.z_index = 30
+	shop_drag_preview.scale = Vector2.ONE * 1.2
+	shop_drag_preview.modulate = Color(1.0, 1.0, 1.0, 0.78)
+	add_child(shop_drag_preview)
+	shop_drag_preview.remove_from_group("prototype_towers")
+	status_label.text = "구매할 터렛을 빈 슬롯에 놓으세요"
+	_update_shop_drag_slot_states(null)
+	_update_shop_cards()
+	return true
+
+
+# 상점 카드의 더미 터렛을 포인터에 따라 이동시키고 가장 가까운 빈 슬롯을 강조한다.
+func _update_shop_card_drag(local_pointer: Vector2) -> void:
+	if shop_drag_preview == null or not is_instance_valid(shop_drag_preview):
+		_cancel_shop_card_drag()
+		return
+	shop_drag_preview.position = local_pointer
+	shop_drag_target_slot = _nearest_empty_slot(local_pointer)
+	_update_shop_drag_slot_states(shop_drag_target_slot)
+
+
+# 층 제한 없이 포인터 반경 안에서 비어 있는 구매 드롭 슬롯을 찾는다.
+func _nearest_empty_slot(local_pointer: Vector2) -> PrototypeTowerSlot:
+	var nearest: PrototypeTowerSlot = null
+	var nearest_distance := 70.0
+	for slot in tower_slots:
+		if not slot.is_empty():
+			continue
+		var distance := local_pointer.distance_to(slot.position)
+		if distance < nearest_distance:
+			nearest = slot
+			nearest_distance = distance
+	return nearest
+
+
+# 유효한 빈 슬롯에 놓였을 때만 결제와 설치를 실행하고 그 외 드롭은 무상 취소한다.
+func _finish_shop_card_drag() -> void:
+	var purchased := _purchase_shop_card_to_slot(dragged_shop_card_index, shop_drag_target_slot)
+	status_label.text = "터렛을 구매해 설치했습니다" if purchased else "빈 슬롯에 놓아야 구매할 수 있습니다"
+	_clear_shop_card_drag_visuals()
+
+
+# 카드와 슬롯, 골드를 다시 검증한 뒤 설치 함수가 골드를 차감하도록 구매를 확정한다.
+func _purchase_shop_card_to_slot(card_index: int, target: PrototypeTowerSlot) -> bool:
+	if not _is_shop_available() or card_index < 0 or card_index >= shop_cards.size():
+		return false
+	if target == null or not target.is_empty() or not shop_card_available[card_index]:
+		return false
+	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+	var tower_cost := int(tower_data.get("base_price", -1))
+	if tower_data.is_empty() or gold < tower_cost:
+		return false
+	selected_shop_card = card_index
+	_place_tower(target, true)
+	return true
+
+
+# 단계 전환이나 게임 초기화로 구매 드래그가 중단되면 결제 없이 더미와 강조를 제거한다.
+func _cancel_shop_card_drag() -> void:
+	if dragged_shop_card_index < 0 and shop_drag_preview == null:
+		return
+	_clear_shop_card_drag_visuals()
+
+
+# 상점 구매 드래그 종료 후 더미 터렛, 슬롯 강조, 카드 선택과 임시 참조를 초기화한다.
+func _clear_shop_card_drag_visuals() -> void:
+	if shop_drag_preview != null and is_instance_valid(shop_drag_preview):
+		shop_drag_preview.queue_free()
+	for slot in tower_slots:
+		slot.set_drag_state(false, false)
+	dragged_shop_card_index = -1
+	shop_drag_preview = null
+	shop_drag_target_slot = null
+	selected_shop_card = -1
+	_update_shop_cards()
+
+
+# 구매 드래그 중 모든 빈 슬롯과 현재 드롭 대상 슬롯을 구분해 강조한다.
+func _update_shop_drag_slot_states(target: PrototypeTowerSlot) -> void:
+	for slot in tower_slots:
+		var eligible := dragged_shop_card_index >= 0 and slot.is_empty()
+		slot.set_drag_state(eligible, eligible and slot == target)
 
 
 # 포인터 반경 안에서 가장 위에 그려진 살아 있는 설치 터렛을 찾는다.
@@ -338,6 +473,15 @@ func _build_interface() -> void:
 	reroll_button.focus_mode = Control.FOCUS_NONE
 	reroll_button.add_theme_font_override("font", GAME_FONT)
 	reroll_button.add_theme_font_size_override("font_size", 24)
+	# 리롤 가능 여부가 색만 보아도 구분되도록 활성/호버/비활성 스타일을 명시한다.
+	reroll_button.add_theme_stylebox_override("normal", _make_button_style(Color("2f9d69"), Color("8ff0b4")))
+	reroll_button.add_theme_stylebox_override("hover", _make_button_style(Color("3eb978"), Color("c3ffd8")))
+	reroll_button.add_theme_stylebox_override("pressed", _make_button_style(Color("23764f"), Color("8ff0b4")))
+	reroll_button.add_theme_stylebox_override("disabled", _make_button_style(Color("27313a"), Color("46535e")))
+	reroll_button.add_theme_color_override("font_color", Color.WHITE)
+	reroll_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	reroll_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	reroll_button.add_theme_color_override("font_disabled_color", Color("77838e"))
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
 	interface_canvas.add_child(reroll_button)
 	_create_shop_cards(interface_canvas)
@@ -368,6 +512,16 @@ func _make_label(parent: Node, label_position: Vector2, label_size: Vector2, fon
 	return label
 
 
+# 상점 제어 버튼의 배경, 테두리와 모서리를 동일한 규격으로 생성한다.
+func _make_button_style(background_color: Color, border_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background_color
+	style.border_color = border_color
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(8)
+	return style
+
+
 # B1~B3 각 5개, 총 15개의 고정 터렛 슬롯을 만든다.
 func _create_tower_slots() -> void:
 	for floor_index in 3:
@@ -389,7 +543,6 @@ func _create_shop_cards(canvas: CanvasLayer) -> void:
 		card.position = Vector2(250.0 + card_index * 300.0, 790.0)
 		card.size = Vector2(280.0, 270.0)
 		card.setup(GAME_FONT)
-		card.pressed.connect(_on_shop_card_pressed.bind(card_index))
 		canvas.add_child(card)
 		shop_cards.append(card)
 		shop_card_available.append(true)
@@ -406,23 +559,9 @@ func _on_action_button_pressed() -> void:
 		_reset_game()
 
 
-# 구매할 카드를 선택하되 골드는 실제 슬롯 배치가 성공할 때 차감한다.
-func _on_shop_card_pressed(card_index: int) -> void:
-	if phase != Phase.READY or not shop_card_available[card_index]:
-		return
-	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
-	var tower_cost := int(tower_data.get("base_price", -1))
-	if gold < tower_cost:
-		status_label.text = "골드가 부족합니다"
-		return
-	selected_shop_card = card_index
-	status_label.text = "배치할 빈 슬롯을 선택하세요"
-	_update_shop_cards()
-
-
 # 현재 누적 비용을 차감하고 카드 5장을 다시 추첨한 뒤 리롤 횟수를 증가시킨다.
 func _on_reroll_button_pressed() -> void:
-	if phase != Phase.READY:
+	if not _is_shop_available():
 		return
 	var reroll_cost := _current_reroll_cost()
 	if gold < reroll_cost:
@@ -432,22 +571,19 @@ func _on_reroll_button_pressed() -> void:
 	reroll_count += 1
 	selected_shop_card = -1
 	_refresh_shop_cards()
-	status_label.text = "상점이 새로고침됐습니다"
 	_update_interface()
+	status_label.text = "상점이 새로고침됐습니다"
 	_update_shop_cards()
 
 
-# 빈 슬롯과 선택된 상점 카드가 모두 있을 때만 배치를 요청한다.
+# 기존 클릭 구매를 사용하지 않으므로 빈 슬롯 클릭 시 상점 카드 드래그 방법을 안내한다.
 func _on_tower_slot_pressed(slot: PrototypeTowerSlot) -> void:
 	if phase != Phase.READY:
 		return
 	if not slot.is_empty():
 		status_label.text = "이미 터렛이 배치된 슬롯입니다"
 		return
-	if selected_shop_card < 0:
-		status_label.text = "먼저 상점 카드를 선택하세요"
-		return
-	_place_tower(slot, true)
+	status_label.text = "상점 카드를 이 빈 슬롯으로 드래그하세요"
 
 
 # 터렛 ID를 데이터로 변환해 오브젝트를 생성하고 슬롯과 파괴 신호를 연결한다.
@@ -501,7 +637,9 @@ func _start_wave() -> void:
 	spawned_count = 0
 	defeated_count = 0
 	spawn_cooldown_sec = 0.15
-	selected_shop_card = -1
+	# 상점 카드 드래그 중 전투가 시작돼도 구매 동작은 그대로 이어간다.
+	if dragged_shop_card_index < 0:
+		selected_shop_card = -1
 	for tower in towers:
 		if is_instance_valid(tower):
 			tower.reset_for_wave()
@@ -510,6 +648,12 @@ func _start_wave() -> void:
 
 # 테스트 종류에 필요한 터렛을 자동 배치한 뒤 정비 시간을 건너뛰고 웨이브를 시작한다.
 func _start_automated_test() -> void:
+	if automated_test_wave_shop:
+		_run_wave_shop_automated_test()
+		return
+	if automated_test_shop_drag:
+		_run_shop_drag_automated_test()
+		return
 	if automated_test_drag:
 		_run_drag_automated_test()
 		return
@@ -525,6 +669,45 @@ func _start_automated_test() -> void:
 	if automated_test_expects_tower_destruction:
 		for tower in towers:
 			tower.enabled = false
+
+
+# 잘못된 드롭은 무상 취소되고 유효한 빈 슬롯 드롭만 결제·설치되는지 검증한다.
+func _run_shop_drag_automated_test() -> void:
+	var card_index := 0
+	var target := tower_slots[0]
+	var starting_gold := gold
+	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+	var tower_cost := int(tower_data.get("base_price", -1))
+	var invalid_drop_rejected := not _purchase_shop_card_to_slot(card_index, null) and gold == starting_gold
+	var valid_drop_purchased := _purchase_shop_card_to_slot(card_index, target)
+	var passed := invalid_drop_rejected and valid_drop_purchased and gold == starting_gold - tower_cost and not target.is_empty() and not shop_card_available[card_index]
+	if passed:
+		print("Automated shop drag test passed: PAY_ON_VALID_DROP")
+	else:
+		push_error("Automated shop drag test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
+# 전투 중에도 카드 구매와 리롤이 결제·갱신되는지 회귀 테스트한다.
+func _run_wave_shop_automated_test() -> void:
+	_set_phase(Phase.WAVE)
+	var card_index := 0
+	var target := tower_slots[0]
+	var starting_gold := gold
+	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+	var tower_cost := int(tower_data.get("base_price", -1))
+	var reroll_cost := _current_reroll_cost()
+	var purchased := _purchase_shop_card_to_slot(card_index, target)
+	_on_reroll_button_pressed()
+	var placed_tower := target.occupant as PrototypeTower
+	var passed := purchased and placed_tower != null and placed_tower.enabled and reroll_count == 1 and gold == starting_gold - tower_cost - reroll_cost
+	if passed:
+		print("Automated wave shop test passed: PURCHASE_AND_REROLL_DURING_WAVE")
+	else:
+		push_error("Automated wave shop test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
 
 
 # 같은 층 이동 성공과 다른 층 이동 거부를 헤드리스 환경에서 함께 검증한다.
@@ -612,6 +795,8 @@ func _complete_wave() -> void:
 
 # 단계에 맞춰 터렛 공격, 슬롯 입력, 몬스터 진행, HUD를 일괄 전환한다.
 func _set_phase(next_phase: Phase) -> void:
+	if next_phase != Phase.READY and next_phase != Phase.WAVE and dragged_shop_card_index >= 0:
+		_cancel_shop_card_drag()
 	if next_phase != Phase.READY and dragged_tower != null:
 		_cancel_tower_drag()
 	phase = next_phase
@@ -656,6 +841,7 @@ func _clear_monsters() -> void:
 
 # 결과 화면에서 새 게임을 시작할 때 몬스터·터렛·슬롯·RNG를 초기 상태로 되돌린다.
 func _reset_game() -> void:
+	_cancel_shop_card_drag()
 	_cancel_tower_drag()
 	_clear_monsters()
 	for tower in towers:
@@ -702,6 +888,11 @@ func _current_reroll_cost() -> int:
 	return database.define_int("rerollCost", 10) + database.define_int("rerollPlusCost", 5) * reroll_count
 
 
+# 상점 카드는 정비와 전투 중 모두 구매할 수 있고, 결과 화면에서는 잠긴다.
+func _is_shop_available() -> bool:
+	return phase == Phase.READY or phase == Phase.WAVE
+
+
 # 골드·단계·카드 소모 상태에 따라 상점과 리롤 버튼의 활성화를 갱신한다.
 func _update_shop_cards() -> void:
 	if shop_cards.is_empty() or shop_card_available.size() != shop_cards.size():
@@ -710,12 +901,18 @@ func _update_shop_cards() -> void:
 		var card := shop_cards[card_index]
 		var tower_data := database.get_turret_data(shop_turret_ids[card_index])
 		var tower_cost := int(tower_data.get("base_price", 0))
-		var interactable := phase == Phase.READY and shop_card_available[card_index] and gold >= tower_cost
+		var interactable := _is_shop_available() and shop_card_available[card_index] and gold >= tower_cost
 		card.set_card_state(shop_card_available[card_index], card_index == selected_shop_card, interactable)
 	if reroll_button != null:
 		var reroll_cost := _current_reroll_cost()
-		reroll_button.text = "새로고침  %d G" % reroll_cost
-		reroll_button.disabled = phase != Phase.READY or gold < reroll_cost
+		var can_reroll := _is_shop_available() and gold >= reroll_cost
+		reroll_button.disabled = not can_reroll
+		if can_reroll:
+			reroll_button.text = "새로고침  %d G" % reroll_cost
+		elif _is_shop_available():
+			reroll_button.text = "골드 부족 · %d G" % reroll_cost
+		else:
+			reroll_button.text = "새로고침  %d G" % reroll_cost
 
 
 # 웨이브/골드/정비시간/결과 문구를 현재 상태에 맞게 HUD에 반영한다.
