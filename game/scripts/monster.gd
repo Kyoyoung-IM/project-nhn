@@ -4,8 +4,11 @@ extends Node2D
 signal defeated(monster: PrototypeMonster)
 signal reached_deepest_floor(monster: PrototypeMonster)
 
-enum MoveState { SPAWNING, WALKING, DESCENDING, ATTACKING, EXIT, DEAD }
+enum MoveState { SPAWNING, WALKING, DESCENDING, ATTACKING, STUNNED, EXIT, DEAD }
 
+var monster_id: String = ""
+var display_name: String = ""
+var monster_type: String = "NORMAL"
 var max_hp: float = 1.0
 var hp: float = 1.0
 var move_speed_px_sec: float = 1.0
@@ -14,6 +17,13 @@ var attack_interval_sec: float = 1.0
 var attack_range_px: float = 1.0
 var attack_cooldown_sec: float = 0.0
 var reward_gold: int = 0
+var body_color := Color("d96772")
+var stun_remaining_sec: float = 0.0
+var slow_remaining_sec: float = 0.0
+var slow_multiplier: float = 1.0
+var dot_remaining_sec: float = 0.0
+var dot_tick_damage: float = 0.0
+var dot_tick_cooldown_sec: float = 0.0
 var path_points := PackedVector2Array()
 var path_index: int = 0
 var move_state: MoveState = MoveState.SPAWNING
@@ -26,6 +36,9 @@ var floor_transfer_duration_sec: float = 0.36
 
 
 func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
+	monster_id = str(config.get("id", ""))
+	display_name = str(config.get("display_name", monster_id))
+	monster_type = str(config.get("type", "NORMAL"))
 	max_hp = float(config.get("max_hp", 1.0))
 	hp = max_hp
 	move_speed_px_sec = float(config.get("move_speed_px_sec", 1.0))
@@ -33,6 +46,13 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	attack_interval_sec = float(config.get("attack_interval_sec", 1.0))
 	attack_range_px = float(config.get("attack_range_px", 1.0))
 	reward_gold = int(config.get("reward_gold", 0))
+	body_color = Color(str(config.get("color_hex", "d96772")))
+	stun_remaining_sec = 0.0
+	slow_remaining_sec = 0.0
+	slow_multiplier = 1.0
+	dot_remaining_sec = 0.0
+	dot_tick_damage = 0.0
+	dot_tick_cooldown_sec = 0.0
 	path_points = movement_path
 	position = path_points[0]
 	path_index = 0
@@ -43,6 +63,9 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 
 
 func _process(delta: float) -> void:
+	_process_status_effects(delta)
+	if move_state == MoveState.DEAD:
+		return
 	if move_state == MoveState.SPAWNING:
 		spawn_animation_sec -= delta
 		var reveal := clampf(1.0 - spawn_animation_sec / 0.24, 0.0, 1.0)
@@ -53,6 +76,9 @@ func _process(delta: float) -> void:
 		return
 
 	if move_state == MoveState.DEAD or move_state == MoveState.EXIT:
+		return
+	if stun_remaining_sec > 0.0:
+		move_state = MoveState.STUNNED
 		return
 
 	if floor_transfer_active:
@@ -78,7 +104,7 @@ func _process(delta: float) -> void:
 	var target := path_points[path_index + 1]
 	var offset := target - position
 	move_state = MoveState.DESCENDING if absf(offset.y) > absf(offset.x) else MoveState.WALKING
-	position = position.move_toward(target, move_speed_px_sec * delta)
+	position = position.move_toward(target, move_speed_px_sec * slow_multiplier * delta)
 
 	if position.is_equal_approx(target):
 		path_index += 1
@@ -123,6 +149,42 @@ func take_damage(amount: float) -> void:
 		move_state = MoveState.DEAD
 		defeated.emit(self)
 		queue_free()
+
+
+func receive_turret_hit(amount: float, source_type: String, cc_duration: float, cc_value: float) -> void:
+	take_damage(amount)
+	if move_state == MoveState.DEAD:
+		return
+	var boss_factor := 0.5 if monster_type == "BOSS" else 1.0
+	match source_type:
+		"DOT":
+			dot_remaining_sec = maxf(dot_remaining_sec, cc_duration * boss_factor)
+			dot_tick_damage = maxf(dot_tick_damage, amount * cc_value)
+			dot_tick_cooldown_sec = minf(dot_tick_cooldown_sec, 0.35)
+		"STUN":
+			stun_remaining_sec = maxf(stun_remaining_sec, cc_duration * boss_factor)
+		"SLOW":
+			slow_remaining_sec = maxf(slow_remaining_sec, cc_duration * boss_factor)
+			slow_multiplier = minf(slow_multiplier, clampf(1.0 - cc_value * boss_factor, 0.2, 1.0))
+	queue_redraw()
+
+
+func _process_status_effects(delta: float) -> void:
+	if stun_remaining_sec > 0.0:
+		stun_remaining_sec = maxf(0.0, stun_remaining_sec - delta)
+	if slow_remaining_sec > 0.0:
+		slow_remaining_sec = maxf(0.0, slow_remaining_sec - delta)
+		if slow_remaining_sec <= 0.0:
+			slow_multiplier = 1.0
+	if dot_remaining_sec > 0.0:
+		dot_remaining_sec = maxf(0.0, dot_remaining_sec - delta)
+		dot_tick_cooldown_sec -= delta
+		if dot_tick_cooldown_sec <= 0.0:
+			take_damage(dot_tick_damage)
+			dot_tick_cooldown_sec += 1.0
+		if dot_remaining_sec <= 0.0:
+			dot_tick_damage = 0.0
+	queue_redraw()
 
 
 func is_in_combat_floor() -> bool:
@@ -175,9 +237,19 @@ func _reach_deepest_floor() -> void:
 
 
 func _draw() -> void:
-	# PLACEHOLDER monster: simple capsule-like body and health bar.
-	draw_circle(Vector2.ZERO, 16.0, Color("d96772"))
-	draw_rect(Rect2(-13.0, -8.0, 26.0, 17.0), Color("bd4457"), true)
+	# PLACEHOLDER monster objects: table-driven colors and type silhouettes.
+	match monster_type:
+		"SPEED":
+			draw_colored_polygon(PackedVector2Array([Vector2(-18.0, 12.0), Vector2(18.0, 0.0), Vector2(-18.0, -12.0)]), body_color)
+		"TANK":
+			draw_rect(Rect2(-19.0, -17.0, 38.0, 34.0), body_color, true)
+			draw_rect(Rect2(-15.0, -13.0, 30.0, 26.0), body_color.darkened(0.2), false, 4.0)
+		"BOSS":
+			draw_circle(Vector2.ZERO, 22.0, body_color)
+			draw_colored_polygon(PackedVector2Array([Vector2(-18.0, -15.0), Vector2(-10.0, -31.0), Vector2(-2.0, -17.0), Vector2(7.0, -31.0), Vector2(17.0, -14.0)]), body_color.lightened(0.18))
+		_:
+			draw_circle(Vector2.ZERO, 16.0, body_color)
+			draw_rect(Rect2(-13.0, -8.0, 26.0, 17.0), body_color.darkened(0.16), true)
 	draw_circle(Vector2(-6.0, -4.0), 3.0, Color.WHITE)
 	draw_circle(Vector2(6.0, -4.0), 3.0, Color.WHITE)
 	draw_circle(Vector2(-6.0, -4.0), 1.4, Color("1a2030"))
@@ -186,3 +258,9 @@ func _draw() -> void:
 	var hp_ratio := hp / max_hp
 	draw_rect(Rect2(-18.0, -25.0, 36.0, 5.0), Color("2a1720"), true)
 	draw_rect(Rect2(-18.0, -25.0, 36.0 * hp_ratio, 5.0), Color("73e18b"), true)
+	if stun_remaining_sec > 0.0:
+		draw_arc(Vector2.ZERO, 23.0, 0.0, TAU, 24, Color("8fd7ff"), 3.0)
+	if slow_remaining_sec > 0.0:
+		draw_arc(Vector2.ZERO, 20.0, 0.0, TAU, 24, Color("8fffea"), 2.0)
+	if dot_remaining_sec > 0.0:
+		draw_circle(Vector2(0.0, 16.0), 4.0, Color("d99aff"))

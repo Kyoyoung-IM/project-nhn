@@ -1,46 +1,39 @@
 extends SceneTree
 
-const REQUIRED_SECTIONS := ["meta", "monster", "tower", "economy", "wave"]
+const DatabaseScript := preload("res://scripts/prototype_database.gd")
+const EXPECTED_TURRET_TYPES := ["MELEE", "DOT", "STUN", "SLOW", "RANGED"]
+const EXPECTED_MONSTER_TYPES := ["NORMAL", "SPEED", "TANK", "BOSS"]
 
 
 func _init() -> void:
-	var file := FileAccess.open("res://data/prototype_combat.json", FileAccess.READ)
-	if file == null:
-		_fail("prototype_combat.json could not be opened")
+	var database := DatabaseScript.new() as PrototypeDatabase
+	if database == null or not database.load_all():
+		_fail("prototype database validation failed")
 		return
-
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
-		_fail("prototype_combat.json must contain an object")
+	if database.define_int("failAllowedMonster", -1) != 0:
+		_fail("failAllowedMonster must remain present as the unused placeholder field")
 		return
-
-	var config := parsed as Dictionary
-	for section in REQUIRED_SECTIONS:
-		if not config.has(section) or typeof(config[section]) != TYPE_DICTIONARY:
-			_fail("missing dictionary section: %s" % section)
+	if database.define_float("prepareTimeSec", -1.0) < 0.0:
+		_fail("prepareTimeSec must not be negative")
+		return
+	if database.define_int("rerollPlusCost", -1) < 0:
+		_fail("rerollPlusCost must not be negative")
+		return
+	if database.get_wave_monster_ids("wave1").is_empty():
+		_fail("wave1 must contain SpawnTable rows")
+		return
+	for turret_type in EXPECTED_TURRET_TYPES:
+		var turret_id := "TURRET_%s_T1" % turret_type
+		var turret := database.get_turret_data(turret_id)
+		if turret.is_empty() or float(turret.get("max_hp", 0.0)) <= 0.0:
+			_fail("missing prototype turret object: %s" % turret_id)
 			return
-
-	if config["meta"].get("status") != "PLACEHOLDER":
-		_fail("prototype combat values must be marked PLACEHOLDER")
-		return
-	if float(config["tower"].get("attack_interval_sec", 0.0)) <= 0.0:
-		_fail("tower attack_interval_sec must be positive")
-		return
-	if float(config["tower"].get("max_hp", 0.0)) <= 0.0:
-		_fail("tower max_hp must be positive")
-		return
-	if float(config["monster"].get("attack_damage", 0.0)) <= 0.0:
-		_fail("monster attack_damage must be positive")
-		return
-	if int(config["economy"].get("shop_card_count", 0)) != 5:
-		_fail("prototype shop must expose five cards")
-		return
-	if int(config["economy"].get("reroll_cost", -1)) < 0:
-		_fail("reroll_cost must not be negative")
-		return
-	if int(config["wave"].get("monster_count", 0)) <= 0:
-		_fail("wave monster_count must be positive")
-		return
+	for monster_type in EXPECTED_MONSTER_TYPES:
+		var monster_id := "MONSTER_%s_01" % monster_type
+		var monster := database.get_monster_data(monster_id)
+		if monster.is_empty() or float(monster.get("attack_damage", 0.0)) <= 0.0:
+			_fail("missing prototype monster object: %s" % monster_id)
+			return
 
 	print("Prototype data validation passed.")
 	quit(0)

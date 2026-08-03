@@ -3,8 +3,8 @@ extends Node2D
 const MonsterScript := preload("res://scripts/monster.gd")
 const TowerScript := preload("res://scripts/tower.gd")
 const TowerSlotScript := preload("res://scripts/tower_slot.gd")
+const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const GAME_FONT := preload("res://assets/fonts/NotoSansKR.ttf")
-const CONFIG_PATH := "res://data/prototype_combat.json"
 
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
 
@@ -19,21 +19,29 @@ var movement_path := PackedVector2Array([
 	Vector2(90.0, 525.0),
 ])
 
-var combat_config: Dictionary = {}
+var database: PrototypeDatabase
 var phase: Phase = Phase.READY
 var monsters: Array[PrototypeMonster] = []
 var towers: Array[PrototypeTower] = []
 var tower_slots: Array[PrototypeTowerSlot] = []
 var shop_cards: Array[Button] = []
 var shop_card_available: Array[bool] = []
+var shop_turret_ids: Array[String] = []
 var selected_shop_card: int = -1
+var current_wave_number: int = 1
+var current_wave_monster_ids: Array[String] = []
+var next_spawn_index: int = 0
 var spawned_count: int = 0
 var defeated_count: int = 0
 var gold: int = 0
+var preparation_remaining_sec: float = 0.0
+var reroll_count: int = 0
 var spawn_cooldown_sec: float = 0.0
+var shop_rng := RandomNumberGenerator.new()
 var automated_test_mode: bool = false
 var automated_test_expects_defeat: bool = false
 var automated_test_expects_tower_destruction: bool = false
+var automated_test_economy: bool = false
 var automated_test_tower_was_destroyed: bool = false
 var automated_test_elapsed_sec: float = 0.0
 
@@ -47,13 +55,19 @@ var reroll_button: Button
 
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args
 	automated_test_expects_tower_destruction = "--auto-test-tower-destruction" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args or automated_test_expects_tower_destruction
-	combat_config = _load_and_validate_config()
+	automated_test_economy = "--auto-test-economy" in user_args
+	database = DatabaseScript.new() as PrototypeDatabase
+	if database == null or not database.load_all():
+		push_error("Prototype database could not be loaded.")
+		get_tree().quit(1)
+		return
+	shop_rng.seed = database.extension_int("rngSeed", 20260803)
 	_build_interface()
 	_create_tower_slots()
-	_reset_preparation_state()
+	_begin_preparation(true)
 	_update_interface()
 	queue_redraw()
 	if automated_test_mode:
@@ -70,52 +84,28 @@ func _process(delta: float) -> void:
 			get_tree().quit(1)
 			return
 
+	if phase == Phase.READY:
+		if not automated_test_mode:
+			var previous_second := ceili(preparation_remaining_sec)
+			preparation_remaining_sec = maxf(0.0, preparation_remaining_sec - delta)
+			if ceili(preparation_remaining_sec) != previous_second:
+				_update_interface()
+			if preparation_remaining_sec <= 0.0:
+				_start_wave()
+		return
+
 	if phase != Phase.WAVE:
 		return
 
-	var wave: Dictionary = combat_config["wave"]
-	var total := int(wave["monster_count"])
+	var total := current_wave_monster_ids.size()
 	if spawned_count < total:
 		spawn_cooldown_sec -= delta
 		if spawn_cooldown_sec <= 0.0:
 			_spawn_monster()
-			spawn_cooldown_sec += float(wave["spawn_interval_sec"])
+			spawn_cooldown_sec += database.define_float("monsterSpawnInterval", 0.7)
 
 	if spawned_count >= total and monsters.is_empty():
-		_set_phase(Phase.VICTORY)
-
-
-func _load_and_validate_config() -> Dictionary:
-	var file := FileAccess.open(CONFIG_PATH, FileAccess.READ)
-	if file == null:
-		push_error("Prototype combat config is missing: %s" % CONFIG_PATH)
-		return _fallback_config()
-
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
-		push_error("Prototype combat config is not a JSON object.")
-		return _fallback_config()
-
-	var config := parsed as Dictionary
-	for section in ["meta", "monster", "tower", "economy", "wave"]:
-		if not config.has(section) or typeof(config[section]) != TYPE_DICTIONARY:
-			push_error("Prototype combat config section is missing: %s" % section)
-			return _fallback_config()
-
-	if str(config["meta"].get("status", "")) != "PLACEHOLDER":
-		push_warning("Prototype combat values should remain marked PLACEHOLDER.")
-	return config
-
-
-func _fallback_config() -> Dictionary:
-	# Safety-only values. Normal play must load the replaceable JSON data above.
-	return {
-		"meta": {"status": "PLACEHOLDER"},
-		"monster": {"max_hp": 50.0, "move_speed_px_sec": 80.0, "attack_damage": 10.0, "attack_interval_sec": 0.8, "attack_range_px": 58.0, "reward_gold": 5},
-		"tower": {"display_name": "더미 포탑", "max_hp": 100.0, "damage": 20.0, "attack_interval_sec": 0.4, "range_px": 280.0},
-		"economy": {"starting_gold": 250, "tower_cost": 10, "reroll_cost": 10, "shop_card_count": 5},
-		"wave": {"monster_count": 8, "spawn_interval_sec": 0.9},
-	}
+		_complete_wave()
 
 
 func _build_interface() -> void:
@@ -156,7 +146,7 @@ func _build_interface() -> void:
 	reroll_button = Button.new()
 	reroll_button.position = Vector2(580.0, 624.0)
 	reroll_button.size = Vector2(155.0, 44.0)
-	reroll_button.text = "새로고침  %d G" % int(combat_config["economy"]["reroll_cost"])
+	reroll_button.text = "새로고침  %d G" % _current_reroll_cost()
 	reroll_button.focus_mode = Control.FOCUS_NONE
 	reroll_button.add_theme_font_override("font", GAME_FONT)
 	reroll_button.add_theme_font_size_override("font_size", 17)
@@ -190,23 +180,15 @@ func _create_tower_slots() -> void:
 
 
 func _create_shop_cards(canvas: CanvasLayer) -> void:
-	var economy: Dictionary = combat_config["economy"]
-	var tower_data: Dictionary = combat_config["tower"]
-	var card_count := int(economy["shop_card_count"])
+	var card_count := database.extension_int("shopCardCount", 5)
 	for card_index in card_count:
 		var card := Button.new()
 		card.position = Vector2(20.0 + card_index * 185.0, 690.0)
 		card.size = Vector2(180.0, 150.0)
 		card.focus_mode = Control.FOCUS_NONE
 		card.add_theme_font_override("font", GAME_FONT)
-		card.text = "%s\nHP %.0f  ·  ATK %.0f\n사거리 %.0f\n● %d G" % [
-			str(tower_data["display_name"]),
-			float(tower_data["max_hp"]),
-			float(tower_data["damage"]),
-			float(tower_data["range_px"]),
-			int(economy["tower_cost"]),
-		]
-		card.add_theme_font_size_override("font_size", 18)
+		card.text = "상점 준비 중"
+		card.add_theme_font_size_override("font_size", 16)
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("34485a")
 		style.border_color = Color("7fd9ce")
@@ -220,6 +202,7 @@ func _create_shop_cards(canvas: CanvasLayer) -> void:
 		canvas.add_child(card)
 		shop_cards.append(card)
 		shop_card_available.append(true)
+		shop_turret_ids.append("")
 
 
 func _on_action_button_pressed() -> void:
@@ -234,7 +217,8 @@ func _on_action_button_pressed() -> void:
 func _on_shop_card_pressed(card_index: int) -> void:
 	if phase != Phase.READY or not shop_card_available[card_index]:
 		return
-	var tower_cost := int(combat_config["economy"]["tower_cost"])
+	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+	var tower_cost := int(tower_data.get("base_price", -1))
 	if gold < tower_cost:
 		status_label.text = "골드가 부족합니다"
 		return
@@ -246,14 +230,14 @@ func _on_shop_card_pressed(card_index: int) -> void:
 func _on_reroll_button_pressed() -> void:
 	if phase != Phase.READY:
 		return
-	var reroll_cost := int(combat_config["economy"]["reroll_cost"])
+	var reroll_cost := _current_reroll_cost()
 	if gold < reroll_cost:
 		status_label.text = "새로고침 골드가 부족합니다"
 		return
 	gold -= reroll_cost
+	reroll_count += 1
 	selected_shop_card = -1
-	for card_index in shop_card_available.size():
-		shop_card_available[card_index] = true
+	_refresh_shop_cards()
 	status_label.text = "상점이 새로고침됐습니다"
 	_update_interface()
 	_update_shop_cards()
@@ -271,15 +255,24 @@ func _on_tower_slot_pressed(slot: PrototypeTowerSlot) -> void:
 	_place_tower(slot, true)
 
 
-func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool) -> void:
-	var tower_cost := int(combat_config["economy"]["tower_cost"])
+func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_override: String = "") -> void:
+	var turret_id := turret_id_override
+	if use_shop_card:
+		turret_id = shop_turret_ids[selected_shop_card]
+	elif turret_id.is_empty():
+		turret_id = database.first_shop_turret_id()
+	var tower_data := database.get_turret_data(turret_id)
+	if tower_data.is_empty():
+		push_error("Cannot place unknown turret: %s" % turret_id)
+		return
+	var tower_cost := int(tower_data.get("base_price", 0))
 	if use_shop_card:
 		gold -= tower_cost
 		shop_card_available[selected_shop_card] = false
 		selected_shop_card = -1
 	var tower := TowerScript.new() as PrototypeTower
 	tower.position = slot.position
-	tower.setup(combat_config["tower"], slot.floor_index)
+	tower.setup(tower_data, slot.floor_index)
 	tower.tower_destroyed.connect(_on_tower_destroyed.bind(slot))
 	add_child(tower)
 	towers.append(tower)
@@ -296,7 +289,11 @@ func _on_tower_destroyed(tower: PrototypeTower, slot: PrototypeTowerSlot) -> voi
 
 
 func _start_wave() -> void:
+	if current_wave_monster_ids.is_empty():
+		push_error("Current wave has no SpawnTable entries: wave%d" % current_wave_number)
+		return
 	_clear_monsters()
+	next_spawn_index = 0
 	spawned_count = 0
 	defeated_count = 0
 	spawn_cooldown_sec = 0.15
@@ -308,20 +305,51 @@ func _start_wave() -> void:
 
 
 func _start_automated_test() -> void:
+	if automated_test_economy:
+		_run_economy_automated_test()
+		return
 	if automated_test_expects_tower_destruction:
-		_place_tower(tower_slots[0], false)
+		_place_tower(tower_slots[0], false, "TURRET_MELEE_T1")
 	elif not automated_test_expects_defeat:
 		for slot_index in 5:
-			_place_tower(tower_slots[slot_index], false)
+			_place_tower(tower_slots[slot_index], false, "TURRET_RANGED_T1")
 	_start_wave()
 	if automated_test_expects_tower_destruction:
 		for tower in towers:
 			tower.enabled = false
 
 
+func _run_economy_automated_test() -> void:
+	var starting_gold := gold
+	var base_cost := database.define_int("rerollCost", 10)
+	var plus_cost := database.define_int("rerollPlusCost", 5)
+	var first_cost := _current_reroll_cost()
+	_on_reroll_button_pressed()
+	var second_cost := _current_reroll_cost()
+	_on_reroll_button_pressed()
+	var expected_gold := starting_gold - base_cost - (base_cost + plus_cost)
+	var passed := first_cost == base_cost and second_cost == base_cost + plus_cost and gold == expected_gold
+	_begin_preparation(false)
+	passed = passed and _current_reroll_cost() == base_cost and gold == expected_gold
+	if passed:
+		print("Automated economy test passed: REROLL_10_15_RESET")
+	else:
+		push_error("Automated economy test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
 func _spawn_monster() -> void:
+	if next_spawn_index >= current_wave_monster_ids.size():
+		return
+	var monster_id := current_wave_monster_ids[next_spawn_index]
+	next_spawn_index += 1
+	var monster_data := database.get_monster_data(monster_id)
+	if monster_data.is_empty():
+		push_error("Cannot spawn unknown monster: %s" % monster_id)
+		return
 	var monster := MonsterScript.new() as PrototypeMonster
-	monster.setup(combat_config["monster"], movement_path)
+	monster.setup(monster_data, movement_path)
 	monster.defeated.connect(_on_monster_defeated)
 	monster.reached_deepest_floor.connect(_on_monster_reached_deepest_floor)
 	add_child(monster)
@@ -341,6 +369,14 @@ func _on_monster_reached_deepest_floor(monster: PrototypeMonster) -> void:
 	monsters.erase(monster)
 	if phase == Phase.WAVE:
 		_set_phase(Phase.DEFEAT)
+
+
+func _complete_wave() -> void:
+	if current_wave_number >= database.define_int("totalWaveCount", 1):
+		_set_phase(Phase.VICTORY)
+		return
+	current_wave_number += 1
+	_begin_preparation(false)
 
 
 func _set_phase(next_phase: Phase) -> void:
@@ -390,52 +426,87 @@ func _reset_game() -> void:
 	towers.clear()
 	for slot in tower_slots:
 		slot.clear_occupant()
-	_reset_preparation_state()
-	_set_phase(Phase.READY)
+	current_wave_number = 1
+	shop_rng.seed = database.extension_int("rngSeed", 20260803)
+	_begin_preparation(true)
 
 
-func _reset_preparation_state() -> void:
-	gold = int(combat_config["economy"]["starting_gold"])
+func _begin_preparation(reset_run: bool) -> void:
+	if reset_run:
+		gold = database.define_int("initialGold", 100)
+	reroll_count = 0
+	preparation_remaining_sec = database.define_float("prepareTimeSec", 20.0)
+	current_wave_monster_ids = database.get_wave_monster_ids("wave%d" % current_wave_number)
 	selected_shop_card = -1
+	_set_phase(Phase.READY)
+	_refresh_shop_cards()
+	status_label.text = "터렛을 구매해 배치하세요"
+	_update_interface()
+
+
+func _refresh_shop_cards() -> void:
+	shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
 	shop_card_available.clear()
-	for _card in shop_cards:
+	for card_index in shop_cards.size():
 		shop_card_available.append(true)
+		var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+		var card := shop_cards[card_index]
+		card.text = "%s  [%s]\nHP %.0f · ATK %.0f\n주기 %.2fs · 사거리 %.0f\n● %d G" % [
+			str(tower_data.get("display_name", "터렛")),
+			str(tower_data.get("type", "")),
+			float(tower_data.get("max_hp", 0.0)),
+			float(tower_data.get("damage", 0.0)),
+			float(tower_data.get("attack_interval_sec", 0.0)),
+			float(tower_data.get("range_px", 0.0)),
+			int(tower_data.get("base_price", 0)),
+		]
 	_update_shop_cards()
+
+
+func _current_reroll_cost() -> int:
+	return database.define_int("rerollCost", 10) + database.define_int("rerollPlusCost", 5) * reroll_count
 
 
 func _update_shop_cards() -> void:
 	if shop_cards.is_empty() or shop_card_available.size() != shop_cards.size():
 		return
-	var tower_cost := int(combat_config["economy"]["tower_cost"])
 	for card_index in shop_cards.size():
 		var card := shop_cards[card_index]
+		var tower_data := database.get_turret_data(shop_turret_ids[card_index])
+		var tower_cost := int(tower_data.get("base_price", 0))
 		card.disabled = phase != Phase.READY or not shop_card_available[card_index] or gold < tower_cost
 		card.modulate = Color("fff2a8") if card_index == selected_shop_card else Color.WHITE
 	if reroll_button != null:
-		var reroll_cost := int(combat_config["economy"]["reroll_cost"])
+		var reroll_cost := _current_reroll_cost()
+		reroll_button.text = "새로고침  %d G" % reroll_cost
 		reroll_button.disabled = phase != Phase.READY or gold < reroll_cost
 
 
 func _update_interface() -> void:
 	if wave_label == null:
 		return
-	var wave_total := int(combat_config["wave"].get("monster_count", 0))
-	wave_label.text = "WAVE  1 / 1"
+	var wave_total := current_wave_monster_ids.size()
+	var total_wave_count := database.define_int("totalWaveCount", 1)
+	wave_label.text = "WAVE  %d / %d" % [current_wave_number, total_wave_count]
 	gold_label.text = "GOLD  %d" % gold
 	match phase:
 		Phase.READY:
+			phase_label.text = "정비 시간  %d초 · 지상 진입 구간" % ceili(preparation_remaining_sec)
 			status_label.text = "터렛을 구매해 배치하세요"
-			action_button.text = "1 웨이브 시작"
+			action_button.text = "%d 웨이브 조기 시작" % current_wave_number
 			action_button.disabled = false
 		Phase.WAVE:
+			phase_label.text = "지상 진입 구간 · 전투는 지하 3개 층"
 			status_label.text = "방어 중  %d / %d 처치" % [defeated_count, wave_total]
 			action_button.text = "웨이브 진행 중"
 			action_button.disabled = true
 		Phase.VICTORY:
+			phase_label.text = "모든 웨이브 방어 완료"
 			status_label.text = "방어 성공"
 			action_button.text = "프로토타입 초기화"
 			action_button.disabled = false
 		Phase.DEFEAT:
+			phase_label.text = "최심부 코어 침입"
 			status_label.text = "최심부 침입 · 패배"
 			action_button.text = "프로토타입 초기화"
 			action_button.disabled = false

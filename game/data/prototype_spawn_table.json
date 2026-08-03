@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "status": "PLACEHOLDER",
+    "source": "game_table_specification_v3.pdf"
+  },
+  "rows": [
+    {"waveGroup": "wave1", "monsterId": "MONSTER_NORMAL_01", "spawnOrder": 1, "value": 5},
+    {"waveGroup": "wave1", "monsterId": "MONSTER_SPEED_01", "spawnOrder": 2, "value": 2},
+    {"waveGroup": "wave1", "monsterId": "MONSTER_TANK_01", "spawnOrder": 3, "value": 1}
+  ]
+}

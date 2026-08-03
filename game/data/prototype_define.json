@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "status": "PLACEHOLDER",
+    "source": "game_table_specification_v3.pdf",
+    "note": "Values are for prototype structure validation and are not final balance. failAllowedMonster is intentionally unused."
+  },
+  "values": {
+    "prepareTimeSec": 20.0,
+    "totalWaveCount": 1.0,
+    "waveTimeSec": 50.0,
+    "initialGold": 100.0,
+    "rerollCost": 10.0,
+    "rerollPlusCost": 5.0,
+    "failAllowedMonster": 0.0,
+    "monsterSpawnInterval": 0.7
+  },
+  "prototypeExtensions": {
+    "shopCardCount": 5,
+    "rngSeed": 20260803
+  }
+}
