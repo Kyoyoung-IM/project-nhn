@@ -1,13 +1,20 @@
 class_name PrototypeTower
 extends Node2D
 
+# 한 개의 배치된 터렛 오브젝트를 담당한다.
+# 데이터베이스에서 정규화된 설정을 받아 표적 선택, 공격, 체력, 타입별 연출을 처리한다.
+
+# 체력이 0이 되면 슬롯을 비울 수 있도록 게임 컨트롤러에 자신을 전달한다.
 signal tower_destroyed(tower: PrototypeTower)
 
+# 데이터 식별자와 머지 트리 정보다. 현재 머지 UI가 추가되면 이 값을 그대로 사용한다.
 var turret_id: String = ""
 var display_name: String = ""
 var turret_type: String = "RANGED"
 var next_turret_id: String = "-1"
 var tier: int = 1
+
+# 전투 능력치다. 모두 prototype_turrets.json에서 로드된 PLACEHOLDER 값이다.
 var max_hp: float = 1.0
 var hp: float = 1.0
 var damage: float = 1.0
@@ -15,14 +22,19 @@ var attack_interval_sec: float = 1.0
 var attack_range_px: float = 100.0
 var cc_duration: float = 0.0
 var cc_value: float = 0.0
+
+# 렌더링 색상과 현재 배치된 전투층 인덱스다.
 var tower_color := Color("68d8c1")
 var floor_index: int = 0
+
+# 공격 재사용 대기시간 및 짧은 광선 피드백 상태다.
 var cooldown_sec: float = 0.0
 var enabled: bool = true
 var beam_end := Vector2.ZERO
 var beam_visible_sec: float = 0.0
 
 
+# 로더가 만든 내부 설정을 복사하고 해당 층의 터렛 그룹에 등록한다.
 func setup(config: Dictionary, assigned_floor_index: int) -> void:
 	turret_id = str(config.get("id", ""))
 	display_name = str(config.get("display_name", turret_id))
@@ -43,6 +55,8 @@ func setup(config: Dictionary, assigned_floor_index: int) -> void:
 	queue_redraw()
 
 
+# 새 웨이브 시작 시 공격 가능 상태와 시각 효과 타이머를 초기화한다.
+# 체력은 웨이브 사이에 자동 회복하지 않는다.
 func reset_for_wave() -> void:
 	enabled = true
 	cooldown_sec = 0.0
@@ -50,6 +64,7 @@ func reset_for_wave() -> void:
 	queue_redraw()
 
 
+# 몬스터 공격 피해를 적용하고 체력이 소진되면 파괴 신호를 보낸다.
 func take_damage(amount: float) -> void:
 	if hp <= 0.0:
 		return
@@ -61,6 +76,7 @@ func take_damage(amount: float) -> void:
 		queue_free()
 
 
+# 공격 간격을 갱신하고 같은 층·사거리 안의 최우선 몬스터를 자동 공격한다.
 func _process(delta: float) -> void:
 	if beam_visible_sec > 0.0:
 		beam_visible_sec -= delta
@@ -84,6 +100,8 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+# 같은 전투층에서 코어 진행도가 가장 높은 몬스터를 선택한다.
+# progress_score를 사용하므로 단순 x좌표 비교보다 층간 이동에 안전하다.
 func _select_target() -> PrototypeMonster:
 	var selected: PrototypeMonster = null
 	var best_progress := -INF
@@ -102,6 +120,7 @@ func _select_target() -> PrototypeMonster:
 	return selected
 
 
+# 외부 이미지가 없는 프로토타입이므로 타입별 도형과 체력 바를 직접 그린다.
 func _draw() -> void:
 	# PLACEHOLDER tower objects: table-driven colors and type silhouettes.
 	draw_circle(Vector2.ZERO, 24.0, Color("29384f"))

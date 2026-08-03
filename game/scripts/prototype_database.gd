@@ -1,24 +1,37 @@
 class_name PrototypeDatabase
 extends RefCounted
 
+# PDF의 Define/Turret/Monster/SpawnTable/ShopGacha를 로컬 JSON에서 읽는 전용 로더다.
+# 원본 camelCase 컬럼은 데이터 파일에 보존하고, 게임에서 쓰기 쉬운 snake_case로 여기서만 변환한다.
+
+# 각 테이블의 res:// 경로다. 런타임 네트워크 호출 없이 Web 빌드 안에 함께 포함된다.
 const DEFINE_PATH := "res://data/prototype_define.json"
 const TURRET_PATH := "res://data/prototype_turrets.json"
 const MONSTER_PATH := "res://data/prototype_monsters.json"
 const SPAWN_TABLE_PATH := "res://data/prototype_spawn_table.json"
 const SHOP_GACHA_PATH := "res://data/prototype_shop_gacha.json"
+
+# PDF의 range는 슬롯 간격 단위이므로 실제 화면 픽셀 사거리로 바꿀 때 사용하는 기준값이다.
 const SLOT_SPACING_PX := 145.0
+
+# 데이터 오탈자나 정의되지 않은 유형을 조기에 검출하기 위한 허용 목록이다.
 const TURRET_TYPES := ["MELEE", "DOT", "STUN", "SLOW", "RANGED"]
 const MONSTER_TYPES := ["NORMAL", "SPEED", "TANK", "BOSS"]
 
+# 로드된 원본 행을 ID 인덱스와 배열 형태로 보관한다.
 var define_values: Dictionary = {}
 var define_extensions: Dictionary = {}
 var turrets_by_id: Dictionary = {}
 var monsters_by_id: Dictionary = {}
 var spawn_rows: Array[Dictionary] = []
 var shop_rows: Array[Dictionary] = []
+
+# 검증 오류를 모아서 한 번에 출력하기 위한 버퍼다.
 var validation_errors: Array[String] = []
 
 
+# 다섯 JSON 문서를 읽고 내부 인덱스를 만든 뒤 전체 교차 참조를 검증한다.
+# 성공 시 true이며, false일 때 게임은 잘못된 데이터로 시작하지 않는다.
 func load_all() -> bool:
 	define_values.clear()
 	define_extensions.clear()
@@ -57,18 +70,23 @@ func load_all() -> bool:
 	return true
 
 
+# Define의 숫자 값을 float로 안전하게 조회한다.
 func define_float(key: String, fallback: float = 0.0) -> float:
 	return float(define_values.get(key, fallback))
 
 
+# 웨이브 수·골드처럼 정수 의미인 Define 값을 int로 변환해 조회한다.
 func define_int(key: String, fallback: int = 0) -> int:
 	return int(define_values.get(key, fallback))
 
 
+# 원본 명세 밖의 프로토타입 전용 Define 값을 조회한다.
 func extension_int(key: String, fallback: int = 0) -> int:
 	return int(define_extensions.get(key, fallback))
 
 
+# Turret 원본 행을 런타임용 Dictionary로 정규화한다.
+# attackspeed는 초 단위 공격 간격으로, range는 픽셀 사거리로 변환한다.
 func get_turret_data(turret_id: String) -> Dictionary:
 	if not turrets_by_id.has(turret_id):
 		return {}
@@ -96,6 +114,7 @@ func get_turret_data(turret_id: String) -> Dictionary:
 	}
 
 
+# Monster 원본 행과 prototypeExtensions 공격 값을 런타임 형식으로 합친다.
 func get_monster_data(monster_id: String) -> Dictionary:
 	if not monsters_by_id.has(monster_id):
 		return {}
@@ -117,6 +136,7 @@ func get_monster_data(monster_id: String) -> Dictionary:
 	}
 
 
+# SpawnTable의 행을 spawnOrder 순으로 정렬하고 value만큼 실제 생성 ID를 펼친다.
 func get_wave_monster_ids(wave_group: String) -> Array[String]:
 	var matching_rows: Array[Dictionary] = []
 	for row in spawn_rows:
@@ -130,6 +150,8 @@ func get_wave_monster_ids(wave_group: String) -> Array[String]:
 	return monster_ids
 
 
+# ShopGacha 확률 누적 방식으로 지정 개수만큼 Tier 1 터렛 ID를 뽑는다.
+# 전달받은 고정 시드 RNG 덕분에 테스트와 영상 장면을 재현할 수 있다.
 func roll_shop_turret_ids(rng: RandomNumberGenerator, count: int) -> Array[String]:
 	var result: Array[String] = []
 	if shop_rows.is_empty():
@@ -147,10 +169,12 @@ func roll_shop_turret_ids(rng: RandomNumberGenerator, count: int) -> Array[Strin
 	return result
 
 
+# 자동 테스트가 상점 선택 없이 터렛을 배치할 때 사용할 안전한 기본 ID다.
 func first_shop_turret_id() -> String:
 	return "" if shop_rows.is_empty() else str(shop_rows[0].get("turretIndex", ""))
 
 
+# JSON 파일 하나를 읽어 최상위 객체로 반환하고 구문/파일 오류를 기록한다.
 func _read_document(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -163,12 +187,14 @@ func _read_document(path: String) -> Dictionary:
 	return parsed as Dictionary
 
 
+# 모든 프로토타입 테이블이 최종 밸런스로 오해되지 않도록 PLACEHOLDER 표기를 강제한다.
 func _validate_placeholder_meta(document: Dictionary, path: String) -> void:
 	var meta: Variant = document.get("meta", {})
 	if typeof(meta) != TYPE_DICTIONARY or str((meta as Dictionary).get("status", "")) != "PLACEHOLDER":
 		validation_errors.append("table must be marked PLACEHOLDER: %s" % path)
 
 
+# 필수 Dictionary 필드를 타입 검사와 함께 꺼낸다.
 func _dictionary_field(document: Dictionary, key: String, path: String) -> Dictionary:
 	var value: Variant = document.get(key, {})
 	if typeof(value) != TYPE_DICTIONARY:
@@ -177,6 +203,7 @@ func _dictionary_field(document: Dictionary, key: String, path: String) -> Dicti
 	return value as Dictionary
 
 
+# 필수 Array 필드를 타입 검사와 함께 꺼낸다.
 func _array_field(document: Dictionary, key: String, path: String) -> Array:
 	var value: Variant = document.get(key, [])
 	if typeof(value) != TYPE_ARRAY:
@@ -185,6 +212,7 @@ func _array_field(document: Dictionary, key: String, path: String) -> Array:
 	return value as Array
 
 
+# Turret 행을 ID로 인덱싱하고 유형·공격 주기·확장 필드를 1차 검증한다.
 func _load_turrets(rows: Array) -> void:
 	for value in rows:
 		if typeof(value) != TYPE_DICTIONARY:
@@ -204,6 +232,7 @@ func _load_turrets(rows: Array) -> void:
 		turrets_by_id[turret_id] = row
 
 
+# Monster 행을 ID로 인덱싱하고 유형·체력·이동 속도를 1차 검증한다.
 func _load_monsters(rows: Array) -> void:
 	for value in rows:
 		if typeof(value) != TYPE_DICTIONARY:
@@ -225,6 +254,7 @@ func _load_monsters(rows: Array) -> void:
 		monsters_by_id[monster_id] = row
 
 
+# SpawnTable 행을 타입 확인 후 순서를 유지한 채 저장한다.
 func _load_spawn_rows(rows: Array) -> void:
 	for value in rows:
 		if typeof(value) == TYPE_DICTIONARY:
@@ -233,6 +263,7 @@ func _load_spawn_rows(rows: Array) -> void:
 			validation_errors.append("SpawnTable row must be an object")
 
 
+# ShopGacha 행을 타입 확인 후 확률 검증용 배열에 저장한다.
 func _load_shop_rows(rows: Array) -> void:
 	for value in rows:
 		if typeof(value) == TYPE_DICTIONARY:
@@ -241,6 +272,8 @@ func _load_shop_rows(rows: Array) -> void:
 			validation_errors.append("ShopGacha row must be an object")
 
 
+# Define 필수 키, 양수/음수 범위, 고정 상점 카드 수를 검증한다.
+# failAllowedMonster는 존재 여부만 보장하며 게임 오버 계산에는 사용하지 않는다.
 func _validate_define() -> void:
 	for key in ["prepareTimeSec", "totalWaveCount", "waveTimeSec", "initialGold", "rerollCost", "rerollPlusCost", "failAllowedMonster", "monsterSpawnInterval"]:
 		if not define_values.has(key):
@@ -257,6 +290,7 @@ func _validate_define() -> void:
 		validation_errors.append("prototype shopCardCount must remain 5")
 
 
+# 머지 트리, 몬스터 참조, 스폰 순서, 상점 확률 합계, 웨이브 누락을 검사한다.
 func _validate_cross_references() -> void:
 	for turret_id in turrets_by_id:
 		var turret: Dictionary = turrets_by_id[turret_id]
@@ -296,6 +330,7 @@ func _validate_cross_references() -> void:
 			validation_errors.append("SpawnTable is missing wave%d" % wave_number)
 
 
+# 누적된 검증 오류에 공통 접두사를 붙여 Godot 오류 로그로 출력한다.
 func _report_errors() -> void:
 	for message in validation_errors:
 		push_error("Prototype database validation: %s" % message)

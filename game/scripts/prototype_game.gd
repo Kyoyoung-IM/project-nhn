@@ -1,13 +1,24 @@
 extends Node2D
 
+# 프로토타입 전체 장면의 게임 루프와 UI를 조정하는 최상위 컨트롤러다.
+# 개별 터렛/몬스터의 전투는 각 오브젝트 스크립트에 맡기고 여기서는 생성·경제·승패만 관리한다.
+
+# 동적으로 생성하는 오브젝트, 데이터 로더, 한글 UI 폰트를 미리 로드한다.
 const MonsterScript := preload("res://scripts/monster.gd")
 const TowerScript := preload("res://scripts/tower.gd")
 const TowerSlotScript := preload("res://scripts/tower_slot.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const GAME_FONT := preload("res://assets/fonts/NotoSansKR.ttf")
 
+# 모든 전투 좌표와 UI 배치는 이 논리 해상도를 기준으로 작성한다.
+# Web 창의 가로세로 비율이 달라져도 이 영역 전체가 보이도록 Godot 스트레치가 먼저 배율을 정한다.
+const REFERENCE_VIEWPORT_SIZE := Vector2(960.0, 860.0)
+
+# READY는 정비, WAVE는 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
 
+# 지상 오른쪽→왼쪽, B1~B3 각각 오른쪽→왼쪽으로 이어지는 고정 웨이포인트다.
+# 홀수 인덱스의 왼쪽 출구에서 다음 짝수 인덱스의 오른쪽 입구로 하강한다.
 var movement_path := PackedVector2Array([
 	Vector2(880.0, 135.0),
 	Vector2(90.0, 135.0),
@@ -19,25 +30,38 @@ var movement_path := PackedVector2Array([
 	Vector2(90.0, 525.0),
 ])
 
+# 로드된 데이터베이스와 현재 장면 단계다.
 var database: PrototypeDatabase
 var phase: Phase = Phase.READY
+
+# 현재 장면에 살아 있는 오브젝트와 15개 배치 슬롯 목록이다.
 var monsters: Array[PrototypeMonster] = []
 var towers: Array[PrototypeTower] = []
 var tower_slots: Array[PrototypeTowerSlot] = []
+
+# 하단 상점의 카드 UI, 카드별 구매 가능 여부, 실제 터렛 ID를 같은 인덱스로 관리한다.
 var shop_cards: Array[Button] = []
 var shop_card_available: Array[bool] = []
 var shop_turret_ids: Array[String] = []
 var selected_shop_card: int = -1
+
+# 현재 웨이브의 SpawnTable 전개 결과와 생성/처치 진행도다.
 var current_wave_number: int = 1
 var current_wave_monster_ids: Array[String] = []
 var next_spawn_index: int = 0
 var spawned_count: int = 0
 var defeated_count: int = 0
+
+# 정비 단계 경제 및 스폰 타이머 상태다.
 var gold: int = 0
 var preparation_remaining_sec: float = 0.0
 var reroll_count: int = 0
 var spawn_cooldown_sec: float = 0.0
+
+# 고정 시드 상점 RNG로 같은 입력에서 같은 카드 순서를 재현한다.
 var shop_rng := RandomNumberGenerator.new()
+
+# 헤드리스 정상/실패/경제 테스트를 한 장면 코드에서 실행하기 위한 플래그다.
 var automated_test_mode: bool = false
 var automated_test_expects_defeat: bool = false
 var automated_test_expects_tower_destruction: bool = false
@@ -45,6 +69,7 @@ var automated_test_economy: bool = false
 var automated_test_tower_was_destroyed: bool = false
 var automated_test_elapsed_sec: float = 0.0
 
+# 런타임에 생성하는 주요 HUD 참조다.
 var phase_label: Label
 var wave_label: Label
 var gold_label: Label
@@ -52,7 +77,11 @@ var status_label: Label
 var action_button: Button
 var reroll_button: Button
 
+# CanvasLayer는 Node2D 변환을 상속하지 않으므로 별도로 보관해 전장과 같은 중앙 오프셋을 적용한다.
+var interface_canvas: CanvasLayer
 
+
+# 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
 	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args
@@ -67,6 +96,9 @@ func _ready() -> void:
 	shop_rng.seed = database.extension_int("rngSeed", 20260803)
 	_build_interface()
 	_create_tower_slots()
+	# aspect=expand가 만든 여분의 논리 공간에 게임을 중앙 정렬하고, 이후 브라우저 크기 변화도 추적한다.
+	get_viewport().size_changed.connect(_update_responsive_layout)
+	_update_responsive_layout()
 	_begin_preparation(true)
 	_update_interface()
 	queue_redraw()
@@ -75,6 +107,7 @@ func _ready() -> void:
 		call_deferred("_start_automated_test")
 
 
+# 정비 카운트다운 또는 웨이브 몬스터 스폰/종료 조건을 매 프레임 처리한다.
 func _process(delta: float) -> void:
 	if automated_test_mode:
 		automated_test_elapsed_sec += delta
@@ -108,17 +141,18 @@ func _process(delta: float) -> void:
 		_complete_wave()
 
 
+# 상단 정보, 하단 상점, 웨이브/리롤 버튼을 CanvasLayer에 생성한다.
 func _build_interface() -> void:
-	var canvas := CanvasLayer.new()
-	add_child(canvas)
+	interface_canvas = CanvasLayer.new()
+	add_child(interface_canvas)
 
-	phase_label = _make_label(canvas, Vector2(36.0, 26.0), Vector2(430.0, 38.0), 24)
+	phase_label = _make_label(interface_canvas, Vector2(36.0, 26.0), Vector2(430.0, 38.0), 24)
 	phase_label.text = "지상 진입 구간 · 전투 없음"
 
-	wave_label = _make_label(canvas, Vector2(36.0, 78.0), Vector2(190.0, 34.0), 20)
-	gold_label = _make_label(canvas, Vector2(242.0, 78.0), Vector2(190.0, 34.0), 20)
+	wave_label = _make_label(interface_canvas, Vector2(36.0, 78.0), Vector2(190.0, 34.0), 20)
+	gold_label = _make_label(interface_canvas, Vector2(242.0, 78.0), Vector2(190.0, 34.0), 20)
 
-	status_label = _make_label(canvas, Vector2(20.0, 625.0), Vector2(245.0, 42.0), 19)
+	status_label = _make_label(interface_canvas, Vector2(20.0, 625.0), Vector2(245.0, 42.0), 19)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	action_button = Button.new()
@@ -137,9 +171,9 @@ func _build_interface() -> void:
 	action_button.add_theme_stylebox_override("normal", normal_style)
 	action_button.add_theme_color_override("font_color", Color("2e2819"))
 	action_button.pressed.connect(_on_action_button_pressed)
-	canvas.add_child(action_button)
+	interface_canvas.add_child(action_button)
 
-	var shop_title := _make_label(canvas, Vector2(267.0, 626.0), Vector2(305.0, 38.0), 19)
+	var shop_title := _make_label(interface_canvas, Vector2(267.0, 626.0), Vector2(305.0, 38.0), 19)
 	shop_title.text = "터렛 상점 · 카드 → 슬롯"
 	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -151,10 +185,24 @@ func _build_interface() -> void:
 	reroll_button.add_theme_font_override("font", GAME_FONT)
 	reroll_button.add_theme_font_size_override("font_size", 17)
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
-	canvas.add_child(reroll_button)
-	_create_shop_cards(canvas)
+	interface_canvas.add_child(reroll_button)
+	_create_shop_cards(interface_canvas)
 
 
+# Web 캔버스가 넓거나 높아질 때 960×860 게임 영역을 남는 축의 중앙으로 이동한다.
+# 실제 확대·축소는 project.godot의 canvas_items + expand 설정이 담당하므로 여기서는 왜곡 없이 위치만 맞춘다.
+func _update_responsive_layout() -> void:
+	var visible_size := get_viewport_rect().size
+	var center_offset := Vector2(
+		maxf(0.0, (visible_size.x - REFERENCE_VIEWPORT_SIZE.x) * 0.5),
+		maxf(0.0, (visible_size.y - REFERENCE_VIEWPORT_SIZE.y) * 0.5)
+	)
+	position = center_offset
+	if is_instance_valid(interface_canvas):
+		interface_canvas.offset = center_offset
+
+
+# 모든 HUD Label에 동일한 한글 폰트와 기본 색상을 적용하는 생성 도우미다.
 func _make_label(parent: Node, label_position: Vector2, label_size: Vector2, font_size: int) -> Label:
 	var label := Label.new()
 	label.position = label_position
@@ -166,6 +214,7 @@ func _make_label(parent: Node, label_position: Vector2, label_size: Vector2, fon
 	return label
 
 
+# B1~B3 각 5개, 총 15개의 고정 터렛 슬롯을 만든다.
 func _create_tower_slots() -> void:
 	var floor_y := [218.0, 353.0, 488.0]
 	var slot_x := [190.0, 335.0, 480.0, 625.0, 770.0]
@@ -179,6 +228,8 @@ func _create_tower_slots() -> void:
 			tower_slots.append(slot)
 
 
+# PDF/AGENTS에 확정된 5칸 TFT형 상점 카드 버튼을 만든다.
+# 카드의 실제 내용은 매 정비 단계마다 _refresh_shop_cards에서 채운다.
 func _create_shop_cards(canvas: CanvasLayer) -> void:
 	var card_count := database.extension_int("shopCardCount", 5)
 	for card_index in card_count:
@@ -205,6 +256,7 @@ func _create_shop_cards(canvas: CanvasLayer) -> void:
 		shop_turret_ids.append("")
 
 
+# 정비 단계에서는 웨이브를 조기 시작하고, 결과 단계에서는 전체 게임을 초기화한다.
 func _on_action_button_pressed() -> void:
 	if phase == Phase.WAVE:
 		return
@@ -214,6 +266,7 @@ func _on_action_button_pressed() -> void:
 		_reset_game()
 
 
+# 구매할 카드를 선택하되 골드는 실제 슬롯 배치가 성공할 때 차감한다.
 func _on_shop_card_pressed(card_index: int) -> void:
 	if phase != Phase.READY or not shop_card_available[card_index]:
 		return
@@ -227,6 +280,7 @@ func _on_shop_card_pressed(card_index: int) -> void:
 	_update_shop_cards()
 
 
+# 현재 누적 비용을 차감하고 카드 5장을 다시 추첨한 뒤 리롤 횟수를 증가시킨다.
 func _on_reroll_button_pressed() -> void:
 	if phase != Phase.READY:
 		return
@@ -243,6 +297,7 @@ func _on_reroll_button_pressed() -> void:
 	_update_shop_cards()
 
 
+# 빈 슬롯과 선택된 상점 카드가 모두 있을 때만 배치를 요청한다.
 func _on_tower_slot_pressed(slot: PrototypeTowerSlot) -> void:
 	if phase != Phase.READY:
 		return
@@ -255,6 +310,8 @@ func _on_tower_slot_pressed(slot: PrototypeTowerSlot) -> void:
 	_place_tower(slot, true)
 
 
+# 터렛 ID를 데이터로 변환해 오브젝트를 생성하고 슬롯과 파괴 신호를 연결한다.
+# 자동 테스트는 use_shop_card=false와 override ID로 경제 차감 없이 배치할 수 있다.
 func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_override: String = "") -> void:
 	var turret_id := turret_id_override
 	if use_shop_card:
@@ -281,6 +338,7 @@ func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_overr
 	_update_shop_cards()
 
 
+# 파괴된 터렛을 활성 목록과 슬롯에서 제거하고 관련 자동 테스트 상태를 기록한다.
 func _on_tower_destroyed(tower: PrototypeTower, slot: PrototypeTowerSlot) -> void:
 	towers.erase(tower)
 	slot.clear_occupant()
@@ -288,6 +346,7 @@ func _on_tower_destroyed(tower: PrototypeTower, slot: PrototypeTowerSlot) -> voi
 		automated_test_tower_was_destroyed = true
 
 
+# 현재 SpawnTable이 유효한지 확인하고 카운터/터렛 쿨다운을 초기화해 전투를 시작한다.
 func _start_wave() -> void:
 	if current_wave_monster_ids.is_empty():
 		push_error("Current wave has no SpawnTable entries: wave%d" % current_wave_number)
@@ -304,6 +363,7 @@ func _start_wave() -> void:
 	_set_phase(Phase.WAVE)
 
 
+# 테스트 종류에 필요한 터렛을 자동 배치한 뒤 정비 시간을 건너뛰고 웨이브를 시작한다.
 func _start_automated_test() -> void:
 	if automated_test_economy:
 		_run_economy_automated_test()
@@ -319,6 +379,7 @@ func _start_automated_test() -> void:
 			tower.enabled = false
 
 
+# 리롤 비용 10→15 증가와 다음 정비 단계의 기본 비용 초기화를 검증한다.
 func _run_economy_automated_test() -> void:
 	var starting_gold := gold
 	var base_cost := database.define_int("rerollCost", 10)
@@ -339,6 +400,7 @@ func _run_economy_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
+# 펼쳐진 SpawnTable 순서에서 다음 ID를 꺼내 데이터 기반 몬스터를 생성한다.
 func _spawn_monster() -> void:
 	if next_spawn_index >= current_wave_monster_ids.size():
 		return
@@ -358,6 +420,7 @@ func _spawn_monster() -> void:
 	_update_interface()
 
 
+# 처치된 몬스터를 목록에서 제거하고 Monster.rewardGold를 지급한다.
 func _on_monster_defeated(monster: PrototypeMonster) -> void:
 	monsters.erase(monster)
 	defeated_count += 1
@@ -365,12 +428,14 @@ func _on_monster_defeated(monster: PrototypeMonster) -> void:
 	_update_interface()
 
 
+# failAllowedMonster 대신 확정 규칙인 B3 최심부 코어 도달만 패배로 처리한다.
 func _on_monster_reached_deepest_floor(monster: PrototypeMonster) -> void:
 	monsters.erase(monster)
 	if phase == Phase.WAVE:
 		_set_phase(Phase.DEFEAT)
 
 
+# 다음 웨이브가 있으면 정비 단계로 돌아가고 마지막 웨이브면 승리한다.
 func _complete_wave() -> void:
 	if current_wave_number >= database.define_int("totalWaveCount", 1):
 		_set_phase(Phase.VICTORY)
@@ -379,6 +444,7 @@ func _complete_wave() -> void:
 	_begin_preparation(false)
 
 
+# 단계에 맞춰 터렛 공격, 슬롯 입력, 몬스터 진행, HUD를 일괄 전환한다.
 func _set_phase(next_phase: Phase) -> void:
 	phase = next_phase
 	for tower in towers:
@@ -397,6 +463,7 @@ func _set_phase(next_phase: Phase) -> void:
 		call_deferred("_finish_automated_test")
 
 
+# 기대 단계와 터렛 파괴 여부를 비교해 헤드리스 테스트 종료 코드를 결정한다.
 func _finish_automated_test() -> void:
 	var expected_phase := Phase.DEFEAT if automated_test_expects_defeat else Phase.VICTORY
 	var passed := phase == expected_phase
@@ -411,6 +478,7 @@ func _finish_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
+# 장면에 남은 몬스터를 안전하게 삭제하고 추적 배열을 비운다.
 func _clear_monsters() -> void:
 	for monster in monsters:
 		if is_instance_valid(monster):
@@ -418,6 +486,7 @@ func _clear_monsters() -> void:
 	monsters.clear()
 
 
+# 결과 화면에서 새 게임을 시작할 때 몬스터·터렛·슬롯·RNG를 초기 상태로 되돌린다.
 func _reset_game() -> void:
 	_clear_monsters()
 	for tower in towers:
@@ -431,6 +500,8 @@ func _reset_game() -> void:
 	_begin_preparation(true)
 
 
+# 게임 시작 또는 웨이브 사이 정비 시간을 설정하고 상점/리롤 상태를 초기화한다.
+# reset_run=false일 때는 기존 골드와 살아 있는 터렛을 보존한다.
 func _begin_preparation(reset_run: bool) -> void:
 	if reset_run:
 		gold = database.define_int("initialGold", 100)
@@ -444,6 +515,7 @@ func _begin_preparation(reset_run: bool) -> void:
 	_update_interface()
 
 
+# ShopGacha 확률로 카드 ID를 새로 뽑고 카드에 타입·능력치·가격을 표시한다.
 func _refresh_shop_cards() -> void:
 	shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
 	shop_card_available.clear()
@@ -463,10 +535,12 @@ func _refresh_shop_cards() -> void:
 	_update_shop_cards()
 
 
+# 현재 정비 단계에서 지불할 비용을 기본값 + 증가값 × 실행 횟수로 계산한다.
 func _current_reroll_cost() -> int:
 	return database.define_int("rerollCost", 10) + database.define_int("rerollPlusCost", 5) * reroll_count
 
 
+# 골드·단계·카드 소모 상태에 따라 상점과 리롤 버튼의 활성화를 갱신한다.
 func _update_shop_cards() -> void:
 	if shop_cards.is_empty() or shop_card_available.size() != shop_cards.size():
 		return
@@ -482,6 +556,7 @@ func _update_shop_cards() -> void:
 		reroll_button.disabled = phase != Phase.READY or gold < reroll_cost
 
 
+# 웨이브/골드/정비시간/결과 문구를 현재 상태에 맞게 HUD에 반영한다.
 func _update_interface() -> void:
 	if wave_label == null:
 		return
@@ -512,6 +587,7 @@ func _update_interface() -> void:
 			action_button.disabled = false
 
 
+# 외부 배경 에셋 없이 지상 구간, 지하 3층, 진입구, 코어, 상점 배경을 그린다.
 func _draw() -> void:
 	# Header / ground staging area.
 	draw_rect(Rect2(18.0, 16.0, 924.0, 596.0), Color("253044"), true)
@@ -563,6 +639,7 @@ func _draw() -> void:
 	draw_line(Vector2(18.0, 680.0), Vector2(942.0, 680.0), Color("39475b"), 2.0)
 
 
+# 층별 오른쪽→왼쪽 진행 방향을 선과 삼각형 화살촉으로 표시한다.
 func _draw_arrow(from: Vector2, to: Vector2, color: Color) -> void:
 	draw_line(from, to, color, 3.0)
 	var direction := (to - from).normalized()
