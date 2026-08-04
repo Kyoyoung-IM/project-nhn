@@ -1465,17 +1465,30 @@ func _run_attack_styles_automated_test() -> void:
 		and not get_tree().get_nodes_in_group("tower_hit_effects").is_empty()
 	_free_attack_test_nodes(melee_tower, melee_monster)
 
-	# DOT는 rangeValue=1.5칸 안의 표적을 선택하고 화염 투사체 명중 후에만 기본 피해와 화상을 적용한다.
+	# DOT는 rangeValue=1.5칸 안의 표적을 선택하고 화염방사가 닿은 뒤에만 기본 피해와 화상을 적용한다.
 	var dot_tower := _create_attack_test_tower("turretDot1", test_origin)
 	var dot_monster := _create_attack_test_monster(test_origin.x + 200.0)
 	var dot_hp_before := dot_monster.hp
 	dot_tower._process(dot_tower.attack_interval_sec)
-	var dot_projectile := _latest_attack_test_projectile()
-	var dot_waited_for_impact := dot_projectile != null and is_equal_approx(dot_monster.hp, dot_hp_before)
-	if dot_projectile != null:
-		dot_projectile._process(1.0)
+	var dot_flamethrower := _latest_attack_test_flamethrower()
+	var dot_waited_for_impact := dot_flamethrower != null and is_equal_approx(dot_monster.hp, dot_hp_before)
+	if dot_flamethrower != null:
+		dot_flamethrower._process(0.21)
 	var dot_ok := dot_waited_for_impact and dot_monster.hp < dot_hp_before and dot_monster.dot_remaining_sec > 0.0
 	_free_attack_test_nodes(dot_tower, dot_monster)
+	# 화염방사가 닿기 전에 표적이 층 이동을 시작하면 추적과 피해가 모두 취소되어야 한다.
+	var dot_cancel_tower := _create_attack_test_tower("turretDot1", test_origin)
+	var dot_cancel_monster := _create_attack_test_monster(test_origin.x + 200.0)
+	var dot_cancel_hp_before := dot_cancel_monster.hp
+	dot_cancel_tower._process(dot_cancel_tower.attack_interval_sec)
+	var cancelled_flamethrower := _latest_attack_test_flamethrower()
+	dot_cancel_monster.floor_transfer_active = true
+	if cancelled_flamethrower != null:
+		cancelled_flamethrower._process(0.21)
+	var dot_floor_cancel_ok := cancelled_flamethrower != null \
+		and cancelled_flamethrower.is_queued_for_deletion() \
+		and is_equal_approx(dot_cancel_monster.hp, dot_cancel_hp_before)
+	_free_attack_test_nodes(dot_cancel_tower, dot_cancel_monster)
 
 	# SLOW 눈덩이는 명중 전에는 변화가 없고 명중 뒤 이동 배율을 낮춰야 한다.
 	var slow_tower := _create_attack_test_tower("turretSlow1", test_origin)
@@ -1504,6 +1517,19 @@ func _run_attack_styles_automated_test() -> void:
 		and ranged_monster.slow_remaining_sec == 0.0 \
 		and ranged_monster.stun_remaining_sec == 0.0
 	_free_attack_test_nodes(ranged_tower, ranged_monster)
+	# 이동 투사체도 표적이 층 이동을 시작한 즉시 소멸하고 기존 층에서 피해를 주지 않아야 한다.
+	var projectile_cancel_tower := _create_attack_test_tower("turretRanged1", test_origin)
+	var projectile_cancel_monster := _create_attack_test_monster(test_origin.x + 220.0)
+	var projectile_cancel_hp_before := projectile_cancel_monster.hp
+	projectile_cancel_tower._process(projectile_cancel_tower.attack_interval_sec)
+	var cancelled_projectile := _latest_attack_test_projectile()
+	projectile_cancel_monster.floor_transfer_active = true
+	if cancelled_projectile != null:
+		cancelled_projectile._process(0.05)
+	var projectile_floor_cancel_ok := cancelled_projectile != null \
+		and cancelled_projectile.is_queued_for_deletion() \
+		and is_equal_approx(projectile_cancel_monster.hp, projectile_cancel_hp_before)
+	_free_attack_test_nodes(projectile_cancel_tower, projectile_cancel_monster)
 
 	# STUN은 충전 중 피해가 없고 충전 완료 후 낙뢰 히트스캔·기절·헤롱헤롱 이펙트를 생성한다.
 	var stun_tower := _create_attack_test_tower("turretStun1", test_origin)
@@ -1518,11 +1544,11 @@ func _run_attack_styles_automated_test() -> void:
 		and not get_tree().get_nodes_in_group("tower_hit_effects").is_empty()
 	_free_attack_test_nodes(stun_tower, stun_monster)
 
-	var passed := melee_ok and dot_ok and slow_ok and ranged_ok and stun_ok
+	var passed := melee_ok and dot_ok and dot_floor_cancel_ok and slow_ok and ranged_ok and projectile_floor_cancel_ok and stun_ok
 	if passed:
 		print("Automated attack style test passed: HITSCAN_PROJECTILES_STATUS_VFX")
 	else:
-		push_error("Automated attack style test failed: melee=%s dot=%s slow=%s ranged=%s stun=%s" % [melee_ok, dot_ok, slow_ok, ranged_ok, stun_ok])
+		push_error("Automated attack style test failed: melee=%s dot=%s dot_cancel=%s slow=%s ranged=%s projectile_cancel=%s stun=%s" % [melee_ok, dot_ok, dot_floor_cancel_ok, slow_ok, ranged_ok, projectile_floor_cancel_ok, stun_ok])
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -1551,12 +1577,17 @@ func _latest_attack_test_projectile() -> PrototypeTowerProjectile:
 	return projectiles.back() as PrototypeTowerProjectile if not projectiles.is_empty() else null
 
 
+func _latest_attack_test_flamethrower() -> Node2D:
+	var flamethrowers := get_tree().get_nodes_in_group("tower_flamethrowers")
+	return flamethrowers.back() as Node2D if not flamethrowers.is_empty() else null
+
+
 func _free_attack_test_nodes(tower: PrototypeTower, monster: PrototypeMonster) -> void:
 	if is_instance_valid(tower):
 		tower.free()
 	if is_instance_valid(monster):
 		monster.free()
-	for group_name in ["tower_projectiles", "tower_hit_effects"]:
+	for group_name in ["tower_projectiles", "tower_flamethrowers", "tower_hit_effects"]:
 		for node in get_tree().get_nodes_in_group(group_name):
 			if is_instance_valid(node):
 				node.free()

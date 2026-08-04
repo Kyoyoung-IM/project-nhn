@@ -3,7 +3,11 @@ extends Node2D
 
 # 히트스캔 공격의 판정 위치에 붙는 MELEE 할퀴기와 STUN 낙뢰·헤롱헤롱 연출이다.
 const MELEE_DURATION_SEC := 0.24
-const STUN_DURATION_SEC := 0.72
+const STUN_DURATION_SEC := 1.0
+
+# 히트스캔은 판정 자체는 즉시 처리하고, 이 이미지만 대상 위치에 짧게 재생한다.
+const MELEE_SLASH_TEXTURE := preload("res://assets/combat_vfx/hit_melee_slash_v2.png")
+const STUN_LIGHTNING_TEXTURE := preload("res://assets/combat_vfx/hit_stun_lightning_v2.png")
 
 var effect_type: String = "MELEE"
 var remaining_sec: float = 0.0
@@ -38,43 +42,28 @@ func _draw() -> void:
 
 # 세 줄의 발톱 자국이 빠르게 벌어졌다 사라지며 근접 히트스캔의 피격 위치를 명확히 보여준다.
 func _draw_melee_slashes(progress: float) -> void:
-	var slash_color := Color("fff0c2")
-	slash_color.a = 1.0 - progress
-	var spread := lerpf(4.0, 14.0, progress)
-	for slash_index in 3:
-		var offset_x := (float(slash_index) - 1.0) * spread
-		var points := PackedVector2Array([
-			Vector2(offset_x - 13.0, -20.0),
-			Vector2(offset_x - 4.0, -7.0),
-			Vector2(offset_x + 5.0, 5.0),
-			Vector2(offset_x + 13.0, 18.0),
-		])
-		draw_polyline(points, slash_color, 4.0 + tier * 0.35, true)
+	var alpha := 1.0 - progress
+	var scale_factor := (0.82 + progress * 0.28) * (1.0 + float(tier - 1) * 0.05)
+	var draw_size := Vector2(123.0, 138.0) * scale_factor
+	draw_texture_rect(
+		MELEE_SLASH_TEXTURE,
+		Rect2(-draw_size * 0.5, draw_size),
+		false,
+		Color(1.0, 1.0, 1.0, alpha)
+	)
 
 
-# 머리 위에서 떨어지는 지그재그 낙뢰와 회전하는 별을 한 이펙트로 묶어 타격과 기절을 동시에 전달한다.
+# 작은 먹구름부터 지면 충돌점까지 이어지는 생성 낙뢰로 기절 타격을 표시한다.
+# 지속되는 헤롱헤롱 별은 몬스터 상태에 직접 그려 실제 기절 시간과 동기화한다.
 func _draw_stun_effect(progress: float) -> void:
-	var lightning_alpha := clampf(1.0 - progress * 1.8, 0.0, 1.0)
-	var lightning_color := Color(0.88, 0.94, 1.0, lightning_alpha)
-	var lightning_points := PackedVector2Array([
-		Vector2(-8.0, -112.0),
-		Vector2(9.0, -86.0),
-		Vector2(-5.0, -66.0),
-		Vector2(12.0, -43.0),
-		Vector2(0.0, -18.0),
-	])
-	draw_polyline(lightning_points, Color(0.43, 0.56, 1.0, lightning_alpha * 0.7), 10.0, true)
-	draw_polyline(lightning_points, lightning_color, 4.0, true)
-	var orbit_angle := progress * TAU * 1.7
-	for star_index in 3:
-		var angle := orbit_angle + TAU * float(star_index) / 3.0
-		var star_position := Vector2(cos(angle) * 24.0, -36.0 + sin(angle) * 7.0)
-		_draw_star(star_position, 6.0 + tier * 0.5, Color(1.0, 0.91, 0.32, 1.0 - progress * 0.45))
-
-
-func _draw_star(center: Vector2, radius: float, color: Color) -> void:
-	var points := PackedVector2Array()
-	for point_index in 8:
-		var point_radius := radius if point_index % 2 == 0 else radius * 0.42
-		points.append(center + Vector2.from_angle(-PI * 0.5 + TAU * float(point_index) / 8.0) * point_radius)
-	draw_colored_polygon(points, color)
+	# Hold the lightning at full opacity before fading so one complete bolt is
+	# visible even when combat is accelerated.
+	var fade_progress := clampf((progress - 0.55) / 0.45, 0.0, 1.0)
+	var lightning_alpha := 1.0 - fade_progress
+	var lightning_size := Vector2(147.0, 213.0) * (1.0 + float(tier - 1) * 0.035)
+	draw_texture_rect(
+		STUN_LIGHTNING_TEXTURE,
+		Rect2(Vector2(-lightning_size.x * 0.5, -lightning_size.y + 4.0), lightning_size),
+		false,
+		Color(1.0, 1.0, 1.0, lightning_alpha)
+	)

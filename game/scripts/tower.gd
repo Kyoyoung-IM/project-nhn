@@ -7,7 +7,9 @@ extends Node2D
 
 const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
 const TowerProjectileScript := preload("res://scripts/tower_projectile.gd")
+const TowerFlamethrowerScript := preload("res://scripts/tower_flamethrower.gd")
 const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
+const STUN_CHARGE_AURA_TEXTURE := preload("res://assets/combat_vfx/stun_charge_aura_v2.png")
 
 # Tier가 높아질수록 본체가 조금씩 커져 머지 결과를 실루엣만으로도 구분할 수 있다.
 # 이 값은 기존 더미 도형의 반경과 무관한 실제 스프라이트 표시 크기다.
@@ -244,6 +246,8 @@ func _process(delta: float) -> void:
 	match turret_type:
 		"MELEE":
 			_apply_hitscan_attack(target, "MELEE")
+		"DOT":
+			_spawn_flamethrower(target)
 		"STUN":
 			stun_charge_target = target
 			stun_charge_remaining_sec = STUN_CHARGE_DURATION_SEC
@@ -253,12 +257,19 @@ func _process(delta: float) -> void:
 	cooldown_sec = attack_interval_sec
 
 
-# DOT/SLOW/RANGED는 실제 이동 노드를 만들고 투사체가 몬스터에 닿을 때 피해·상태이상을 적용한다.
+# SLOW/RANGED는 실제 이동 노드를 만들고 투사체가 몬스터에 닿을 때 피해·상태이상을 적용한다.
 func _spawn_projectile(target: PrototypeMonster) -> void:
 	var projectile := TowerProjectileScript.new() as PrototypeTowerProjectile
 	get_parent().add_child(projectile)
-	projectile.global_position = _projectile_muzzle_global_position()
+	projectile.global_position = projectile_muzzle_global_position()
 	projectile.setup(target, turret_type, damage, cc_duration, cc_value, tier)
+
+
+# DOT는 일반 투사체 대신 포구에서 표적까지 짧게 뻗는 전용 화염방사를 생성한다.
+func _spawn_flamethrower(target: PrototypeMonster) -> void:
+	var flamethrower := TowerFlamethrowerScript.new() as PrototypeTowerFlamethrower
+	get_parent().add_child(flamethrower)
+	flamethrower.setup(self, target, damage, cc_duration, cc_value, tier)
 
 
 # STUN 충전이 끝났을 때 표적이 여전히 같은 층·사거리 안에 있으면 낙뢰 히트스캔을 실행한다.
@@ -277,11 +288,15 @@ func _apply_hitscan_attack(target: PrototypeMonster, attack_type: String) -> voi
 	target.receive_turret_hit(damage, attack_type, cc_duration, cc_value)
 	var hit_effect := TowerHitEffectScript.new() as PrototypeTowerHitEffect
 	get_parent().add_child(hit_effect)
+	# The lightning texture includes a ground impact. Anchor STUN at the target's
+	# floor contact instead of its body center so the whole bolt stays legible.
 	hit_effect.global_position = target.global_position
+	if attack_type == "STUN":
+		hit_effect.global_position.y += target.body_bottom_offset_y
 	hit_effect.setup(attack_type, tier)
 
 
-func _projectile_muzzle_global_position() -> Vector2:
+func projectile_muzzle_global_position() -> Vector2:
 	var local_muzzle := Vector2(0.0, -58.0)
 	if body_sprite != null:
 		local_muzzle = body_sprite.position + Vector2(0.0, -12.0)
@@ -342,12 +357,14 @@ func _draw() -> void:
 	if stun_charge_remaining_sec > 0.0:
 		var charge_progress := 1.0 - stun_charge_remaining_sec / STUN_CHARGE_DURATION_SEC
 		var charge_center := body_sprite.position if body_sprite != null else Vector2(0.0, -100.0)
-		var pulse_radius := lerpf(25.0, 42.0, charge_progress)
-		var charge_color := Color(0.73, 0.82, 1.0, 0.72)
-		draw_arc(charge_center, pulse_radius, charge_progress * TAU, charge_progress * TAU + PI * 1.55, 24, charge_color, 5.0)
-		for spark_index in 4:
-			var spark_angle := charge_progress * TAU * 2.0 + TAU * float(spark_index) / 4.0
-			draw_circle(charge_center + Vector2.from_angle(spark_angle) * pulse_radius, 4.0, Color("eef2ff"))
+		var charge_size := Vector2.ONE * lerpf(108.0, 144.0, charge_progress)
+		var charge_alpha := 0.70 + sin(charge_progress * TAU * 2.0) * 0.16
+		draw_texture_rect(
+			STUN_CHARGE_AURA_TEXTURE,
+			Rect2(charge_center - charge_size * 0.5, charge_size),
+			false,
+			Color(1.0, 1.0, 1.0, charge_alpha)
+		)
 	# 머지 직후 바깥으로 퍼지는 링과 방사형 빛 점을 그려 승급 순간을 강조한다.
 	if upgrade_effect_remaining_sec > 0.0:
 		var effect_progress := 1.0 - upgrade_effect_remaining_sec / UPGRADE_EFFECT_DURATION_SEC

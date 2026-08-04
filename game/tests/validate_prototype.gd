@@ -8,6 +8,10 @@ const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const TowerScript := preload("res://scripts/tower.gd")
 const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
 const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
+const MonsterScript := preload("res://scripts/monster.gd")
+const TowerProjectileScript := preload("res://scripts/tower_projectile.gd")
+const TowerFlamethrowerScript := preload("res://scripts/tower_flamethrower.gd")
+const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
 
 # 읽기 전용 데이터 테이블의 대표 오브젝트 ID다. 원본 오탈자 spped1도 그대로 보존한다.
 const EXPECTED_TURRET_IDS := ["turretMelee1", "turretDot1", "turretStun1", "turretSlow1", "turretRanged1"]
@@ -81,6 +85,35 @@ func _init() -> void:
 		if monster.is_empty() or float(monster.get("max_hp", 0.0)) <= 0.0:
 			_fail("missing prototype monster object: %s" % monster_id)
 			return
+	# 정식 몬스터 그래픽을 대비한 확대 배율과 발판 접지 오프셋이 같은 배율을 사용해야 한다.
+	if not is_equal_approx(MonsterScript.MONSTER_VISUAL_SCALE, 1.6):
+		_fail("placeholder monster visual scale must remain 1.6")
+		return
+	if not is_equal_approx(MonsterScript._body_bottom_offset_for_type("NORMAL"), 25.6):
+		_fail("scaled monster floor contact offset is invalid")
+		return
+	# 생성형 이미지로 교체한 투사체와 히트스캔 텍스처가 모두 빌드에 포함되는지 검사한다.
+	var combat_vfx_textures: Array[Texture2D] = [
+		TowerProjectileScript.SLOW_PROJECTILE_TEXTURE,
+		TowerProjectileScript.RANGED_PROJECTILE_TEXTURE,
+		TowerFlamethrowerScript.FLAME_TEXTURE,
+		TowerHitEffectScript.MELEE_SLASH_TEXTURE,
+		TowerHitEffectScript.STUN_LIGHTNING_TEXTURE,
+		MonsterScript.STUN_STATUS_TEXTURE,
+		TowerScript.STUN_CHARGE_AURA_TEXTURE,
+	]
+	for combat_vfx_texture in combat_vfx_textures:
+		if combat_vfx_texture == null or combat_vfx_texture.get_width() <= 0 or combat_vfx_texture.get_height() <= 0:
+			_fail("combat VFX texture failed to load")
+			return
+	# Loading alone does not catch a broken chroma-key pass. The flame and stun
+	# stars must retain enough opaque subject pixels to be visible in combat.
+	if not _texture_has_opaque_coverage(TowerFlamethrowerScript.FLAME_TEXTURE, 0.20):
+		_fail("flamethrower texture lost its visible interior during alpha processing")
+		return
+	if not _texture_has_opaque_coverage(MonsterScript.STUN_STATUS_TEXTURE, 0.08):
+		_fail("stun status texture lost its visible interior during alpha processing")
+		return
 	if int(database.get_monster_data("boss1").get("reward_gold", 0)) != 555555:
 		_fail("boss1 rewardGold must match the read-only source value")
 		return
@@ -121,9 +154,9 @@ func _init() -> void:
 	if TowerVisualAssetsScript.dot_front_texture(3).get_size() != Vector2(256.0, 242.0) or TowerVisualAssetsScript.dot_front_texture(4).get_size() != Vector2(256.0, 189.0):
 		_fail("DOT tier 3 and 4 must provide separate front body layers")
 		return
-	# 세 전투 플랫폼에서 계산한 밤 배경 보정 결과가 낮 기준선과 1px 안팎으로 일치해야 한다.
-	var night_source_rows := [805.0, 1041.0, 1282.0]
-	var day_target_rows := [847.0, 1081.0, 1320.0]
+	# v7 낮/밤 이미지의 세 전투 플랫폼은 같은 픽셀 행이며 렌더링 추가 변형도 없어야 한다.
+	var night_source_rows := [848.0, 1081.0, 1320.0]
+	var day_target_rows := [848.0, 1081.0, 1320.0]
 	for row_index in night_source_rows.size():
 		var aligned_row: float = BattlefieldWorldScript.NIGHT_VERTICAL_OFFSET_SOURCE_PX + night_source_rows[row_index] * BattlefieldWorldScript.NIGHT_VERTICAL_SCALE
 		if absf(aligned_row - day_target_rows[row_index]) > 1.25:
@@ -135,6 +168,19 @@ func _init() -> void:
 
 
 # 오류 메시지를 Godot 로그에 남기고 테스트 프로세스를 실패로 종료한다.
+func _texture_has_opaque_coverage(texture: Texture2D, minimum_ratio: float) -> bool:
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return false
+	var opaque_pixel_count := 0
+	for y in image.get_height():
+		for x in image.get_width():
+			if image.get_pixel(x, y).a >= 0.75:
+				opaque_pixel_count += 1
+	var total_pixel_count := image.get_width() * image.get_height()
+	return total_pixel_count > 0 and float(opaque_pixel_count) / float(total_pixel_count) >= minimum_ratio
+
+
 func _fail(message: String) -> void:
 	push_error(message)
 	quit(1)

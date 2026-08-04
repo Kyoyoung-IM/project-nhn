@@ -11,6 +11,12 @@ signal reached_deepest_floor(monster: PrototypeMonster)
 # SPAWNING부터 DEAD까지 몬스터의 현재 행동을 명시적으로 구분한다.
 enum MoveState { SPAWNING, WALKING, DESCENDING, STUNNED, EXIT, DEAD }
 
+# PLACEHOLDER 도형 몬스터를 향후 정식 스프라이트 크기에 가깝게 미리 확대한다.
+# 위치 계산도 같은 배율을 사용해 확대 후에도 발이 플랫폼 표면에 고정된다.
+const MONSTER_VISUAL_SCALE := 1.6
+const STUN_STATUS_TEXTURE := preload("res://assets/combat_vfx/status_stun_stars_v2.png")
+const STUN_STATUS_DRAW_SIZE := Vector2(126.0, 84.0)
+
 # 데이터 식별자와 표시용 속성이다.
 var monster_id: String = ""
 var display_name: String = ""
@@ -22,6 +28,8 @@ var hp: float = 1.0
 var move_speed_px_sec: float = 1.0
 var reward_gold: int = 0
 var body_color := Color("d96772")
+# 처음 피해를 받기 전에는 체력 바를 숨기고, 첫 유효 피해부터 남은 전투 동안 표시한다.
+var health_bar_visible: bool = false
 
 # 터렛의 STUN, SLOW, DOT 효과를 초 단위 런타임 상태로 보관한다.
 var stun_remaining_sec: float = 0.0
@@ -47,6 +55,7 @@ var floor_transfer_duration_sec: float = 0.36
 
 # 경로 좌표는 몬스터 중심이 아니라 발판에 닿아야 하는 바닥 접촉점으로 전달된다.
 var body_bottom_offset_y: float = 16.0
+var visual_elapsed_sec: float = 0.0
 
 
 # 로더가 정규화한 몬스터 데이터와 공유 이동 경로를 복사해 초기 상태를 만든다.
@@ -59,6 +68,7 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	move_speed_px_sec = float(config.get("move_speed_px_sec", 1.0))
 	reward_gold = int(config.get("reward_gold", 0))
 	body_color = Color(str(config.get("color_hex", "d96772")))
+	health_bar_visible = false
 	body_bottom_offset_y = _body_bottom_offset_for_type(monster_type)
 	stun_remaining_sec = 0.0
 	slow_remaining_sec = 0.0
@@ -74,20 +84,23 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	path_index = 0
 	move_state = MoveState.SPAWNING
 	scale = Vector2.ZERO
+	# 같은 전장 CanvasItem 안에서 설치 터렛보다 앞, 투사체·피격 이펙트보다 뒤에 표시한다.
+	z_index = 30
 	add_to_group("prototype_monsters")
 	queue_redraw()
 
 
 # 더미 도형의 실제 최하단을 중심점 기준으로 반환해 종류별 뜨거나 파묻히는 차이를 없앤다.
 static func _body_bottom_offset_for_type(type_value: String) -> float:
+	var unscaled_offset := 16.0
 	match type_value:
 		"SPEED":
-			return 12.0
+			unscaled_offset = 12.0
 		"TANK":
-			return 17.0
+			unscaled_offset = 17.0
 		"BOSS":
-			return 22.0
-	return 16.0
+			unscaled_offset = 22.0
+	return unscaled_offset * MONSTER_VISUAL_SCALE
 
 
 func center_position_for_floor_contact(floor_contact_position: Vector2) -> Vector2:
@@ -96,17 +109,18 @@ func center_position_for_floor_contact(floor_contact_position: Vector2) -> Vecto
 
 # 상태 이상, 등장 연출과 웨이포인트 이동을 우선순위대로 처리한다.
 func _process(delta: float) -> void:
+	visual_elapsed_sec += delta
 	_process_status_effects(delta)
 	if move_state == MoveState.DEAD:
 		return
 	if move_state == MoveState.SPAWNING:
 		spawn_animation_sec -= delta
 		var reveal := clampf(1.0 - spawn_animation_sec / 0.24, 0.0, 1.0)
-		scale = Vector2.ONE * reveal
+		scale = Vector2.ONE * MONSTER_VISUAL_SCALE * reveal
 		# 중심 확대 중에도 도형의 실제 발끝을 지면에 고정해 지상 진입 시 공중부양처럼 보이지 않게 한다.
 		position = spawn_floor_contact_position - Vector2(0.0, body_bottom_offset_y * reveal)
 		if spawn_animation_sec <= 0.0:
-			scale = Vector2.ONE
+			scale = Vector2.ONE * MONSTER_VISUAL_SCALE
 			position = center_position_for_floor_contact(spawn_floor_contact_position)
 			move_state = MoveState.WALKING
 		return
@@ -158,7 +172,7 @@ func _process_floor_transfer(delta: float) -> void:
 	floor_transfer_remaining_sec = maxf(0.0, floor_transfer_remaining_sec - delta)
 	var progress := 1.0 - floor_transfer_remaining_sec / floor_transfer_duration_sec
 	var transition_scale := 1.0 - sin(progress * PI) * 0.78
-	scale = Vector2.ONE * transition_scale
+	scale = Vector2.ONE * MONSTER_VISUAL_SCALE * transition_scale
 	if progress >= 0.5 and not floor_transfer_repositioned:
 		position = path_points[floor_transfer_destination_index]
 		floor_transfer_repositioned = true
@@ -166,7 +180,7 @@ func _process_floor_transfer(delta: float) -> void:
 		path_index = floor_transfer_destination_index
 		floor_transfer_active = false
 		floor_transfer_destination_index = -1
-		scale = Vector2.ONE
+		scale = Vector2.ONE * MONSTER_VISUAL_SCALE
 		move_state = MoveState.WALKING
 
 
@@ -174,6 +188,8 @@ func _process_floor_transfer(delta: float) -> void:
 func take_damage(amount: float) -> void:
 	if move_state == MoveState.DEAD or move_state == MoveState.EXIT:
 		return
+	if amount > 0.0 and hp > 0.0:
+		health_bar_visible = true
 	hp = maxf(0.0, hp - amount)
 	queue_redraw()
 	if hp <= 0.0:
@@ -277,11 +293,18 @@ func _draw() -> void:
 	draw_circle(Vector2(-6.0, -4.0), 1.4, Color("1a2030"))
 	draw_circle(Vector2(6.0, -4.0), 1.4, Color("1a2030"))
 	draw_line(Vector2(-7.0, 6.0), Vector2(7.0, 6.0), Color("661e32"), 2.0)
-	var hp_ratio := hp / max_hp
-	draw_rect(Rect2(-18.0, -25.0, 36.0, 5.0), Color("2a1720"), true)
-	draw_rect(Rect2(-18.0, -25.0, 36.0 * hp_ratio, 5.0), Color("73e18b"), true)
+	if health_bar_visible:
+		var hp_ratio := hp / max_hp
+		draw_rect(Rect2(-18.0, -25.0, 36.0, 5.0), Color("2a1720"), true)
+		draw_rect(Rect2(-18.0, -25.0, 36.0 * hp_ratio, 5.0), Color("73e18b"), true)
 	if stun_remaining_sec > 0.0:
-		draw_arc(Vector2.ZERO, 23.0, 0.0, TAU, 24, Color("8fd7ff"), 3.0)
+		# 생성된 별 헤일로가 실제 기절 시간 동안 머리 위에서 가볍게 흔들리도록 표시한다.
+		var stun_wobble := sin(visual_elapsed_sec * 7.0) * 4.0
+		draw_texture_rect(
+			STUN_STATUS_TEXTURE,
+			Rect2(Vector2(-STUN_STATUS_DRAW_SIZE.x * 0.5 + stun_wobble, -78.0), STUN_STATUS_DRAW_SIZE),
+			false
+		)
 	if slow_remaining_sec > 0.0:
 		draw_arc(Vector2.ZERO, 20.0, 0.0, TAU, 24, Color("8fffea"), 2.0)
 	if dot_remaining_sec > 0.0:
