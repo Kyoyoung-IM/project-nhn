@@ -33,7 +33,7 @@ const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
 # 4개 임시 웨이브 전체를 시간 가속 상태에서 끝낼 수 있도록 헤드리스 테스트 제한을 넉넉히 둔다.
 const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 
-# READY는 정비, WAVE는 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
+# READY는 낮, WAVE는 밤 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
 
 # 지상 오른쪽→왼쪽, B1~B3 각각 오른쪽→왼쪽으로 이어지는 고정 웨이포인트다.
@@ -78,20 +78,27 @@ var reroll_count: int = 0
 var spawn_cooldown_sec: float = 0.0
 var game_speed_multiplier: int = 1
 
+# 낮(0.0)과 밤(1.0) 사이의 배경 색조를 Tween으로 보간한다.
+var night_visual_amount: float = 0.0:
+	set(value):
+		night_visual_amount = clampf(value, 0.0, 1.0)
+		queue_redraw()
+var day_night_tween: Tween
+
 # 일반 플레이에서는 무작위화하고 자동 테스트·디버그 시드에서는 재현 가능한 상점 RNG다.
 var shop_rng := RandomNumberGenerator.new()
 
 # 헤드리스 정상/실패/경제 테스트를 한 장면 코드에서 실행하기 위한 플래그다.
 var automated_test_mode: bool = false
 var automated_test_expects_defeat: bool = false
-var automated_test_expects_tower_destruction: bool = false
 var automated_test_economy: bool = false
 var automated_test_drag: bool = false
 var automated_test_shop_drag: bool = false
+var automated_test_shop_merge: bool = false
 var automated_test_wave_shop: bool = false
 var automated_test_melee_attack: bool = false
 var automated_test_wave_features: bool = false
-var automated_test_tower_was_destroyed: bool = false
+var automated_test_merge: bool = false
 var automated_test_elapsed_sec: float = 0.0
 
 # 런타임에 생성하는 주요 HUD 참조다.
@@ -122,15 +129,16 @@ var shop_drag_target_slot: PrototypeTowerSlot = null
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-tower-destruction" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-wave-features" in user_args
-	automated_test_expects_tower_destruction = "--auto-test-tower-destruction" in user_args
-	automated_test_expects_defeat = "--auto-test-defeat" in user_args or automated_test_expects_tower_destruction
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args
+	automated_test_expects_defeat = "--auto-test-defeat" in user_args
 	automated_test_economy = "--auto-test-economy" in user_args
 	automated_test_drag = "--auto-test-drag" in user_args
 	automated_test_shop_drag = "--auto-test-shop-drag" in user_args
+	automated_test_shop_merge = "--auto-test-shop-merge" in user_args
 	automated_test_wave_shop = "--auto-test-wave-shop" in user_args
 	automated_test_melee_attack = "--auto-test-melee-attack" in user_args
 	automated_test_wave_features = "--auto-test-wave-features" in user_args
+	automated_test_merge = "--auto-test-merge" in user_args
 	database = DatabaseScript.new() as PrototypeDatabase
 	if database == null or not database.load_all():
 		push_error("Prototype database could not be loaded.")
@@ -269,28 +277,32 @@ func _begin_shop_card_drag(card_index: int, local_pointer: Vector2) -> bool:
 	shop_drag_preview.modulate = Color(1.0, 1.0, 1.0, 0.78)
 	add_child(shop_drag_preview)
 	shop_drag_preview.remove_from_group("prototype_towers")
-	status_label.text = "구매할 터렛을 빈 슬롯에 놓으세요"
+	status_label.text = "빈 슬롯에 설치하거나 같은 터렛 위에 놓아 머지하세요"
 	_update_shop_drag_slot_states(null)
 	_update_shop_cards()
 	return true
 
 
-# 상점 카드의 더미 터렛을 포인터에 따라 이동시키고 가장 가까운 빈 슬롯을 강조한다.
+# 상점 카드의 더미 터렛을 포인터에 따라 이동시키고 가장 가까운 설치·머지 슬롯을 강조한다.
 func _update_shop_card_drag(local_pointer: Vector2) -> void:
 	if shop_drag_preview == null or not is_instance_valid(shop_drag_preview):
 		_cancel_shop_card_drag()
 		return
 	shop_drag_preview.position = local_pointer
-	shop_drag_target_slot = _nearest_empty_slot(local_pointer)
+	var tower_data := database.get_turret_data(shop_turret_ids[dragged_shop_card_index])
+	shop_drag_target_slot = _nearest_shop_drop_target(local_pointer, tower_data)
 	_update_shop_drag_slot_states(shop_drag_target_slot)
 
 
-# 층 제한 없이 포인터 반경 안에서 비어 있는 구매 드롭 슬롯을 찾는다.
-func _nearest_empty_slot(local_pointer: Vector2) -> PrototypeTowerSlot:
+# 층 제한 없이 포인터 반경 안에서 빈 슬롯 또는 상점 머지 가능한 점유 슬롯을 찾는다.
+func _nearest_shop_drop_target(local_pointer: Vector2, tower_data: Dictionary) -> PrototypeTowerSlot:
 	var nearest: PrototypeTowerSlot = null
 	var nearest_distance := 70.0
 	for slot in tower_slots:
-		if not slot.is_empty():
+		var eligible := slot.is_empty()
+		if not eligible:
+			eligible = _can_merge_shop_card_with_tower(tower_data, slot.occupant as PrototypeTower)
+		if not eligible:
 			continue
 		var distance := local_pointer.distance_to(slot.position)
 		if distance < nearest_distance:
@@ -299,25 +311,69 @@ func _nearest_empty_slot(local_pointer: Vector2) -> PrototypeTowerSlot:
 	return nearest
 
 
-# 유효한 빈 슬롯에 놓였을 때만 결제와 설치를 실행하고 그 외 드롭은 무상 취소한다.
+# 유효한 빈 슬롯 또는 동일 터렛에 놓였을 때만 결제 후 설치·머지를 실행한다.
 func _finish_shop_card_drag() -> void:
+	var merge_requested := shop_drag_target_slot != null and not shop_drag_target_slot.is_empty()
 	var purchased := _purchase_shop_card_to_slot(dragged_shop_card_index, shop_drag_target_slot)
-	status_label.text = "터렛을 구매해 설치했습니다" if purchased else "빈 슬롯에 놓아야 구매할 수 있습니다"
+	if purchased:
+		status_label.text = "상점 터렛을 구매해 상위 Tier로 머지했습니다" if merge_requested else "터렛을 구매해 설치했습니다"
+	else:
+		status_label.text = "빈 슬롯 또는 동일 Tier 터렛에 놓아야 구매할 수 있습니다"
 	_clear_shop_card_drag_visuals()
 
 
-# 카드와 슬롯, 골드를 다시 검증한 뒤 설치 함수가 골드를 차감하도록 구매를 확정한다.
+# 카드와 슬롯, 골드를 다시 검증한 뒤 빈 슬롯 설치 또는 점유 슬롯 머지 구매를 확정한다.
 func _purchase_shop_card_to_slot(card_index: int, target: PrototypeTowerSlot) -> bool:
 	if not _is_shop_available() or card_index < 0 or card_index >= shop_cards.size():
 		return false
-	if target == null or not target.is_empty() or not shop_card_available[card_index]:
+	if target == null or not shop_card_available[card_index]:
 		return false
 	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
 	var tower_cost := int(tower_data.get("base_price", -1))
 	if tower_data.is_empty() or gold < tower_cost:
 		return false
 	selected_shop_card = card_index
-	_place_tower(target, true)
+	if target.is_empty():
+		return _place_tower(target, true) != null
+	return _merge_shop_card_with_tower(card_index, target, tower_data, tower_cost)
+
+
+# 상점 카드와 설치 터렛이 같은 ID·Tier이고 다음 Tier 데이터가 있을 때 구매 머지를 허용한다.
+# 설치 터렛 드래그와 달리 상점 구매는 기존 상점 정책에 따라 낮과 밤 모두 사용할 수 있다.
+func _can_merge_shop_card_with_tower(tower_data: Dictionary, target: PrototypeTower) -> bool:
+	if tower_data.is_empty() or target == null or not is_instance_valid(target):
+		return false
+	if str(tower_data.get("id", "")) != target.turret_id or int(tower_data.get("tier", -1)) != target.tier:
+		return false
+	var next_turret_id := str(tower_data.get("next_turret_id", "-1"))
+	if next_turret_id.is_empty() or next_turret_id == "-1":
+		return false
+	return not database.get_turret_data(next_turret_id).is_empty()
+
+
+# 카드 가격을 지불하고 대상 터렛 하나를 소비해 같은 슬롯에 상위 데이터 터렛을 생성한다.
+func _merge_shop_card_with_tower(card_index: int, target_slot: PrototypeTowerSlot, tower_data: Dictionary, tower_cost: int) -> bool:
+	if target_slot == null or target_slot.is_empty() or card_index < 0 or card_index >= shop_card_available.size():
+		return false
+	var target := target_slot.occupant as PrototypeTower
+	if not _can_merge_shop_card_with_tower(tower_data, target):
+		return false
+	var upgraded_turret_id := str(tower_data.get("next_turret_id", "-1"))
+	# 생성 실패 시 기존 점유자를 복원할 수 있도록 새 터렛 생성이 성공하기 전에는 기존 배열을 지우지 않는다.
+	target_slot.clear_occupant()
+	var upgraded_tower := _spawn_tower_in_slot(target_slot, upgraded_turret_id)
+	if upgraded_tower == null:
+		target_slot.set_occupant(target)
+		return false
+	tower_slot_by_instance_id.erase(target.get_instance_id())
+	towers.erase(target)
+	target.queue_free()
+	gold -= tower_cost
+	shop_card_available[card_index] = false
+	selected_shop_card = -1
+	upgraded_tower.play_upgrade_effect()
+	_update_interface()
+	_update_shop_cards()
 	return true
 
 
@@ -341,10 +397,13 @@ func _clear_shop_card_drag_visuals() -> void:
 	_update_shop_cards()
 
 
-# 구매 드래그 중 모든 빈 슬롯과 현재 드롭 대상 슬롯을 구분해 강조한다.
+# 구매 드래그 중 모든 빈 슬롯·동일 터렛 슬롯과 현재 드롭 대상을 구분해 강조한다.
 func _update_shop_drag_slot_states(target: PrototypeTowerSlot) -> void:
+	var tower_data: Dictionary = {}
+	if dragged_shop_card_index >= 0 and dragged_shop_card_index < shop_turret_ids.size():
+		tower_data = database.get_turret_data(shop_turret_ids[dragged_shop_card_index])
 	for slot in tower_slots:
-		var eligible := dragged_shop_card_index >= 0 and slot.is_empty()
+		var eligible := dragged_shop_card_index >= 0 and (slot.is_empty() or _can_merge_shop_card_with_tower(tower_data, slot.occupant as PrototypeTower))
 		slot.set_drag_state(eligible, eligible and slot == target)
 
 
@@ -357,7 +416,7 @@ func _tower_at_pointer(local_pointer: Vector2) -> PrototypeTower:
 	return null
 
 
-# 드래그를 시작하면서 상점 선택을 해제하고 같은 층 빈 슬롯을 녹색으로 표시한다.
+# 드래그를 시작하면서 상점 선택을 해제하고 같은 층의 이동·머지 가능 슬롯을 표시한다.
 func _begin_tower_drag(tower: PrototypeTower, origin: PrototypeTowerSlot, local_pointer: Vector2) -> void:
 	dragged_tower = tower
 	dragged_origin_slot = origin
@@ -365,7 +424,7 @@ func _begin_tower_drag(tower: PrototypeTower, origin: PrototypeTowerSlot, local_
 	selected_shop_card = -1
 	tower.z_index = 20
 	tower.modulate = Color(1.0, 1.0, 1.0, 0.78)
-	status_label.text = "같은 층의 빈 슬롯으로 드래그하세요"
+	status_label.text = "빈 슬롯으로 이동하거나 같은 터렛 위에 놓아 머지하세요"
 	_update_drag_slot_states(null)
 	_update_shop_cards()
 
@@ -380,12 +439,17 @@ func _update_tower_drag(local_pointer: Vector2) -> void:
 	_update_drag_slot_states(dragged_target_slot)
 
 
-# 포인터 위치에서 같은 층의 비어 있는 슬롯만 드롭 대상으로 반환한다.
+# 포인터 위치에서 같은 층의 빈 슬롯 또는 머지 가능한 점유 슬롯을 드롭 대상으로 반환한다.
 func _nearest_drag_target(local_pointer: Vector2, floor_index: int) -> PrototypeTowerSlot:
 	var nearest: PrototypeTowerSlot = null
 	var nearest_distance := 70.0
 	for slot in tower_slots:
-		if slot.floor_index != floor_index or not slot.is_empty():
+		if slot.floor_index != floor_index or slot == dragged_origin_slot:
+			continue
+		var eligible := slot.is_empty()
+		if not eligible:
+			eligible = _can_merge_towers(dragged_tower, slot.occupant as PrototypeTower)
+		if not eligible:
 			continue
 		var distance := local_pointer.distance_to(slot.position)
 		if distance < nearest_distance:
@@ -394,18 +458,65 @@ func _nearest_drag_target(local_pointer: Vector2, floor_index: int) -> Prototype
 	return nearest
 
 
-# 같은 층 빈 슬롯이면 점유 관계를 옮기고, 그 외 위치라면 원래 슬롯으로 되돌린다.
+# 같은 층의 동일 터렛이면 머지하고, 빈 슬롯이면 이동하며, 그 외 위치라면 원래 슬롯으로 되돌린다.
 func _finish_tower_drag() -> void:
 	if dragged_tower == null or not is_instance_valid(dragged_tower):
 		_cancel_tower_drag()
 		return
-	var moved := _relocate_tower(dragged_tower, dragged_target_slot)
-	if moved:
+	var merged := _merge_tower(dragged_tower, dragged_target_slot)
+	var moved := false
+	if not merged:
+		moved = _relocate_tower(dragged_tower, dragged_target_slot)
+	if merged:
+		status_label.text = "터렛을 상위 Tier로 머지했습니다"
+	elif moved:
 		status_label.text = "터렛 위치를 변경했습니다"
 	else:
 		dragged_tower.position = dragged_origin_slot.position
-		status_label.text = "같은 층의 빈 슬롯으로만 이동할 수 있습니다"
+		status_label.text = "같은 층의 빈 슬롯 또는 동일 Tier 터렛에만 놓을 수 있습니다"
 	_clear_tower_drag_visuals()
+
+
+# 두 설치 터렛이 같은 층·동일 ID와 Tier이며 상위 데이터가 있을 때만 머지 대상으로 인정한다.
+func _can_merge_towers(source: PrototypeTower, target: PrototypeTower) -> bool:
+	if phase != Phase.READY or source == null or target == null:
+		return false
+	if not is_instance_valid(source) or not is_instance_valid(target) or source == target:
+		return false
+	if source.floor_index != target.floor_index:
+		return false
+	if source.turret_id != target.turret_id or source.tier != target.tier:
+		return false
+	if source.next_turret_id.is_empty() or source.next_turret_id == "-1":
+		return false
+	return not database.get_turret_data(source.next_turret_id).is_empty()
+
+
+# 드래그한 터렛과 대상 터렛을 소비하고 대상 슬롯에 데이터 테이블의 상위 터렛을 생성한다.
+func _merge_tower(source: PrototypeTower, target_slot: PrototypeTowerSlot) -> bool:
+	if source == null or target_slot == null or target_slot.is_empty():
+		return false
+	var target := target_slot.occupant as PrototypeTower
+	if not _can_merge_towers(source, target):
+		return false
+	var origin := tower_slot_by_instance_id.get(source.get_instance_id()) as PrototypeTowerSlot
+	if origin == null or origin == target_slot:
+		return false
+	var upgraded_turret_id := source.next_turret_id
+	origin.clear_occupant()
+	target_slot.clear_occupant()
+	tower_slot_by_instance_id.erase(source.get_instance_id())
+	tower_slot_by_instance_id.erase(target.get_instance_id())
+	towers.erase(source)
+	towers.erase(target)
+	source.queue_free()
+	target.queue_free()
+	var upgraded_tower := _spawn_tower_in_slot(target_slot, upgraded_turret_id)
+	if upgraded_tower == null:
+		push_error("Could not create merged turret: %s" % upgraded_turret_id)
+		return false
+	upgraded_tower.play_upgrade_effect()
+	return true
 
 
 # 터렛과 대상 슬롯이 확정 규칙을 만족할 때만 슬롯 점유 관계와 좌표를 변경한다.
@@ -443,10 +554,12 @@ func _clear_tower_drag_visuals() -> void:
 	drag_pointer_offset = Vector2.ZERO
 
 
-# 드래그 중 같은 층의 빈 슬롯 전체와 현재 드롭 대상 슬롯을 구분해 강조한다.
+# 드래그 중 같은 층의 빈 슬롯과 머지 가능한 동일 터렛 슬롯을 구분해 강조한다.
 func _update_drag_slot_states(target: PrototypeTowerSlot) -> void:
 	for slot in tower_slots:
-		var eligible := dragged_tower != null and slot.floor_index == dragged_tower.floor_index and slot.is_empty()
+		var eligible := false
+		if dragged_tower != null and slot.floor_index == dragged_tower.floor_index and slot != dragged_origin_slot:
+			eligible = slot.is_empty() or _can_merge_towers(dragged_tower, slot.occupant as PrototypeTower)
 		slot.set_drag_state(eligible, eligible and slot == target)
 
 
@@ -648,9 +761,9 @@ func _on_tower_slot_pressed(slot: PrototypeTowerSlot) -> void:
 	status_label.text = "상점 카드를 이 빈 슬롯으로 드래그하세요"
 
 
-# 터렛 ID를 데이터로 변환해 오브젝트를 생성하고 슬롯과 파괴 신호를 연결한다.
+# 터렛 ID를 데이터로 변환해 오브젝트를 생성하고 슬롯 점유 관계를 연결한다.
 # 자동 테스트는 use_shop_card=false와 override ID로 경제 차감 없이 배치할 수 있다.
-func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_override: String = "") -> void:
+func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_override: String = "") -> PrototypeTower:
 	var turret_id := turret_id_override
 	if use_shop_card:
 		turret_id = shop_turret_ids[selected_shop_card]
@@ -659,34 +772,36 @@ func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_overr
 	var tower_data := database.get_turret_data(turret_id)
 	if tower_data.is_empty():
 		push_error("Cannot place unknown turret: %s" % turret_id)
-		return
+		return null
 	var tower_cost := int(tower_data.get("base_price", 0))
 	if use_shop_card:
 		gold -= tower_cost
 		shop_card_available[selected_shop_card] = false
 		selected_shop_card = -1
+	var tower := _spawn_tower_in_slot(slot, turret_id)
+	if tower == null:
+		return null
+	_update_interface()
+	_update_shop_cards()
+	return tower
+
+
+# 구매·자동 테스트·머지가 공유하도록 한 ID의 터렛을 지정 슬롯에 생성하는 순수 배치 도우미다.
+func _spawn_tower_in_slot(slot: PrototypeTowerSlot, turret_id: String) -> PrototypeTower:
+	if slot == null or not slot.is_empty():
+		return null
+	var tower_data := database.get_turret_data(turret_id)
+	if tower_data.is_empty():
+		return null
 	var tower := TowerScript.new() as PrototypeTower
 	tower.position = slot.position
 	tower.setup(tower_data, slot.floor_index)
-	tower.tower_destroyed.connect(_on_tower_destroyed)
+	tower.enabled = phase == Phase.WAVE
 	add_child(tower)
 	towers.append(tower)
 	slot.set_occupant(tower)
 	tower_slot_by_instance_id[tower.get_instance_id()] = slot
-	_update_interface()
-	_update_shop_cards()
-
-
-# 파괴된 터렛을 활성 목록과 현재 슬롯에서 제거하고 관련 자동 테스트 상태를 기록한다.
-func _on_tower_destroyed(tower: PrototypeTower) -> void:
-	var instance_id := tower.get_instance_id()
-	var slot := tower_slot_by_instance_id.get(instance_id) as PrototypeTowerSlot
-	towers.erase(tower)
-	if slot != null:
-		slot.clear_occupant()
-	tower_slot_by_instance_id.erase(instance_id)
-	if automated_test_expects_tower_destruction:
-		automated_test_tower_was_destroyed = true
+	return tower
 
 
 # 현재 SpawnTable이 유효한지 확인하고 카운터/터렛 쿨다운을 초기화해 전투를 시작한다.
@@ -710,6 +825,12 @@ func _start_wave() -> void:
 
 # 테스트 종류에 필요한 터렛을 자동 배치한 뒤 정비 시간을 건너뛰고 웨이브를 시작한다.
 func _start_automated_test() -> void:
+	if automated_test_merge:
+		_run_merge_automated_test()
+		return
+	if automated_test_shop_merge:
+		_run_shop_merge_automated_test()
+		return
 	if automated_test_wave_features:
 		_run_wave_features_automated_test()
 		return
@@ -728,16 +849,11 @@ func _start_automated_test() -> void:
 	if automated_test_economy:
 		_run_economy_automated_test()
 		return
-	if automated_test_expects_tower_destruction:
-		_place_tower(tower_slots[0], false, "turretMelee1")
-	elif not automated_test_expects_defeat:
+	if not automated_test_expects_defeat:
 		# 승리 회귀 테스트는 밸런스 초안 변화와 무관하게 전체 진행을 검증하도록 모든 층에 최고 Tier 터렛을 배치한다.
 		for slot in tower_slots:
 			_place_tower(slot, false, "turretRanged4")
 	_start_wave()
-	if automated_test_expects_tower_destruction:
-		for tower in towers:
-			tower.enabled = false
 
 
 # 경로와 수직으로 떨어진 근접 포탑이 같은 층·수평 사거리 안의 적을 찾아 실제 피해를 주는지 검증한다.
@@ -755,6 +871,8 @@ func _run_melee_attack_automated_test() -> void:
 	target_monster.scale = Vector2.ONE
 	monsters.append(target_monster)
 	var initial_hp := target_monster.hp
+	# 낮에는 새로 배치된 터렛도 공격하지 않으므로 실제 전투 단계인 밤으로 전환한 뒤 피해를 검증한다.
+	_set_phase(Phase.WAVE)
 	var selected_target := melee_tower.call("_select_target") as PrototypeMonster
 	melee_tower._process(melee_tower.attack_interval_sec)
 	var passed := selected_target == target_monster and is_equal_approx(target_monster.hp, initial_hp - melee_tower.damage)
@@ -766,24 +884,37 @@ func _run_melee_attack_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
-# 웨이브 클리어가 생존 터렛을 완전 회복하고 선택한 배속을 ×1로 초기화하는지 검증한다.
+# 불파괴 터렛, 낮/밤 명칭과 선택한 배속의 낮 전환 초기화를 함께 검증한다.
 func _run_wave_features_automated_test() -> void:
 	_place_tower(tower_slots[0], false, "turretMelee1")
 	var test_tower := towers[0]
-	test_tower.take_damage(test_tower.max_hp * 0.5)
-	var tower_was_damaged := test_tower.hp < test_tower.max_hp
+	var monster_data := database.get_monster_data("normal1")
+	var passing_monster := MonsterScript.new() as PrototypeMonster
+	passing_monster.setup(monster_data, movement_path)
+	add_child(passing_monster)
+	passing_monster.position = Vector2(test_tower.position.x, COMBAT_LANE_Y[0])
+	passing_monster.path_index = 2
+	passing_monster.move_state = PrototypeMonster.MoveState.WALKING
+	passing_monster.scale = Vector2.ONE
+	monsters.append(passing_monster)
+	var monster_start_x := passing_monster.position.x
 	# 이 테스트에서만 일반 플레이 배속 분기를 실행하고, 종료 전 자동 테스트 상태를 복원한다.
 	automated_test_mode = false
 	_set_phase(Phase.WAVE)
 	_on_speed_button_pressed(3)
-	var triple_speed_applied := game_speed_multiplier == 3 and is_equal_approx(Engine.time_scale, 3.0) and speed_buttons[2].visible
+	passing_monster._process(0.1)
+	var night_state_ok := phase_label.text == "밤" and speed_buttons[2].visible
+	var triple_speed_applied := game_speed_multiplier == 3 and is_equal_approx(Engine.time_scale, 3.0)
+	var tower_remained_fixed := is_instance_valid(test_tower) and towers.has(test_tower) and passing_monster.position.x < monster_start_x
+	monsters.erase(passing_monster)
+	passing_monster.queue_free()
 	_complete_wave()
-	var tower_fully_restored := is_equal_approx(test_tower.hp, test_tower.max_hp)
-	var speed_reset := game_speed_multiplier == 1 and is_equal_approx(Engine.time_scale, 1.0) and not speed_buttons[0].visible
-	var passed := tower_was_damaged and triple_speed_applied and tower_fully_restored and speed_reset and phase == Phase.READY
+	var day_state_ok := phase_label.text.begins_with("낮") and not speed_buttons[0].visible
+	var speed_reset := game_speed_multiplier == 1 and is_equal_approx(Engine.time_scale, 1.0)
+	var passed := night_state_ok and triple_speed_applied and tower_remained_fixed and day_state_ok and speed_reset and phase == Phase.READY
 	automated_test_mode = true
 	if passed:
-		print("Automated wave feature test passed: TOWER_HEAL_AND_SPEED_CONTROLS")
+		print("Automated wave feature test passed: INDESTRUCTIBLE_TOWER_DAY_NIGHT_SPEED")
 	else:
 		push_error("Automated wave feature test failed.")
 	Engine.time_scale = 1.0
@@ -804,6 +935,41 @@ func _run_shop_drag_automated_test() -> void:
 		print("Automated shop drag test passed: PAY_ON_VALID_DROP")
 	else:
 		push_error("Automated shop drag test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
+# 밤에도 상점 카드만 동일 ID·Tier 터렛과 구매 머지되고, 호환되지 않는 점유 슬롯은 결제 없이 거부되는지 검증한다.
+func _run_shop_merge_automated_test() -> void:
+	var card_index := 0
+	var merge_target_slot := tower_slots[0]
+	var incompatible_slot := tower_slots[1]
+	var original_target := _place_tower(merge_target_slot, false, "turretMelee1")
+	_place_tower(incompatible_slot, false, "turretDot1")
+	shop_turret_ids[card_index] = "turretMelee1"
+	shop_card_available[card_index] = true
+	var tower_data := database.get_turret_data("turretMelee1")
+	var tower_cost := int(tower_data.get("base_price", -1))
+	var starting_gold := gold
+	_set_phase(Phase.WAVE)
+	var incompatible_rejected := not _purchase_shop_card_to_slot(card_index, incompatible_slot) and gold == starting_gold and shop_card_available[card_index]
+	var merged_at_night := _purchase_shop_card_to_slot(card_index, merge_target_slot)
+	var upgraded := merge_target_slot.occupant as PrototypeTower
+	var passed := incompatible_rejected \
+		and merged_at_night \
+		and phase == Phase.WAVE \
+		and gold == starting_gold - tower_cost \
+		and not shop_card_available[card_index] \
+		and not towers.has(original_target) \
+		and upgraded != null \
+		and upgraded.turret_id == "turretMelee2" \
+		and upgraded.tier == 2 \
+		and upgraded.enabled \
+		and upgraded.upgrade_effect_remaining_sec > 0.0
+	if passed:
+		print("Automated shop merge test passed: NIGHT_PURCHASE_MERGE_PAY_ON_SUCCESS")
+	else:
+		push_error("Automated shop merge test failed.")
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -843,6 +1009,41 @@ func _run_drag_automated_test() -> void:
 		print("Automated drag test passed: SAME_FLOOR_ONLY")
 	else:
 		push_error("Automated drag test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
+# 낮·같은 층·동일 ID/Tier만 머지되고 상위 데이터 스탯과 외형 Tier가 적용되는지 검증한다.
+func _run_merge_automated_test() -> void:
+	var source_slot := tower_slots[0]
+	var target_slot := tower_slots[1]
+	var cross_floor_slot := tower_slots[5]
+	var different_type_slot := tower_slots[2]
+	var source := _place_tower(source_slot, false, "turretMelee1")
+	var target := _place_tower(target_slot, false, "turretMelee1")
+	var cross_floor_target := _place_tower(cross_floor_slot, false, "turretMelee1")
+	var different_type_target := _place_tower(different_type_slot, false, "turretDot1")
+	var no_automatic_merge := source_slot.occupant == source and target_slot.occupant == target and towers.has(source) and towers.has(target)
+	var cross_floor_rejected := not _can_merge_towers(source, cross_floor_target)
+	var different_type_rejected := not _can_merge_towers(source, different_type_target)
+	_set_phase(Phase.WAVE)
+	var night_merge_rejected := not _can_merge_towers(source, target)
+	_set_phase(Phase.READY)
+	var merged := _merge_tower(source, target_slot)
+	var upgraded := target_slot.occupant as PrototypeTower
+	var upgraded_data := database.get_turret_data("turretMelee2")
+	var upgraded_stats_applied := upgraded != null \
+		and upgraded.turret_id == "turretMelee2" \
+		and upgraded.tier == int(upgraded_data.get("tier", -1)) \
+		and is_equal_approx(upgraded.damage, float(upgraded_data.get("damage", -1.0))) \
+		and is_equal_approx(upgraded.attack_interval_sec, float(upgraded_data.get("attack_interval_sec", -1.0))) \
+		and upgraded.upgrade_effect_remaining_sec > 0.0
+	var source_consumed := source_slot.is_empty() and not towers.has(source) and not towers.has(target)
+	var passed := no_automatic_merge and cross_floor_rejected and different_type_rejected and night_merge_rejected and merged and source_consumed and upgraded_stats_applied
+	if passed:
+		print("Automated merge test passed: MANUAL_SAME_FLOOR_DAY_DATA_DRIVEN")
+	else:
+		push_error("Automated merge test failed.")
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -919,27 +1120,18 @@ func _on_monster_reached_deepest_floor(monster: PrototypeMonster) -> void:
 		_set_phase(Phase.DEFEAT)
 
 
-# 웨이브 클리어 보상으로 생존 터렛을 모두 회복한 뒤 다음 정비 또는 최종 승리로 전환한다.
+# 밤의 모든 몬스터를 처치하면 다음 낮 또는 최종 승리로 전환한다.
 func _complete_wave() -> void:
-	_restore_all_towers()
 	if current_wave_number >= database.define_int("totalWaveCount", 1):
 		_set_phase(Phase.VICTORY)
 		return
 	current_wave_number += 1
 	_begin_preparation(false)
-	status_label.text = "웨이브 클리어 · 모든 터렛 체력 회복"
+	status_label.text = "밤 방어 완료 · 낮 시작"
 	_update_interface()
 	# 헤드리스 전체 승리 테스트는 사용자 입력이 없으므로 다음 정비 단계를 즉시 건너뛴다.
 	if automated_test_mode:
 		call_deferred("_start_wave")
-
-
-# 파괴되지 않고 현재 설치된 모든 터렛에 완전 회복을 적용한다.
-func _restore_all_towers() -> void:
-	for tower in towers:
-		if is_instance_valid(tower):
-			tower.restore_full_health()
-
 
 # 단계에 맞춰 터렛 공격, 슬롯 입력, 몬스터 진행, HUD를 일괄 전환한다.
 func _set_phase(next_phase: Phase) -> void:
@@ -948,6 +1140,7 @@ func _set_phase(next_phase: Phase) -> void:
 	if next_phase != Phase.READY and dragged_tower != null:
 		_cancel_tower_drag()
 	phase = next_phase
+	_start_day_night_transition(automated_test_mode)
 	for tower in towers:
 		if is_instance_valid(tower):
 			tower.enabled = phase == Phase.WAVE
@@ -972,14 +1165,25 @@ func _set_phase(next_phase: Phase) -> void:
 		call_deferred("_finish_automated_test")
 
 
-# 기대 단계와 터렛 파괴 여부를 비교해 헤드리스 테스트 종료 코드를 결정한다.
+# 현재 단계에 맞춰 낮/밤 색조를 즉시 적용하거나 짧은 Tween으로 전환한다.
+func _start_day_night_transition(instant: bool = false) -> void:
+	var target_amount := 1.0 if phase == Phase.WAVE or phase == Phase.DEFEAT else 0.0
+	if day_night_tween != null and day_night_tween.is_valid():
+		day_night_tween.kill()
+	if instant:
+		night_visual_amount = target_amount
+		return
+	day_night_tween = create_tween()
+	day_night_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	day_night_tween.tween_property(self, "night_visual_amount", target_amount, 0.7)
+
+
+# 기대 승패 단계와 실제 결과를 비교해 헤드리스 테스트 종료 코드를 결정한다.
 func _finish_automated_test() -> void:
 	var expected_phase := Phase.DEFEAT if automated_test_expects_defeat else Phase.VICTORY
 	var passed := phase == expected_phase
-	if automated_test_expects_tower_destruction:
-		passed = passed and automated_test_tower_was_destroyed
 	if passed:
-		var result_name := "TOWER_DESTROYED_THEN_DEFEAT" if automated_test_expects_tower_destruction else ("DEFEAT" if automated_test_expects_defeat else "VICTORY")
+		var result_name := "DEFEAT" if automated_test_expects_defeat else "VICTORY"
 		print("Automated wave test passed: %s" % result_name)
 	else:
 		push_error("Automated wave test reached an unexpected result.")
@@ -1081,24 +1285,24 @@ func _update_interface() -> void:
 	gold_label.text = "GOLD  %d" % gold
 	match phase:
 		Phase.READY:
-			phase_label.text = "정비  %d초" % ceili(preparation_remaining_sec)
+			phase_label.text = "낮  %d초" % ceili(preparation_remaining_sec)
 			# 선택·구매·드래그 결과 메시지는 다음 사용자 행동까지 유지하고 빈 경우에만 기본 안내를 채운다.
 			if status_label.text.is_empty():
 				status_label.text = "터렛을 구매해 배치하세요"
-			action_button.text = "%d 웨이브 조기 시작" % current_wave_number
+			action_button.text = "%d번째 밤 시작" % current_wave_number
 			action_button.disabled = false
 		Phase.WAVE:
-			phase_label.text = "전투 진행"
-			status_label.text = "방어 중  %d / %d 처치" % [defeated_count, wave_total]
-			action_button.text = "웨이브 진행 중"
+			phase_label.text = "밤"
+			status_label.text = "밤 방어 중  %d / %d 처치" % [defeated_count, wave_total]
+			action_button.text = "밤 진행 중"
 			action_button.disabled = true
 		Phase.VICTORY:
-			phase_label.text = "모든 웨이브 방어 완료"
+			phase_label.text = "모든 밤 방어 완료"
 			status_label.text = "방어 성공"
 			action_button.text = "프로토타입 초기화"
 			action_button.disabled = false
 		Phase.DEFEAT:
-			phase_label.text = "최심부 코어 침입"
+			phase_label.text = "밤 · 최심부 코어 침입"
 			status_label.text = "최심부 침입 · 패배"
 			action_button.text = "프로토타입 초기화"
 			action_button.disabled = false
@@ -1108,9 +1312,21 @@ func _update_interface() -> void:
 func _draw() -> void:
 	# Header / ground staging area.
 	draw_rect(Rect2(24.0, 20.0, 1872.0, 750.0), Color("253044"), true)
-	draw_rect(Rect2(32.0, 28.0, 1856.0, 152.0), Color("6ca4cb"), true)
-	draw_rect(Rect2(32.0, 142.0, 1856.0, 38.0), Color("759b60"), true)
+	var sky_color := Color("6ca4cb").lerp(Color("172847"), night_visual_amount)
+	var ground_color := Color("759b60").lerp(Color("34485a"), night_visual_amount)
+	draw_rect(Rect2(32.0, 28.0, 1856.0, 152.0), sky_color, true)
+	draw_rect(Rect2(32.0, 142.0, 1856.0, 38.0), ground_color, true)
 	draw_rect(Rect2(32.0, 174.0, 1856.0, 12.0), Color("283342"), true)
+	# 낮에는 해가, 밤에는 달과 별이 서서히 나타나 단계 전환을 즉시 알아볼 수 있게 한다.
+	var day_alpha := 1.0 - night_visual_amount
+	if day_alpha > 0.01:
+		draw_circle(Vector2(1480.0, 100.0), 25.0, Color(1.0, 0.83, 0.35, day_alpha))
+	if night_visual_amount > 0.01:
+		var night_alpha := night_visual_amount
+		draw_circle(Vector2(1480.0, 100.0), 23.0, Color(0.86, 0.91, 1.0, night_alpha))
+		draw_circle(Vector2(1490.0, 91.0), 22.0, Color(sky_color.r, sky_color.g, sky_color.b, night_alpha))
+		for star_position in [Vector2(1300.0, 72.0), Vector2(1370.0, 122.0), Vector2(1580.0, 70.0), Vector2(1640.0, 130.0)]:
+			draw_circle(star_position, 3.0, Color(0.92, 0.95, 1.0, night_alpha))
 
 	# Entrance skyline and the dedicated descent shaft.
 	draw_rect(Rect2(1690.0, 88.0, 150.0, 86.0), Color("39465c"), true)
@@ -1120,7 +1336,11 @@ func _draw() -> void:
 	draw_line(Vector2(PATH_LEFT_X, 150.0), Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]), Color("90a1b7"), 7.0)
 
 	# Three playable underground floors.
-	var floor_colors := [Color("473f49"), Color("403943"), Color("39343f")]
+	var floor_colors := [
+		Color("473f49").lerp(Color("292b3d"), night_visual_amount),
+		Color("403943").lerp(Color("252838"), night_visual_amount),
+		Color("39343f").lerp(Color("202432"), night_visual_amount),
+	]
 	for index in 3:
 		draw_rect(Rect2(32.0, FLOOR_TOP_Y[index], 1856.0, 180.0), floor_colors[index], true)
 		draw_line(Vector2(36.0, FLOOR_TOP_Y[index] + 10.0), Vector2(1884.0, FLOOR_TOP_Y[index] + 10.0), Color("655b65"), 5.0)

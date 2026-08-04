@@ -1,7 +1,7 @@
 class_name PrototypeMonster
 extends Node2D
 
-# 웨이브에 생성되는 몬스터 한 개의 이동·전투·상태 이상을 담당한다.
+# 밤에 생성되는 몬스터 한 개의 이동·피격·상태 이상을 담당한다.
 # 실제 플랫폼 물리 없이 고정 웨이포인트와 상태 전환으로 층을 이동한다.
 
 # 처치와 최심부 도달은 보상/패배 처리를 위해 게임 컨트롤러에 알린다.
@@ -9,21 +9,17 @@ signal defeated(monster: PrototypeMonster)
 signal reached_deepest_floor(monster: PrototypeMonster)
 
 # SPAWNING부터 DEAD까지 몬스터의 현재 행동을 명시적으로 구분한다.
-enum MoveState { SPAWNING, WALKING, DESCENDING, ATTACKING, STUNNED, EXIT, DEAD }
+enum MoveState { SPAWNING, WALKING, DESCENDING, STUNNED, EXIT, DEAD }
 
 # 데이터 식별자와 표시용 속성이다.
 var monster_id: String = ""
 var display_name: String = ""
 var monster_type: String = "NORMAL"
 
-# 기본 전투 능력치다. 원본 Monster 컬럼과 prototypeExtensions를 정규화한 값이다.
+# 기본 전투 능력치다. 원본 Monster 컬럼과 표시용 prototypeExtensions를 정규화한 값이다.
 var max_hp: float = 1.0
 var hp: float = 1.0
 var move_speed_px_sec: float = 1.0
-var attack_damage: float = 1.0
-var attack_interval_sec: float = 1.0
-var attack_range_px: float = 1.0
-var attack_cooldown_sec: float = 0.0
 var reward_gold: int = 0
 var body_color := Color("d96772")
 
@@ -57,9 +53,6 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	max_hp = float(config.get("max_hp", 1.0))
 	hp = max_hp
 	move_speed_px_sec = float(config.get("move_speed_px_sec", 1.0))
-	attack_damage = float(config.get("attack_damage", 1.0))
-	attack_interval_sec = float(config.get("attack_interval_sec", 1.0))
-	attack_range_px = float(config.get("attack_range_px", 1.0))
 	reward_gold = int(config.get("reward_gold", 0))
 	body_color = Color(str(config.get("color_hex", "d96772")))
 	stun_remaining_sec = 0.0
@@ -77,7 +70,7 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	queue_redraw()
 
 
-# 상태 이상, 등장 연출, 터렛 공격, 웨이포인트 이동을 우선순위대로 처리한다.
+# 상태 이상, 등장 연출과 웨이포인트 이동을 우선순위대로 처리한다.
 func _process(delta: float) -> void:
 	_process_status_effects(delta)
 	if move_state == MoveState.DEAD:
@@ -102,15 +95,6 @@ func _process(delta: float) -> void:
 		return
 	if _is_floor_transfer_origin():
 		_begin_floor_transfer()
-		return
-
-	var blocking_tower := _find_blocking_tower()
-	if blocking_tower != null:
-		move_state = MoveState.ATTACKING
-		attack_cooldown_sec = maxf(0.0, attack_cooldown_sec - delta)
-		if attack_cooldown_sec <= 0.0:
-			blocking_tower.take_damage(attack_damage)
-			attack_cooldown_sec = attack_interval_sec
 		return
 
 	if path_index >= path_points.size() - 1:
@@ -225,24 +209,6 @@ func current_combat_floor() -> int:
 		6:
 			return 2
 	return -1
-
-
-# 현재 층에서 공격 사거리 안에 있는 가장 가까운 생존 터렛을 찾는다.
-func _find_blocking_tower() -> PrototypeTower:
-	var current_floor := current_combat_floor()
-	if current_floor < 0:
-		return null
-	var closest: PrototypeTower = null
-	var closest_distance := INF
-	for node in get_tree().get_nodes_in_group("prototype_towers"):
-		var candidate := node as PrototypeTower
-		if candidate == null or candidate.hp <= 0.0 or candidate.floor_index != current_floor:
-			continue
-		var distance := global_position.distance_to(candidate.global_position)
-		if distance <= attack_range_px and distance < closest_distance:
-			closest_distance = distance
-			closest = candidate
-	return closest
 
 
 # 터렛 표적 우선순위용 진행도다. 경로 인덱스가 높을수록 코어에 더 가깝다.

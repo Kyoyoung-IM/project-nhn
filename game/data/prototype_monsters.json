@@ -2,43 +2,43 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / monster",
-    "note": "Read-only source snapshot. Attack fields, displayName and colorHex are local prototype extensions; source IDs including spped1/spped2 are preserved. See REQUEST.md."
+    "note": "Read-only source snapshot. displayName and colorHex are local visual prototype extensions; source IDs including spped1/spped2 are preserved. This branch does not add monster attack fields."
   },
   "rows": [
     {
       "monsterId": "normal1", "type": "normal", "baseHp": 100, "moveSpeed": 1.0, "rewardGold": 1,
       "prefabResource": "prefab_normal1",
-      "prototypeExtensions": {"displayName": "일반 몬스터", "attackDamage": 10.0, "attackIntervalSec": 1.0, "attackRange": 56.0, "colorHex": "d96772"}
+      "prototypeExtensions": {"displayName": "일반 몬스터", "colorHex": "d96772"}
     },
     {
       "monsterId": "normal2", "type": "normal", "baseHp": 110, "moveSpeed": 1.0, "rewardGold": 1,
       "prefabResource": "prefab_normal2",
-      "prototypeExtensions": {"displayName": "일반 몬스터 II", "attackDamage": 10.0, "attackIntervalSec": 1.0, "attackRange": 56.0, "colorHex": "d96772"}
+      "prototypeExtensions": {"displayName": "일반 몬스터 II", "colorHex": "d96772"}
     },
     {
       "monsterId": "spped1", "type": "speed", "baseHp": 50, "moveSpeed": 2.0, "rewardGold": 2,
       "prefabResource": "prefab_spped1",
-      "prototypeExtensions": {"displayName": "고속 몬스터", "attackDamage": 8.0, "attackIntervalSec": 0.72, "attackRange": 52.0, "colorHex": "ffb65f"}
+      "prototypeExtensions": {"displayName": "고속 몬스터", "colorHex": "ffb65f"}
     },
     {
       "monsterId": "spped2", "type": "speed", "baseHp": 55, "moveSpeed": 2.0, "rewardGold": 2,
       "prefabResource": "prefab_spped2",
-      "prototypeExtensions": {"displayName": "고속 몬스터 II", "attackDamage": 8.0, "attackIntervalSec": 0.72, "attackRange": 52.0, "colorHex": "ffb65f"}
+      "prototypeExtensions": {"displayName": "고속 몬스터 II", "colorHex": "ffb65f"}
     },
     {
       "monsterId": "tank1", "type": "tank", "baseHp": 200, "moveSpeed": 0.5, "rewardGold": 3,
       "prefabResource": "prefab_tank1",
-      "prototypeExtensions": {"displayName": "중장 몬스터", "attackDamage": 18.0, "attackIntervalSec": 1.2, "attackRange": 60.0, "colorHex": "a96f78"}
+      "prototypeExtensions": {"displayName": "중장 몬스터", "colorHex": "a96f78"}
     },
     {
       "monsterId": "tank2", "type": "tank", "baseHp": 220, "moveSpeed": 0.5, "rewardGold": 3,
       "prefabResource": "prefab_tank2",
-      "prototypeExtensions": {"displayName": "중장 몬스터 II", "attackDamage": 18.0, "attackIntervalSec": 1.2, "attackRange": 60.0, "colorHex": "a96f78"}
+      "prototypeExtensions": {"displayName": "중장 몬스터 II", "colorHex": "a96f78"}
     },
     {
       "monsterId": "boss1", "type": "boss", "baseHp": 500, "moveSpeed": 1.0, "rewardGold": 555555,
       "prefabResource": "prefab_boss1",
-      "prototypeExtensions": {"displayName": "보스 몬스터", "attackDamage": 26.0, "attackIntervalSec": 1.0, "attackRange": 65.0, "colorHex": "8d405e"}
+      "prototypeExtensions": {"displayName": "보스 몬스터", "colorHex": "8d405e"}
     }
   ]
 }

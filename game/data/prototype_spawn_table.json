@@ -2,7 +2,7 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / spawntable",
-    "note": "Read-only source snapshot. wave3 duplicate spawnOrder rows intentionally preserve source row order; wave5 is missing. See REQUEST.md."
+    "note": "Read-only source snapshot. wave3 duplicate spawnOrder rows intentionally preserve source row order; wave5 is missing. See Design Request/20260803 REQUEST.md."
   },
   "rows": [
     {"waveGroup": "wave1", "monsterId": "normal1", "spawnOrder": 1, "value": 2},

@@ -97,7 +97,7 @@ func _draw_hover_state() -> void:
 	_draw_tower_icon(Vector2(size.x * 0.5, 91.0), tower_color.darkened(0.42), 1.2)
 	draw_line(Vector2(24.0, 150.0), Vector2(size.x - 24.0, 150.0), Color("345667"), 2.0)
 	_draw_centered_text(_effect_description(), 177.0, 21, Color("fff1dc"))
-	_draw_centered_text("HP %.0f   ATK %.0f" % [float(tower_data.get("max_hp", 0.0)), float(tower_data.get("damage", 0.0))], 207.0, 19, Color("d9e6ec"))
+	_draw_centered_text("공격력  %.0f" % float(tower_data.get("damage", 0.0)), 207.0, 19, Color("d9e6ec"))
 	_draw_centered_text("주기 %.2fs   사거리 %.0f" % [float(tower_data.get("attack_interval_sec", 0.0)), float(tower_data.get("range_px", 0.0))], 234.0, 18, Color("bdced7"))
 	_draw_centered_text("%d G" % int(tower_data.get("base_price", 0)), 263.0, 21, Color("f5d76e"))
 
