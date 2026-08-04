@@ -85,6 +85,16 @@ func _init() -> void:
 	if not is_equal_approx(float(dot_turret.get("cc_value", 0.0)), 0.5):
 		_fail("percentage ccValue must be normalized to a 0-1 ratio")
 		return
+	# 2026-08-04 최신 turret 시트의 사거리 변경이 런타임 슬롯 간격(180px)으로 정확히 변환돼야 한다.
+	if not is_equal_approx(float(dot_turret.get("range_px", -1.0)), 36.0):
+		_fail("turretDot1 range must match the latest source value 0.2 slots")
+		return
+	if not is_equal_approx(float(database.get_turret_data("turretStun1").get("range_px", -1.0)), 360.0):
+		_fail("turretStun1 range must match the latest source value 2 slots")
+		return
+	if not is_equal_approx(float(database.get_turret_data("turretSlow1").get("range_px", -1.0)), 360.0):
+		_fail("turretSlow1 range must match the latest source value 2 slots")
+		return
 
 	print("Prototype data validation passed.")
 	quit(0)
