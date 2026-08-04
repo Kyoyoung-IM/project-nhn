@@ -5,6 +5,30 @@ extends Node2D
 # 데이터베이스에서 정규화된 설정을 받아 표적 선택, 공격과 타입별 연출을 처리한다.
 # 이 분기에서 터렛은 체력과 사망 상태가 없는 고정 불파괴 오브젝트다.
 
+const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
+const TowerProjectileScript := preload("res://scripts/tower_projectile.gd")
+const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
+
+# Tier가 높아질수록 본체가 조금씩 커져 머지 결과를 실루엣만으로도 구분할 수 있다.
+# 이 값은 기존 더미 도형의 반경과 무관한 실제 스프라이트 표시 크기다.
+# 각 Tier의 실제 불투명 그림 면적이 아래 정사각형과 같은 면적이 되도록 정규화한다.
+# 캔버스 크기가 아닌 육안 면적을 기준으로 하므로 모든 포탑이 단계별로 일정하게 커진다.
+const BODY_VISIBLE_AREA_SIDE_BY_TIER := [132.0, 154.0, 178.0, 205.0]
+# 낮고 넓은 DOT Tier 4 실루엣은 같은 면적만으로는 Tier 3보다 작게 인식되므로 별도 목표를 사용한다.
+const DOT_TIER_4_BODY_VISIBLE_AREA_SIDE := 244.0
+const BODY_BOTTOM_Y := 100.0
+
+# 지속 피해 불꽃도 실제 불투명 영역을 기준으로 커지고, 본체 윗면과 조금 겹치게 결합한다.
+const DOT_EFFECT_VISIBLE_AREA_SIDE_BY_TIER := [82.0, 96.0, 112.0, 132.0]
+const DOT_TIER_4_EFFECT_VISIBLE_AREA_SIDE := 156.0
+const DOT_EFFECT_BODY_OVERLAP_BY_TIER := [18.0, 22.0, 60.0, 76.0]
+const STUN_LIGHTNING_BODY_WIDTH_RATIO := 1.14
+# 기존 144px 부유 높이의 2/3 지점으로 내려 발판과의 시각적 연결을 강화한다.
+const STUN_HOVER_HEIGHT := 96.0
+const STUN_HOVER_AMPLITUDE := 4.0
+# STUN 공격의 충전 시간은 피해 밸런스와 분리된 시각 전용 PLACEHOLDER 값이다.
+const STUN_CHARGE_DURATION_SEC := 0.38
+
 # 데이터 식별자와 머지 트리 정보다. 현재 머지 UI가 추가되면 이 값을 그대로 사용한다.
 var turret_id: String = ""
 var display_name: String = ""
@@ -27,15 +51,25 @@ var floor_index: int = 0
 # 머지할 때 두 재료의 값을 합쳐 상위 Tier에 넘기므로 판매가는 원본 구매 이력을 보존한다.
 var invested_gold: int = 0
 
-# 공격 재사용 대기시간 및 짧은 광선 피드백 상태다.
+# 공격 재사용 대기시간과 기절 포탑의 충전 상태다.
 var cooldown_sec: float = 0.0
 var enabled: bool = true
-var beam_end := Vector2.ZERO
-var beam_visible_sec: float = 0.0
+var stun_charge_remaining_sec: float = 0.0
+var stun_charge_target: Node2D
 
 # 머지 직후 상위 Tier가 생성됐음을 보여주는 코드 기반 승급 연출 시간이다.
 const UPGRADE_EFFECT_DURATION_SEC := 0.7
 var upgrade_effect_remaining_sec: float = 0.0
+
+# 본체와 상시 이펙트는 독립 노드다. 불꽃과 번개를 공격·상태 연출로 교체할 때
+# 본체 텍스처를 다시 만들지 않고 이 노드만 애니메이션하거나 숨길 수 있다.
+var body_sprite: Sprite2D
+var body_front_sprite: Sprite2D
+var idle_effect_sprite: Sprite2D
+var body_base_position := Vector2.ZERO
+var idle_effect_base_position := Vector2.ZERO
+var idle_effect_base_scale := Vector2.ONE
+var visual_elapsed_sec: float = 0.0
 
 
 # 로더가 만든 내부 설정을 복사하고 해당 층의 터렛 그룹에 등록한다.
@@ -54,15 +88,126 @@ func setup(config: Dictionary, assigned_floor_index: int, assigned_invested_gold
 	floor_index = assigned_floor_index
 	invested_gold = maxi(0, assigned_invested_gold)
 	cooldown_sec = 0.0
+	_refresh_visual_nodes()
 	add_to_group("prototype_towers")
 	queue_redraw()
+
+
+# 승인된 타입·Tier별 본체와 분리 이펙트 텍스처를 자식 Sprite2D에 연결한다.
+func _refresh_visual_nodes() -> void:
+	if body_sprite == null:
+		body_sprite = Sprite2D.new()
+		body_sprite.name = "BodySprite"
+		body_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(body_sprite)
+	if idle_effect_sprite == null:
+		idle_effect_sprite = Sprite2D.new()
+		idle_effect_sprite.name = "IdleEffectSprite"
+		idle_effect_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(idle_effect_sprite)
+	if body_front_sprite == null:
+		body_front_sprite = Sprite2D.new()
+		body_front_sprite.name = "BodyFrontSprite"
+		body_front_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(body_front_sprite)
+
+	var tier_index := clampi(tier - 1, 0, BODY_VISIBLE_AREA_SIDE_BY_TIER.size() - 1)
+	var body_bottom_y := BODY_BOTTOM_Y - (STUN_HOVER_HEIGHT if turret_type == "STUN" else 0.0)
+	body_sprite.texture = TowerVisualAssetsScript.body_texture(turret_type, tier)
+	var body_bounds: Rect2 = TowerVisualAssetsScript.body_visible_bounds(turret_type, tier)
+	var body_scale := _scale_for_visible_area(body_bounds, body_visible_area_side(turret_type, tier))
+	body_base_position = _position_visible_bounds(body_sprite.texture, body_bounds, Vector2(0.0, body_bottom_y), body_scale)
+	body_sprite.position = body_base_position
+	body_sprite.scale = Vector2.ONE * body_scale
+	body_sprite.z_index = 0
+	body_front_sprite.visible = false
+	body_front_sprite.texture = null
+	if turret_type == "DOT" and tier >= 3:
+		var front_region: Rect2 = TowerVisualAssetsScript.dot_front_region(tier)
+		body_front_sprite.texture = TowerVisualAssetsScript.dot_front_texture(tier)
+		# AtlasTexture 중심이 원본 중심과 달라지므로 잘라낸 영역의 중심 차이만큼 위치를 보정한다.
+		body_front_sprite.position = body_base_position + (front_region.get_center() - body_sprite.texture.get_size() * 0.5) * body_scale
+		body_front_sprite.scale = Vector2.ONE * body_scale
+		body_front_sprite.z_index = 2
+		body_front_sprite.visible = true
+
+	idle_effect_sprite.visible = false
+	idle_effect_sprite.texture = null
+	idle_effect_sprite.modulate = Color.WHITE
+	if turret_type == "DOT":
+		idle_effect_sprite.texture = TowerVisualAssetsScript.dot_flame_texture(tier)
+		var effect_bounds: Rect2 = TowerVisualAssetsScript.dot_flame_visible_bounds(tier)
+		var effect_scale := _scale_for_visible_area(effect_bounds, dot_effect_visible_area_side(tier))
+		var body_visible_top_y := _visible_top_y(body_sprite.texture, body_bounds, body_base_position, body_scale)
+		var effect_bottom_y: float = body_visible_top_y + float(DOT_EFFECT_BODY_OVERLAP_BY_TIER[tier_index])
+		idle_effect_base_position = _position_visible_bounds(idle_effect_sprite.texture, effect_bounds, Vector2(0.0, effect_bottom_y), effect_scale)
+		idle_effect_sprite.position = idle_effect_base_position
+		idle_effect_base_scale = Vector2.ONE * effect_scale
+		idle_effect_sprite.scale = idle_effect_base_scale
+		idle_effect_sprite.z_index = 1
+		idle_effect_sprite.visible = true
+	elif turret_type == "STUN" and tier >= 4:
+		idle_effect_sprite.texture = TowerVisualAssetsScript.stun_lightning_texture()
+		var lightning_bounds: Rect2 = TowerVisualAssetsScript.stun_lightning_visible_bounds()
+		var visible_body_width := body_bounds.size.x * body_scale
+		var lightning_scale := visible_body_width * STUN_LIGHTNING_BODY_WIDTH_RATIO / lightning_bounds.size.x
+		var body_visible_center := _visible_center(body_sprite.texture, body_bounds, body_base_position, body_scale)
+		idle_effect_base_position = _position_visible_center(idle_effect_sprite.texture, lightning_bounds, body_visible_center, lightning_scale)
+		idle_effect_sprite.position = idle_effect_base_position
+		idle_effect_base_scale = Vector2.ONE * lightning_scale
+		idle_effect_sprite.scale = idle_effect_base_scale
+		idle_effect_sprite.z_index = -1
+		idle_effect_sprite.visible = true
+
+
+# 경계 상자의 면적이 지정된 정사각형 면적과 같아지도록 균일 배율을 계산한다.
+static func _scale_for_visible_area(bounds: Rect2, target_area_side: float) -> float:
+	var visible_area := maxf(1.0, bounds.size.x * bounds.size.y)
+	return target_area_side / sqrt(visible_area)
+
+
+# 종류별 실루엣 차이까지 반영한 최종 본체 목표 크기를 자동 검사에서도 함께 사용한다.
+static func body_visible_area_side(turret_type_value: String, tier_value: int) -> float:
+	var tier_index := clampi(tier_value - 1, 0, BODY_VISIBLE_AREA_SIDE_BY_TIER.size() - 1)
+	if turret_type_value == "DOT" and tier_index == 3:
+		return DOT_TIER_4_BODY_VISIBLE_AREA_SIDE
+	return float(BODY_VISIBLE_AREA_SIDE_BY_TIER[tier_index])
+
+
+static func dot_effect_visible_area_side(tier_value: int) -> float:
+	var tier_index := clampi(tier_value - 1, 0, DOT_EFFECT_VISIBLE_AREA_SIDE_BY_TIER.size() - 1)
+	if tier_index == 3:
+		return DOT_TIER_4_EFFECT_VISIBLE_AREA_SIDE
+	return float(DOT_EFFECT_VISIBLE_AREA_SIDE_BY_TIER[tier_index])
+
+
+# 텍스처 중심 기준 Sprite2D에서 실제 그림의 아래 중앙을 원하는 월드 좌표에 고정한다.
+static func _position_visible_bounds(texture: Texture2D, bounds: Rect2, target_bottom_center: Vector2, scale_value: float) -> Vector2:
+	var texture_center := texture.get_size() * 0.5
+	var visible_bottom_center := Vector2(bounds.position.x + bounds.size.x * 0.5, bounds.position.y + bounds.size.y)
+	return target_bottom_center - (visible_bottom_center - texture_center) * scale_value
+
+
+static func _position_visible_center(texture: Texture2D, bounds: Rect2, target_center: Vector2, scale_value: float) -> Vector2:
+	var texture_center := texture.get_size() * 0.5
+	var visible_center := bounds.position + bounds.size * 0.5
+	return target_center - (visible_center - texture_center) * scale_value
+
+
+static func _visible_center(texture: Texture2D, bounds: Rect2, sprite_position: Vector2, scale_value: float) -> Vector2:
+	return sprite_position + (bounds.position + bounds.size * 0.5 - texture.get_size() * 0.5) * scale_value
+
+
+static func _visible_top_y(texture: Texture2D, bounds: Rect2, sprite_position: Vector2, scale_value: float) -> float:
+	return sprite_position.y + (bounds.position.y - texture.get_size().y * 0.5) * scale_value
 
 
 # 새 밤 시작 시 공격 가능 상태와 시각 효과 타이머를 초기화한다.
 func reset_for_wave() -> void:
 	enabled = true
 	cooldown_sec = 0.0
-	beam_visible_sec = 0.0
+	stun_charge_remaining_sec = 0.0
+	stun_charge_target = null
 	queue_redraw()
 
 
@@ -73,14 +218,19 @@ func play_upgrade_effect() -> void:
 
 # 공격 간격을 갱신하고 같은 층·사거리 안의 최우선 몬스터를 자동 공격한다.
 func _process(delta: float) -> void:
-	if beam_visible_sec > 0.0:
-		beam_visible_sec -= delta
-		queue_redraw()
+	visual_elapsed_sec += delta
+	_update_idle_effect_animation()
 	if upgrade_effect_remaining_sec > 0.0:
 		upgrade_effect_remaining_sec = maxf(0.0, upgrade_effect_remaining_sec - delta)
 		queue_redraw()
 
 	if not enabled:
+		return
+	if stun_charge_remaining_sec > 0.0:
+		stun_charge_remaining_sec = maxf(0.0, stun_charge_remaining_sec - delta)
+		queue_redraw()
+		if stun_charge_remaining_sec <= 0.0:
+			_finish_stun_attack()
 		return
 
 	cooldown_sec = maxf(0.0, cooldown_sec - delta)
@@ -91,11 +241,79 @@ func _process(delta: float) -> void:
 	if target == null:
 		return
 
-	target.receive_turret_hit(damage, turret_type, cc_duration, cc_value)
-	beam_end = to_local(target.global_position)
-	beam_visible_sec = 0.09
+	match turret_type:
+		"MELEE":
+			_apply_hitscan_attack(target, "MELEE")
+		"STUN":
+			stun_charge_target = target
+			stun_charge_remaining_sec = STUN_CHARGE_DURATION_SEC
+			queue_redraw()
+		_:
+			_spawn_projectile(target)
 	cooldown_sec = attack_interval_sec
-	queue_redraw()
+
+
+# DOT/SLOW/RANGED는 실제 이동 노드를 만들고 투사체가 몬스터에 닿을 때 피해·상태이상을 적용한다.
+func _spawn_projectile(target: PrototypeMonster) -> void:
+	var projectile := TowerProjectileScript.new() as PrototypeTowerProjectile
+	get_parent().add_child(projectile)
+	projectile.global_position = _projectile_muzzle_global_position()
+	projectile.setup(target, turret_type, damage, cc_duration, cc_value, tier)
+
+
+# STUN 충전이 끝났을 때 표적이 여전히 같은 층·사거리 안에 있으면 낙뢰 히트스캔을 실행한다.
+func _finish_stun_attack() -> void:
+	var target := stun_charge_target as PrototypeMonster
+	stun_charge_target = null
+	if not _target_is_attackable(target):
+		return
+	_apply_hitscan_attack(target, "STUN")
+
+
+# 히트스캔 타입은 즉시 기존 피해 규칙을 적용하고 표적 위치에 별도 피격 이펙트를 생성한다.
+func _apply_hitscan_attack(target: PrototypeMonster, attack_type: String) -> void:
+	if not _target_is_attackable(target):
+		return
+	target.receive_turret_hit(damage, attack_type, cc_duration, cc_value)
+	var hit_effect := TowerHitEffectScript.new() as PrototypeTowerHitEffect
+	get_parent().add_child(hit_effect)
+	hit_effect.global_position = target.global_position
+	hit_effect.setup(attack_type, tier)
+
+
+func _projectile_muzzle_global_position() -> Vector2:
+	var local_muzzle := Vector2(0.0, -58.0)
+	if body_sprite != null:
+		local_muzzle = body_sprite.position + Vector2(0.0, -12.0)
+	return to_global(local_muzzle)
+
+
+func _target_is_attackable(target: PrototypeMonster) -> bool:
+	if not is_instance_valid(target) or not target.is_in_combat_floor():
+		return false
+	if target.current_combat_floor() != floor_index:
+		return false
+	return absf(global_position.x - target.global_position.x) <= attack_range_px
+
+
+# 분리된 불꽃과 번개에 아주 작은 크기·밝기 변화를 주어 정지 이미지처럼 굳어 보이지 않게 한다.
+func _update_idle_effect_animation() -> void:
+	# 구름형 기절 포탑은 발판에서 떨어진 채 천천히 위아래로 부유한다.
+	if turret_type == "STUN" and body_sprite != null:
+		var hover_offset := sin(visual_elapsed_sec * 2.4) * STUN_HOVER_AMPLITUDE
+		body_sprite.position = body_base_position + Vector2(0.0, hover_offset)
+		if idle_effect_sprite != null and idle_effect_sprite.visible:
+			idle_effect_sprite.position = idle_effect_base_position + Vector2(0.0, hover_offset)
+	if idle_effect_sprite == null or not idle_effect_sprite.visible:
+		return
+	if turret_type == "DOT":
+		var pulse := sin(visual_elapsed_sec * 5.2) * 0.035
+		idle_effect_sprite.scale = idle_effect_base_scale * (1.0 + pulse)
+		idle_effect_sprite.modulate = Color(1.0, 0.96 + pulse * 0.5, 0.86, 1.0)
+	elif turret_type == "STUN" and tier >= 4:
+		var pulse := sin(visual_elapsed_sec * 7.5) * 0.045
+		idle_effect_sprite.scale = idle_effect_base_scale * (1.0 + pulse)
+		idle_effect_sprite.modulate = Color(0.92, 0.92, 1.0, 0.74 + pulse * 2.0)
 
 
 # 같은 전투층에서 수평 사거리 안에 있으며 코어 진행도가 가장 높은 몬스터를 선택한다.
@@ -119,43 +337,17 @@ func _select_target() -> PrototypeMonster:
 	return selected
 
 
-# 외부 이미지가 없는 프로토타입이므로 타입과 Tier별 도형을 직접 그린다.
+# 본체와 상시 효과는 자식 Sprite2D가 그리며, 여기서는 STUN 충전과 머지 피드백만 그린다.
 func _draw() -> void:
-	# Tier가 오를수록 본체와 외곽 장식이 커져 실제 스프라이트 없이도 승급 상태를 구분한다.
-	var tier_offset := float(maxi(0, tier - 1))
-	var body_radius := 19.0 + tier_offset * 1.8
-	draw_circle(Vector2.ZERO, body_radius + 5.0, Color("29384f"))
-	draw_circle(Vector2.ZERO, body_radius, tower_color)
-	for ring_index in maxi(0, tier - 1):
-		var ring_radius := body_radius + 7.0 + float(ring_index) * 3.0
-		draw_arc(Vector2.ZERO, ring_radius, PI, TAU, 20, tower_color.lightened(0.42), 2.0)
-	match turret_type:
-		"MELEE":
-			var blade_height := 32.0 + tier_offset * 3.0
-			draw_colored_polygon(PackedVector2Array([Vector2(-5.0, -blade_height), Vector2(6.0, -blade_height), Vector2(12.0, -4.0), Vector2(-11.0, -4.0)]), tower_color.lightened(0.32))
-			draw_line(Vector2(-12.0, -10.0), Vector2(12.0, -10.0), Color("fff5de"), 4.0)
-		"DOT":
-			draw_circle(Vector2(0.0, -13.0 - tier_offset), 12.0 + tier_offset, tower_color.lightened(0.28))
-			draw_circle(Vector2(0.0, -13.0), 5.0, Color("2a1738"))
-		"STUN":
-			draw_line(Vector2(-6.0, -30.0 - tier_offset * 2.0), Vector2(4.0, -19.0), Color("e9f5ff"), 5.0 + tier_offset * 0.5)
-			draw_line(Vector2(4.0, -19.0), Vector2(-4.0, -10.0), Color("e9f5ff"), 5.0)
-			draw_line(Vector2(-4.0, -10.0), Vector2(7.0, -2.0), Color("e9f5ff"), 5.0)
-		"SLOW":
-			draw_line(Vector2(0.0, -31.0 - tier_offset * 2.0), Vector2(0.0, -3.0), Color("eaffff"), 4.0 + tier_offset * 0.4)
-			draw_line(Vector2(-12.0, -24.0), Vector2(12.0, -10.0), Color("eaffff"), 4.0)
-			draw_line(Vector2(12.0, -24.0), Vector2(-12.0, -10.0), Color("eaffff"), 4.0)
-		_:
-			var barrel_width := 14.0 + tier_offset * 2.0
-			draw_rect(Rect2(-barrel_width * 0.5, -33.0 - tier_offset * 2.0, barrel_width, 31.0 + tier_offset * 2.0), tower_color.lightened(0.35), true)
-			draw_circle(Vector2.ZERO, 7.0, tower_color.darkened(0.42))
-	# 본체 아래의 밝은 점 개수로 Tier를 직접 읽을 수 있게 한다.
-	for pip_index in tier:
-		var pip_x := (float(pip_index) - float(tier - 1) * 0.5) * 8.0
-		draw_circle(Vector2(pip_x, 12.0), 2.5, Color("fff3bd"))
-	if beam_visible_sec > 0.0:
-		draw_line(Vector2(0.0, -22.0), beam_end, tower_color.lightened(0.34), 4.0)
-		draw_circle(beam_end, 6.0, tower_color.lightened(0.52))
+	if stun_charge_remaining_sec > 0.0:
+		var charge_progress := 1.0 - stun_charge_remaining_sec / STUN_CHARGE_DURATION_SEC
+		var charge_center := body_sprite.position if body_sprite != null else Vector2(0.0, -100.0)
+		var pulse_radius := lerpf(25.0, 42.0, charge_progress)
+		var charge_color := Color(0.73, 0.82, 1.0, 0.72)
+		draw_arc(charge_center, pulse_radius, charge_progress * TAU, charge_progress * TAU + PI * 1.55, 24, charge_color, 5.0)
+		for spark_index in 4:
+			var spark_angle := charge_progress * TAU * 2.0 + TAU * float(spark_index) / 4.0
+			draw_circle(charge_center + Vector2.from_angle(spark_angle) * pulse_radius, 4.0, Color("eef2ff"))
 	# 머지 직후 바깥으로 퍼지는 링과 방사형 빛 점을 그려 승급 순간을 강조한다.
 	if upgrade_effect_remaining_sec > 0.0:
 		var effect_progress := 1.0 - upgrade_effect_remaining_sec / UPGRADE_EFFECT_DURATION_SEC
@@ -167,3 +359,8 @@ func _draw() -> void:
 			var spark_angle := TAU * float(spark_index) / 8.0
 			var spark_position := Vector2.from_angle(spark_angle) * effect_radius
 			draw_circle(spark_position, 4.0 * (1.0 - effect_progress * 0.6), effect_color)
+
+
+# 커진 스프라이트를 가장자리에서도 잡을 수 있도록 선택 반경도 Tier와 함께 확장한다.
+func get_interaction_radius() -> float:
+	return body_visible_area_side(turret_type, tier) * 0.60

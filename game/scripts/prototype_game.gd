@@ -10,12 +10,11 @@ const TowerSlotScript := preload("res://scripts/tower_slot.gd")
 const ShopCardScript := preload("res://scripts/shop_card.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const RewardCoinPopupScript := preload("res://scripts/reward_coin_popup.gd")
+const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
 # 둥근 획의 Jua를 공통 UI 글꼴로 사용해 캐주얼 RPG의 굵고 친근한 인상을 만든다.
 const GAME_FONT := preload("res://assets/fonts/Jua-Regular.ttf")
 # Jua에 없는 ▶ 기호는 기존 로컬 Noto Sans KR로 렌더링해 Web에서도 대체문자 없이 표시한다.
 const SYMBOL_FONT := preload("res://assets/fonts/NotoSansKR.ttf")
-const DAY_ENVIRONMENT_BACKGROUND := preload("res://assets/backgrounds/casual_rpg_mine_day_v3.png")
-const NIGHT_ENVIRONMENT_BACKGROUND := preload("res://assets/backgrounds/casual_rpg_mine_night_v3.png")
 const DAY_NIGHT_HUD_DAY_FRAME := preload("res://assets/ui/day_night_hud_day_frame_v2.png")
 const DAY_NIGHT_HUD_NIGHT_FRAME := preload("res://assets/ui/day_night_hud_night_frame_v2.png")
 const DAY_NIGHT_SUN_ICON := preload("res://assets/ui/day_night_sun_icon_v1.png")
@@ -37,12 +36,19 @@ const REFERENCE_VIEWPORT_SIZE := Vector2(1920.0, 1080.0)
 # 생성 배경의 자연스러운 발판 높이에 이동 경로와 슬롯 중심을 맞춰 한곳에서 관리한다.
 const PATH_LEFT_X := 140.0
 const PATH_RIGHT_X := 1770.0
-const GROUND_LANE_Y := 255.0
-const COMBAT_LANE_Y := [440.0, 585.0, 740.0]
-const TOWER_SLOT_Y := [385.0, 530.0, 685.0]
-# 생성본의 상점·창고 구간을 별도로 늘려 기존 상점 UI 뒤에 자연스럽게 보이도록 분할 렌더링한다.
-const BACKGROUND_SOURCE_SIZE := Vector2(1672.0, 941.0)
-const BACKGROUND_SOURCE_SHOP_Y := 780.0
+# 지상 구간은 시각적 지형 굴곡과 무관하게 같은 Y축을 유지하는 수평 직선으로 이동한다.
+const GROUND_MID_X := 1050.0
+const GROUND_EXIT_X := 450.0
+# 경로 Y는 몬스터 중심이 아니라 도형의 바닥이 닿는 배경 발판 접촉선이다.
+const GROUND_LANE_Y := 1360.0
+# 세로형 v6 배경에서 몬스터의 바닥이 각 발판 두께의 중앙선에 닿도록 맞춘 B1~B3 이동 높이다.
+const COMBAT_LANE_Y := [1857.0, 2382.0, 2907.0]
+const TOWER_SLOT_Y := [1757.0, 2282.0, 2807.0]
+# 터렛·몬스터 같은 전투 오브젝트만 상점 위에서 자르고, 배경은 별도 층에서 화면 전체에 표시한다.
+const BATTLEFIELD_ENTITY_VIEW_HEIGHT := 770.0
+# 각 2층 전투 뷰의 아래쪽 플랫폼과 상점 사이에 약 70px 이상의 안전 여백을 확보한다.
+const BATTLEFIELD_CAMERA_Y := [-650.0, -1185.0, -1685.0, -2210.0]
+const BATTLEFIELD_CAMERA_TRANSITION_SEC := 0.26
 # 오른쪽에서 등장하는 몬스터가 진입할 여백 40%를 비우고, 왼쪽 60%에만 슬롯을 둔다.
 const TOWER_DEPLOYMENT_RATIO := 0.60
 const TOWER_DEPLOYMENT_RIGHT_X := PATH_LEFT_X + (PATH_RIGHT_X - PATH_LEFT_X) * TOWER_DEPLOYMENT_RATIO
@@ -50,23 +56,41 @@ const TOWER_DEPLOYMENT_RIGHT_X := PATH_LEFT_X + (PATH_RIGHT_X - PATH_LEFT_X) * T
 const TOWER_SLOT_GAP_PX := 180.0
 const TOWER_SLOT_X := [300.0, 480.0, 660.0, 840.0, 1020.0]
 # 상점 하단 절반은 낮에 설치 터렛을 판매하는 드롭 영역으로 사용한다.
-const SHOP_AREA_TOP_Y := 770.0
 const SHOP_AREA_BOTTOM_Y := 1080.0
 const SELL_ZONE_TOP_Y := 925.0
 const SELL_ZONE_RECT := Rect2(24.0, SELL_ZONE_TOP_Y, 1872.0, SHOP_AREA_BOTTOM_Y - SELL_ZONE_TOP_Y)
 # 플레이어가 전투 중 선택할 수 있는 게임 진행 배속이다.
 const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
+# 테스트 환경은 빠른 반복 확인을 위해 고정 상점·대량 골드·추가 배속을 사용한다.
+const TEST_START_GOLD := 99999
+const TEST_GAME_SPEED_MULTIPLIERS := [1, 3, 5, 10]
+const TEST_SHOP_TURRET_IDS := [
+	"turretMelee1",
+	"turretRanged1",
+	"turretDot1",
+	"turretSlow1",
+	"turretStun1",
+]
+# URL 또는 사용자 인자로 특정 종류의 Tier 1~4를 즉시 배치하는 시각 검수 전용 ID 목록이다.
+const TOWER_VISUAL_TEST_IDS := {
+	"MELEE": ["turretMelee1", "turretMelee2", "turretMelee3", "turretMelee4"],
+	"RANGED": ["turretRanged1", "turretRanged2", "turretRanged3", "turretRanged4"],
+	"DOT": ["turretDot1", "turretDot2", "turretDot3", "turretDot4"],
+	"SLOW": ["turretSlow1", "turretSlow2", "turretSlow3", "turretSlow4"],
+	"STUN": ["turretStun1", "turretStun2", "turretStun3", "turretStun4"],
+}
 # 4개 임시 웨이브 전체를 시간 가속 상태에서 끝낼 수 있도록 헤드리스 테스트 제한을 넉넉히 둔다.
 const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 
 # READY는 낮, WAVE는 밤 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
 
-# 지상 오른쪽→왼쪽, B1~B3 각각 오른쪽→왼쪽으로 이어지는 고정 웨이포인트다.
-# 홀수 인덱스의 왼쪽 출구에서 다음 짝수 인덱스의 오른쪽 입구로 하강한다.
+# 지상 숲→광산 입구는 수평 직선이며, 이후 B1~B3는 오른쪽→왼쪽으로 이어지는 고정 웨이포인트다.
+# 인덱스 2/4/6의 출구에서 다음 지하층의 오른쪽 입구로 하강한다.
 var movement_path := PackedVector2Array([
 	Vector2(PATH_RIGHT_X + 10.0, GROUND_LANE_Y),
-	Vector2(PATH_LEFT_X, GROUND_LANE_Y),
+	Vector2(GROUND_MID_X, GROUND_LANE_Y),
+	Vector2(GROUND_EXIT_X, GROUND_LANE_Y),
 	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[0]),
 	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[0]),
 	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[1]),
@@ -97,19 +121,30 @@ var next_spawn_index: int = 0
 var spawned_count: int = 0
 var defeated_count: int = 0
 
-# 정비 단계 경제 및 스폰 타이머 상태다.
+# 낮 경제, 밤 기준시간과 스폰 타이머 상태다.
 var gold: int = 0
 var preparation_remaining_sec: float = 0.0
 var reroll_count: int = 0
 var spawn_cooldown_sec: float = 0.0
+var wave_remaining_sec: float = 0.0
 var game_speed_multiplier: int = 1
 
 # 낮(0.0)과 밤(1.0) 사이의 배경 색조를 Tween으로 보간한다.
 var night_visual_amount: float = 0.0:
 	set(value):
 		night_visual_amount = clampf(value, 0.0, 1.0)
+		if is_instance_valid(battlefield_background):
+			battlefield_background.night_visual_amount = night_visual_amount
 		queue_redraw()
 var day_night_tween: Tween
+
+# 기준 화면에 제한된 배경과 마스킹된 전투 오브젝트 월드, 현재 층 쌍과 전환 Tween을 추적한다.
+var battlefield_background_clip: Control
+var battlefield_background: PrototypeBattlefieldWorld
+var battlefield_clip: Control
+var battlefield_world: Node2D
+var battlefield_view_index: int = 0
+var battlefield_camera_tween: Tween
 
 # 일반 플레이에서는 무작위화하고 자동 테스트·디버그 시드에서는 재현 가능한 상점 RNG다.
 var shop_rng := RandomNumberGenerator.new()
@@ -123,9 +158,16 @@ var automated_test_shop_drag: bool = false
 var automated_test_shop_merge: bool = false
 var automated_test_wave_shop: bool = false
 var automated_test_melee_attack: bool = false
+var automated_test_attack_styles: bool = false
 var automated_test_wave_features: bool = false
 var automated_test_merge: bool = false
 var automated_test_sell: bool = false
+var automated_test_camera_navigation: bool = false
+var automated_test_test_environment: bool = false
+
+# 플레이어와 Codex가 같은 샌드박스를 재현하도록 일반 자동 테스트와 구분한 테스트 환경 플래그다.
+var test_mode: bool = false
+var tower_visual_test_type: String = ""
 var automated_test_elapsed_sec: float = 0.0
 
 # 런타임에 생성하는 주요 HUD 참조다.
@@ -142,6 +184,8 @@ var speed_button: Button
 var pause_button: Button
 var options_overlay: Control
 var options_menu_open: bool = false
+var options_test_mode_button: Button
+var test_mode_badge: Label
 var sell_zone_overlay: TextureRect
 var sell_zone_label: Label
 
@@ -167,7 +211,7 @@ func _ready() -> void:
 	# ESC 옵션 창이 SceneTree를 일시 정지해도 이 컨트롤러는 입력을 받아 다시 닫을 수 있어야 한다.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-sell" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-attack-styles" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-sell" in user_args or "--auto-test-camera-navigation" in user_args or "--auto-test-test-environment" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args
 	automated_test_economy = "--auto-test-economy" in user_args
 	automated_test_drag = "--auto-test-drag" in user_args
@@ -175,21 +219,29 @@ func _ready() -> void:
 	automated_test_shop_merge = "--auto-test-shop-merge" in user_args
 	automated_test_wave_shop = "--auto-test-wave-shop" in user_args
 	automated_test_melee_attack = "--auto-test-melee-attack" in user_args
+	automated_test_attack_styles = "--auto-test-attack-styles" in user_args
 	automated_test_wave_features = "--auto-test-wave-features" in user_args
 	automated_test_merge = "--auto-test-merge" in user_args
 	automated_test_sell = "--auto-test-sell" in user_args
+	automated_test_camera_navigation = "--auto-test-camera-navigation" in user_args
+	automated_test_test_environment = "--auto-test-test-environment" in user_args
+	tower_visual_test_type = _requested_tower_visual_test_type(user_args)
+	test_mode = "--test-mode" in user_args or automated_test_test_environment or _web_query_requests_test_mode() or not tower_visual_test_type.is_empty()
 	database = DatabaseScript.new() as PrototypeDatabase
 	if database == null or not database.load_all():
 		push_error("Prototype database could not be loaded.")
 		get_tree().quit(1)
 		return
 	_configure_shop_rng()
+	_build_battlefield()
 	_build_interface()
 	_create_tower_slots()
 	# aspect=expand가 만든 여분의 논리 공간에 게임을 중앙 정렬하고, 이후 브라우저 크기 변화도 추적한다.
 	get_viewport().size_changed.connect(_update_responsive_layout)
 	_update_responsive_layout()
 	_begin_preparation(true)
+	if not tower_visual_test_type.is_empty():
+		_populate_tower_visual_test()
 	_update_interface()
 	queue_redraw()
 	if automated_test_mode:
@@ -197,7 +249,40 @@ func _ready() -> void:
 		call_deferred("_start_automated_test")
 
 
-# 정비 카운트다운 또는 웨이브 몬스터 스폰/종료 조건을 매 프레임 처리한다.
+# Web 빌드는 명령줄 인자를 받을 수 없으므로 URL의 test_mode=1을 같은 런타임 플래그로 변환한다.
+func _web_query_requests_test_mode() -> bool:
+	if not OS.has_feature("web"):
+		return false
+	var query_string := str(JavaScriptBridge.eval("window.location.search", true))
+	for query_part in query_string.trim_prefix("?").split("&"):
+		if query_part == "test_mode=1" or query_part == "test_mode=true":
+			return true
+	return false
+
+
+# `?tower_visual_test=DOT` 또는 `--tower-visual-test=DOT` 값을 허용된 5종으로 제한한다.
+func _requested_tower_visual_test_type(user_args: PackedStringArray) -> String:
+	var requested_type := ""
+	for argument in user_args:
+		if argument.begins_with("--tower-visual-test="):
+			requested_type = argument.trim_prefix("--tower-visual-test=").to_upper()
+	if OS.has_feature("web"):
+		var query_string := str(JavaScriptBridge.eval("window.location.search", true))
+		for query_part in query_string.trim_prefix("?").split("&"):
+			if query_part.begins_with("tower_visual_test="):
+				requested_type = query_part.trim_prefix("tower_visual_test=").to_upper()
+	return requested_type if TOWER_VISUAL_TEST_IDS.has(requested_type) else ""
+
+
+# 일반 플레이를 건드리지 않고 B1 첫 네 슬롯에 선택 종류의 Tier 1~4를 나란히 배치한다.
+func _populate_tower_visual_test() -> void:
+	var turret_ids: Array = TOWER_VISUAL_TEST_IDS[tower_visual_test_type]
+	for tier_index in mini(4, turret_ids.size()):
+		_place_tower(tower_slots[tier_index], false, str(turret_ids[tier_index]))
+	_set_battlefield_view_index(1, true)
+
+
+# 최초 낮 카운트다운 또는 밤의 기준시간·몬스터 스폰을 매 프레임 처리한다.
 func _process(delta: float) -> void:
 	if options_menu_open:
 		return
@@ -211,7 +296,7 @@ func _process(delta: float) -> void:
 			return
 
 	if phase == Phase.READY:
-		if not automated_test_mode:
+		if not automated_test_mode and tower_visual_test_type.is_empty():
 			var previous_second := ceili(preparation_remaining_sec)
 			preparation_remaining_sec = maxf(0.0, preparation_remaining_sec - delta)
 			if ceili(preparation_remaining_sec) != previous_second:
@@ -223,6 +308,14 @@ func _process(delta: float) -> void:
 	if phase != Phase.WAVE:
 		return
 
+	# 일반 웨이브는 데이터의 기준시간이 끝나면 잔존 적을 유지한 채 다음 밤을 추가로 시작한다.
+	# 마지막 웨이브에는 다음 웨이브가 없으므로 타이머를 0에 고정하고 보스 처치/최심부 도달 판정을 기다린다.
+	if wave_remaining_sec > 0.0:
+		wave_remaining_sec = maxf(0.0, wave_remaining_sec - delta)
+		if wave_remaining_sec <= 0.0 and current_wave_number < database.define_int("totalWaveCount", 1):
+			_start_next_wave_immediately()
+			return
+
 	var total := current_wave_spawn_entries.size()
 	if spawned_count < total:
 		spawn_cooldown_sec -= delta
@@ -231,14 +324,10 @@ func _process(delta: float) -> void:
 			# 전체 진행 테스트는 시간값 자체를 데이터 테스트에서 검증하고, 실행 시간은 개체 간격으로 단축한다.
 			spawn_cooldown_sec += minf(next_delay_sec, database.define_float("monsterSpawnInterval", 0.4)) if automated_test_mode else next_delay_sec
 
-	if spawned_count >= total and monsters.is_empty():
-		_complete_wave()
-
-
 # 일반 플레이는 실행마다 다른 시드를 쓰고, 테스트와 --shop-seed=<숫자> 실행은 고정 시드로 재현한다.
 func _configure_shop_rng() -> void:
 	var fallback_seed := database.extension_int("rngSeed", 20260803)
-	if automated_test_mode:
+	if automated_test_mode or test_mode:
 		shop_rng.seed = fallback_seed
 		return
 	for argument in OS.get_cmdline_user_args():
@@ -257,10 +346,14 @@ func _input(event: InputEvent) -> void:
 			_toggle_options_menu()
 		get_viewport().set_input_as_handled()
 		return
+	# 드래그 중이 아닐 때 휠과 위·아래 방향키로 인접한 두 층 화면 사이를 이동한다.
+	if _handle_battlefield_navigation_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if not _is_shop_available():
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		var local_pointer := to_local(event.position)
+		var local_pointer := _viewport_to_battlefield(event.position)
 		if event.pressed and dragged_tower == null and dragged_shop_card_index < 0:
 			var shop_card_index := _shop_card_at_pointer(event.position)
 			if shop_card_index >= 0:
@@ -286,11 +379,39 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion:
 		if dragged_shop_card_index >= 0:
-			_update_shop_card_drag(to_local(event.position))
+			_update_shop_card_drag(_viewport_to_battlefield(event.position))
 			get_viewport().set_input_as_handled()
 		elif dragged_tower != null:
-			_update_tower_drag(to_local(event.position))
+			_update_tower_drag(_viewport_to_battlefield(event.position))
 			get_viewport().set_input_as_handled()
+
+
+# 마우스 휠과 위·아래 방향키를 동일한 카메라 단계 변경으로 변환한다.
+func _handle_battlefield_navigation_input(event: InputEvent) -> bool:
+	if options_menu_open or dragged_tower != null or dragged_shop_card_index >= 0:
+		return false
+	var direction := 0
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			direction = -1
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			direction = 1
+	elif event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_UP:
+			direction = -1
+		elif event.keycode == KEY_DOWN:
+			direction = 1
+	if direction == 0:
+		return false
+	_set_battlefield_view_index(battlefield_view_index + direction)
+	return true
+
+
+# 화면 좌표를 현재 수직 카메라 위치가 적용된 전장 로컬 좌표로 바꿔 드래그 판정을 유지한다.
+func _viewport_to_battlefield(viewport_position: Vector2) -> Vector2:
+	if not is_instance_valid(battlefield_world):
+		return to_local(viewport_position)
+	return battlefield_world.to_local(viewport_position)
 
 
 # CanvasLayer 오프셋을 고려해 포인터 아래에 있는 상점 카드 인덱스를 찾는다.
@@ -322,7 +443,7 @@ func _begin_shop_card_drag(card_index: int, local_pointer: Vector2) -> bool:
 	shop_drag_preview.z_index = 30
 	shop_drag_preview.scale = Vector2.ONE * 1.2
 	shop_drag_preview.modulate = Color(1.0, 1.0, 1.0, 0.78)
-	add_child(shop_drag_preview)
+	battlefield_world.add_child(shop_drag_preview)
 	shop_drag_preview.remove_from_group("prototype_towers")
 	status_label.text = "빈 슬롯에 설치하거나 같은 터렛 위에 놓아 머지하세요"
 	_update_shop_drag_slot_states(null)
@@ -460,7 +581,7 @@ func _update_shop_drag_slot_states(target: PrototypeTowerSlot) -> void:
 func _tower_at_pointer(local_pointer: Vector2) -> PrototypeTower:
 	for tower_index in range(towers.size() - 1, -1, -1):
 		var tower := towers[tower_index]
-		if is_instance_valid(tower) and local_pointer.distance_to(tower.position) <= 46.0:
+		if is_instance_valid(tower) and local_pointer.distance_to(tower.position) <= tower.get_interaction_radius():
 			return tower
 	return null
 
@@ -613,7 +734,12 @@ func _tower_sale_price(tower: PrototypeTower) -> int:
 
 # 설치 터렛은 낮에만 판매할 수 있으며 상점 UI의 정확한 하단 절반을 판정 영역으로 사용한다.
 func _is_in_sell_zone(local_position: Vector2) -> bool:
-	return phase == Phase.READY and SELL_ZONE_RECT.has_point(local_position)
+	if phase != Phase.READY or not is_instance_valid(battlefield_world):
+		return false
+	# 전장 좌표를 고정 UI 기준 좌표로 되돌려 카메라 위치와 관계없이 같은 판매 영역을 사용한다.
+	var viewport_position := battlefield_world.to_global(local_position)
+	var reference_position := viewport_position - position
+	return SELL_ZONE_RECT.has_point(reference_position)
 
 
 # 터렛과 대상 슬롯이 확정 규칙을 만족할 때만 슬롯 점유 관계와 좌표를 변경한다.
@@ -660,6 +786,59 @@ func _update_drag_slot_states(target: PrototypeTowerSlot, show_eligible: bool = 
 		if show_eligible and dragged_tower != null and slot.floor_index == dragged_tower.floor_index and slot != dragged_origin_slot:
 			eligible = slot.is_empty() or _can_merge_towers(dragged_tower, slot.occupant as PrototypeTower)
 		slot.set_drag_state(eligible, eligible and slot == target)
+
+
+# 배경은 화면 전체에 두고 전투 오브젝트만 상점 위에서 자르는 두 개의 수직 이동 층을 생성한다.
+func _build_battlefield() -> void:
+	# 배경은 UI와 독립적으로 움직이되 1920×1080 기준 게임 화면 밖으로는 그리지 않는다.
+	battlefield_background_clip = Control.new()
+	battlefield_background_clip.position = Vector2.ZERO
+	battlefield_background_clip.size = REFERENCE_VIEWPORT_SIZE
+	battlefield_background_clip.clip_contents = true
+	battlefield_background_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	battlefield_background_clip.z_index = -110
+	add_child(battlefield_background_clip)
+
+	# 기준 화면 안에서는 상점 카드 사이까지 배경이 끊김 없이 이어진다.
+	battlefield_background = BattlefieldWorldScript.new() as PrototypeBattlefieldWorld
+	battlefield_background.night_visual_amount = night_visual_amount
+	battlefield_background_clip.add_child(battlefield_background)
+
+	# 슬롯·터렛·몬스터는 상점 카드 뒤로 내려가지 않도록 기존 전장 높이에서만 표시한다.
+	battlefield_clip = Control.new()
+	battlefield_clip.position = Vector2.ZERO
+	battlefield_clip.size = Vector2(REFERENCE_VIEWPORT_SIZE.x, BATTLEFIELD_ENTITY_VIEW_HEIGHT)
+	battlefield_clip.clip_contents = true
+	battlefield_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 루트가 그리는 HUD 장식과 CanvasLayer UI보다 항상 뒤에서 렌더링한다.
+	battlefield_clip.z_index = -100
+	add_child(battlefield_clip)
+
+	battlefield_world = Node2D.new()
+	battlefield_world.name = "BattlefieldEntities"
+	battlefield_clip.add_child(battlefield_world)
+
+	_set_battlefield_view_index(0, true)
+
+
+# 0=하늘+지상, 1=지상+B1, 2=B1+B2, 3=B2+B3으로 제한하고 확대·축소 없이 Y 위치만 보간한다.
+func _set_battlefield_view_index(requested_index: int, instant: bool = false) -> void:
+	if not is_instance_valid(battlefield_world) or not is_instance_valid(battlefield_background):
+		return
+	battlefield_view_index = clampi(requested_index, 0, BATTLEFIELD_CAMERA_Y.size() - 1)
+	var target_y := float(BATTLEFIELD_CAMERA_Y[battlefield_view_index])
+	if battlefield_camera_tween != null and battlefield_camera_tween.is_valid():
+		battlefield_camera_tween.kill()
+	if instant:
+		battlefield_world.position.y = target_y
+		battlefield_background.position.y = target_y
+		return
+	battlefield_camera_tween = create_tween()
+	# 밤의 2·3배속과 무관하게 카메라 조작 감각이 일정하도록 실제 시간을 사용한다.
+	battlefield_camera_tween.set_ignore_time_scale(true)
+	battlefield_camera_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	battlefield_camera_tween.tween_property(battlefield_world, "position:y", target_y, BATTLEFIELD_CAMERA_TRANSITION_SEC)
+	battlefield_camera_tween.parallel().tween_property(battlefield_background, "position:y", target_y, BATTLEFIELD_CAMERA_TRANSITION_SEC)
 
 
 # 상단 정보, 하단 상점, 웨이브/리롤 버튼을 CanvasLayer에 생성한다.
@@ -715,6 +894,15 @@ func _build_interface() -> void:
 	action_button.pressed.connect(_on_action_button_pressed)
 	interface_canvas.add_child(action_button)
 	_create_speed_controls(interface_canvas)
+
+	# 테스트 환경임을 일반 플레이와 명확히 구분하는 작은 고정 배지를 상단에 표시한다.
+	test_mode_badge = _make_label(interface_canvas, Vector2(1260.0, 38.0), Vector2(160.0, 60.0), 27)
+	test_mode_badge.text = "TEST"
+	test_mode_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	test_mode_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	test_mode_badge.add_theme_color_override("font_color", Color.WHITE)
+	test_mode_badge.add_theme_stylebox_override("normal", _make_panel_style(UI_RED, UI_INK, 18, 5, true))
+	test_mode_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	reroll_button = Button.new()
 	reroll_button.position = Vector2(50.0, 884.0)
@@ -784,7 +972,7 @@ func _set_sell_zone_feedback(active: bool, tower: PrototypeTower) -> void:
 		status_label.text = "놓으면 판매  +%d G" % refund
 
 
-# ESC 옵션 창을 전체 화면 어둡게 처리한 중앙 모달로 만들고 세 가지 명령을 묶는다.
+# ESC 옵션 창을 전체 화면 어둡게 처리한 중앙 모달로 만들고 네 가지 명령을 묶는다.
 func _create_options_menu(parent: Node) -> void:
 	options_overlay = Control.new()
 	options_overlay.position = Vector2.ZERO
@@ -803,23 +991,26 @@ func _create_options_menu(parent: Node) -> void:
 	options_overlay.add_child(dimmer)
 
 	var panel := Panel.new()
-	panel.position = Vector2(700.0, 235.0)
-	panel.size = Vector2(520.0, 600.0)
+	panel.position = Vector2(700.0, 140.0)
+	panel.size = Vector2(520.0, 800.0)
 	panel.add_theme_stylebox_override("panel", _make_panel_style(UI_PANEL, UI_INK, 24, 8, true))
 	options_overlay.add_child(panel)
 
-	var title := _make_label(options_overlay, Vector2(760.0, 285.0), Vector2(400.0, 72.0), 46)
+	var title := _make_label(options_overlay, Vector2(760.0, 185.0), Vector2(400.0, 72.0), 46)
 	title.text = "옵션"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_color", UI_CREAM)
 
-	var continue_button := _make_options_button(options_overlay, Vector2(790.0, 390.0), "계속하기", UI_TEAL, Color("8be3d8"))
+	var continue_button := _make_options_button(options_overlay, Vector2(790.0, 300.0), "계속하기", UI_TEAL, Color("8be3d8"))
 	continue_button.pressed.connect(_on_options_continue_pressed)
-	var reset_button := _make_options_button(options_overlay, Vector2(790.0, 510.0), "프로토타입 초기화", UI_GOLD, Color("fff1a8"))
+	options_test_mode_button = _make_options_button(options_overlay, Vector2(790.0, 410.0), "테스트 환경 시작", Color("8d5ac7"), Color("d3a8ff"))
+	options_test_mode_button.pressed.connect(_on_options_test_mode_pressed)
+	var reset_button := _make_options_button(options_overlay, Vector2(790.0, 520.0), "프로토타입 초기화", UI_GOLD, Color("fff1a8"))
 	reset_button.pressed.connect(_on_options_reset_pressed)
 	var quit_button := _make_options_button(options_overlay, Vector2(790.0, 630.0), "게임 종료", UI_RED, Color("ff9ca4"))
 	quit_button.pressed.connect(_on_options_quit_pressed)
+	_update_test_mode_ui()
 
 
 # 옵션 창 버튼은 같은 크기와 글자 스타일을 공유하고 기능색만 달리한다.
@@ -863,6 +1054,16 @@ func _on_options_continue_pressed() -> void:
 	_set_options_menu_visible(false)
 
 
+# 일반↔테스트 환경 전환은 현재 판을 폐기하고 각 모드의 초기 골드·상점 상태로 새로 시작한다.
+func _on_options_test_mode_pressed() -> void:
+	_set_options_menu_visible(false)
+	Engine.time_scale = 1.0
+	test_mode = not test_mode
+	game_speed_multiplier = 1
+	_reset_game()
+	_update_test_mode_ui()
+
+
 func _on_options_reset_pressed() -> void:
 	_set_options_menu_visible(false)
 	Engine.time_scale = 1.0
@@ -900,13 +1101,14 @@ func _create_speed_controls(parent: Node) -> void:
 	_update_speed_controls()
 
 
-# 일반 플레이의 밤에 버튼을 누를 때마다 1배→2배→3배→1배 순서로 순환한다.
+# 일반 밤은 1→2→3배, 테스트 환경의 밤은 1→3→5→10배 순서로 순환한다.
 func _on_speed_button_pressed() -> void:
 	if phase != Phase.WAVE or automated_test_mode:
 		return
-	var current_index := GAME_SPEED_MULTIPLIERS.find(game_speed_multiplier)
-	var next_index := (current_index + 1) % GAME_SPEED_MULTIPLIERS.size()
-	game_speed_multiplier = int(GAME_SPEED_MULTIPLIERS[next_index])
+	var available_speeds: Array = TEST_GAME_SPEED_MULTIPLIERS if test_mode else GAME_SPEED_MULTIPLIERS
+	var current_index := available_speeds.find(game_speed_multiplier)
+	var next_index := (current_index + 1) % available_speeds.size()
+	game_speed_multiplier = int(available_speeds[next_index])
 	Engine.time_scale = float(game_speed_multiplier)
 	_update_speed_controls()
 
@@ -920,6 +1122,10 @@ func _update_speed_controls() -> void:
 			speed_button.text = "▶ ▶"
 		3:
 			speed_button.text = "▶ ▶ ▶"
+		5:
+			speed_button.text = "×5"
+		10:
+			speed_button.text = "×10"
 		_:
 			speed_button.text = "▶"
 	speed_button.visible = phase == Phase.WAVE
@@ -935,6 +1141,14 @@ func _update_speed_controls() -> void:
 		pause_button.add_theme_stylebox_override("hover", _make_circle_button_style(Color("554d70"), Color("d9cff4")))
 		pause_button.add_theme_stylebox_override("pressed", _make_circle_button_style(Color("312b45"), Color("aaa0c7"), 2))
 		_configure_button_text(pause_button, UI_CREAM, Color.WHITE, Color("9994a7"))
+
+
+# 테스트 배지와 옵션 버튼 문구를 현재 모드에 맞춰 동시에 갱신한다.
+func _update_test_mode_ui() -> void:
+	if test_mode_badge != null:
+		test_mode_badge.visible = test_mode
+	if options_test_mode_button != null:
+		options_test_mode_button.text = "일반 모드로 돌아가기" if test_mode else "테스트 환경 시작"
 
 
 # Web 캔버스가 넓거나 높아질 때 1920×1080 게임 영역을 남는 축의 중앙으로 이동한다.
@@ -1010,7 +1224,7 @@ func _create_tower_slots() -> void:
 			slot.position = Vector2(TOWER_SLOT_X[slot_index], TOWER_SLOT_Y[floor_index])
 			slot.setup(floor_index, slot_index)
 			slot.pressed.connect(_on_tower_slot_pressed)
-			add_child(slot)
+			battlefield_world.add_child(slot)
 			tower_slots.append(slot)
 
 
@@ -1100,7 +1314,7 @@ func _spawn_tower_in_slot(slot: PrototypeTowerSlot, turret_id: String, invested_
 	tower.position = slot.position
 	tower.setup(tower_data, slot.floor_index, invested_gold)
 	tower.enabled = phase == Phase.WAVE
-	add_child(tower)
+	battlefield_world.add_child(tower)
 	towers.append(tower)
 	slot.set_occupant(tower)
 	tower_slot_by_instance_id[tower.get_instance_id()] = slot
@@ -1108,15 +1322,18 @@ func _spawn_tower_in_slot(slot: PrototypeTowerSlot, turret_id: String, invested_
 
 
 # 현재 SpawnTable이 유효한지 확인하고 카운터/터렛 쿨다운을 초기화해 전투를 시작한다.
-func _start_wave() -> void:
+func _start_wave(clear_existing_monsters: bool = true) -> void:
 	if current_wave_spawn_entries.is_empty():
 		push_error("Current wave has no SpawnTable entries: wave%d" % current_wave_number)
 		return
-	_clear_monsters()
+	# 최초 밤/전체 초기화만 기존 적을 제거한다. 시간 만료로 이어지는 다음 웨이브는 전장의 적과 투사체를 유지한다.
+	if clear_existing_monsters:
+		_clear_monsters()
 	next_spawn_index = 0
 	spawned_count = 0
 	defeated_count = 0
 	spawn_cooldown_sec = 0.15
+	wave_remaining_sec = database.define_float("waveTimeSec", 50.0)
 	# 상점 카드 드래그 중 전투가 시작돼도 구매 동작은 그대로 이어간다.
 	if dragged_shop_card_index < 0:
 		selected_shop_card = -1
@@ -1128,6 +1345,12 @@ func _start_wave() -> void:
 
 # 테스트 종류에 필요한 터렛을 자동 배치한 뒤 정비 시간을 건너뛰고 웨이브를 시작한다.
 func _start_automated_test() -> void:
+	if automated_test_test_environment:
+		_run_test_environment_automated_test()
+		return
+	if automated_test_camera_navigation:
+		_run_camera_navigation_automated_test()
+		return
 	if automated_test_sell:
 		_run_sell_automated_test()
 		return
@@ -1139,6 +1362,9 @@ func _start_automated_test() -> void:
 		return
 	if automated_test_wave_features:
 		_run_wave_features_automated_test()
+		return
+	if automated_test_attack_styles:
+		_run_attack_styles_automated_test()
 		return
 	if automated_test_melee_attack:
 		_run_melee_attack_automated_test()
@@ -1162,6 +1388,41 @@ func _start_automated_test() -> void:
 	_start_wave()
 
 
+# 테스트 전용 환경의 핵심 진입 조건을 실제 초기화 흐름 위에서 검증한다.
+# 고정 상점은 카드 수가 바뀌더라도 지정된 다섯 종류를 순서대로 반복하도록 검사한다.
+func _run_test_environment_automated_test() -> void:
+	var expected_shop_ids: Array[String] = []
+	for card_index in shop_cards.size():
+		expected_shop_ids.append(str(TEST_SHOP_TURRET_IDS[card_index % TEST_SHOP_TURRET_IDS.size()]))
+	# 실제 버튼 경로를 열어 테스트 배속이 3→5→10→1로 순환하는지 확인한다.
+	automated_test_mode = false
+	_set_phase(Phase.WAVE)
+	var observed_speed_cycle: Array[int] = []
+	for _step in 4:
+		_on_speed_button_pressed()
+		observed_speed_cycle.append(game_speed_multiplier)
+	var speed_values_ok := TEST_GAME_SPEED_MULTIPLIERS == [1, 3, 5, 10] \
+		and observed_speed_cycle == [3, 5, 10, 1] \
+		and is_equal_approx(Engine.time_scale, 1.0)
+	automated_test_mode = true
+	var stun_hover_height_ok := is_equal_approx(float(TowerScript.STUN_HOVER_HEIGHT), 96.0)
+	var test_button_ok := options_test_mode_button != null and options_test_mode_button.text == "일반 모드로 돌아가기"
+	var passed := test_mode \
+		and gold == TEST_START_GOLD \
+		and shop_turret_ids == expected_shop_ids \
+		and test_mode_badge != null \
+		and test_mode_badge.visible \
+		and speed_values_ok \
+		and stun_hover_height_ok \
+		and test_button_ok
+	if passed:
+		print("Automated test environment passed: GOLD_99999_FIXED_SHOP_SPEED_10X")
+	else:
+		push_error("Automated test environment failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
 # 경로와 수직으로 떨어진 근접 포탑이 같은 층·수평 사거리 안의 적을 찾아 실제 피해를 주는지 검증한다.
 func _run_melee_attack_automated_test() -> void:
 	_place_tower(tower_slots[0], false, "turretMelee1")
@@ -1169,10 +1430,10 @@ func _run_melee_attack_automated_test() -> void:
 	var monster_data := database.get_monster_data("normal1")
 	var target_monster := MonsterScript.new() as PrototypeMonster
 	target_monster.setup(monster_data, movement_path)
-	add_child(target_monster)
+	battlefield_world.add_child(target_monster)
 	# 포탑과 X좌표는 같고 Y좌표는 실제 전투 경로에 두어 수평 거리 판정을 직접 검증한다.
-	target_monster.position = Vector2(melee_tower.position.x, COMBAT_LANE_Y[0])
-	target_monster.path_index = 2
+	target_monster.position = target_monster.center_position_for_floor_contact(Vector2(melee_tower.position.x, COMBAT_LANE_Y[0]))
+	target_monster.path_index = 3
 	target_monster.move_state = PrototypeMonster.MoveState.WALKING
 	target_monster.scale = Vector2.ONE
 	monsters.append(target_monster)
@@ -1190,16 +1451,127 @@ func _run_melee_attack_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
-# 불파괴 터렛, 낮/밤 명칭과 선택한 배속의 낮 전환 초기화를 함께 검증한다.
+# 다섯 터렛 타입의 히트스캔·투사체 분기와 기존 피해/상태이상 적용 시점을 한 번에 검증한다.
+func _run_attack_styles_automated_test() -> void:
+	var test_origin := Vector2(500.0, COMBAT_LANE_Y[0] - 100.0)
+
+	# MELEE는 투사체 없이 즉시 피해를 주고 할퀴기 이펙트를 생성해야 한다.
+	var melee_tower := _create_attack_test_tower("turretMelee1", test_origin)
+	var melee_monster := _create_attack_test_monster(test_origin.x + 20.0)
+	var melee_hp_before := melee_monster.hp
+	melee_tower._process(melee_tower.attack_interval_sec)
+	var melee_ok := melee_monster.hp < melee_hp_before \
+		and get_tree().get_nodes_in_group("tower_projectiles").is_empty() \
+		and not get_tree().get_nodes_in_group("tower_hit_effects").is_empty()
+	_free_attack_test_nodes(melee_tower, melee_monster)
+
+	# DOT는 rangeValue=1.5칸 안의 표적을 선택하고 화염 투사체 명중 후에만 기본 피해와 화상을 적용한다.
+	var dot_tower := _create_attack_test_tower("turretDot1", test_origin)
+	var dot_monster := _create_attack_test_monster(test_origin.x + 200.0)
+	var dot_hp_before := dot_monster.hp
+	dot_tower._process(dot_tower.attack_interval_sec)
+	var dot_projectile := _latest_attack_test_projectile()
+	var dot_waited_for_impact := dot_projectile != null and is_equal_approx(dot_monster.hp, dot_hp_before)
+	if dot_projectile != null:
+		dot_projectile._process(1.0)
+	var dot_ok := dot_waited_for_impact and dot_monster.hp < dot_hp_before and dot_monster.dot_remaining_sec > 0.0
+	_free_attack_test_nodes(dot_tower, dot_monster)
+
+	# SLOW 눈덩이는 명중 전에는 변화가 없고 명중 뒤 이동 배율을 낮춰야 한다.
+	var slow_tower := _create_attack_test_tower("turretSlow1", test_origin)
+	var slow_monster := _create_attack_test_monster(test_origin.x + 220.0)
+	var slow_hp_before := slow_monster.hp
+	slow_tower._process(slow_tower.attack_interval_sec)
+	var slow_projectile := _latest_attack_test_projectile()
+	var slow_waited_for_impact := slow_projectile != null and is_equal_approx(slow_monster.hp, slow_hp_before)
+	if slow_projectile != null:
+		slow_projectile._process(1.0)
+	var slow_ok := slow_waited_for_impact and slow_monster.hp < slow_hp_before and slow_monster.slow_multiplier < 1.0
+	_free_attack_test_nodes(slow_tower, slow_monster)
+
+	# RANGED 초록 콩알은 상태이상 없이 투사체 명중 시점에만 피해를 준다.
+	var ranged_tower := _create_attack_test_tower("turretRanged1", test_origin)
+	var ranged_monster := _create_attack_test_monster(test_origin.x + 220.0)
+	var ranged_hp_before := ranged_monster.hp
+	ranged_tower._process(ranged_tower.attack_interval_sec)
+	var ranged_projectile := _latest_attack_test_projectile()
+	var ranged_waited_for_impact := ranged_projectile != null and is_equal_approx(ranged_monster.hp, ranged_hp_before)
+	if ranged_projectile != null:
+		ranged_projectile._process(1.0)
+	var ranged_ok := ranged_waited_for_impact \
+		and ranged_monster.hp < ranged_hp_before \
+		and ranged_monster.dot_remaining_sec == 0.0 \
+		and ranged_monster.slow_remaining_sec == 0.0 \
+		and ranged_monster.stun_remaining_sec == 0.0
+	_free_attack_test_nodes(ranged_tower, ranged_monster)
+
+	# STUN은 충전 중 피해가 없고 충전 완료 후 낙뢰 히트스캔·기절·헤롱헤롱 이펙트를 생성한다.
+	var stun_tower := _create_attack_test_tower("turretStun1", test_origin)
+	var stun_monster := _create_attack_test_monster(test_origin.x + 220.0)
+	var stun_hp_before := stun_monster.hp
+	stun_tower._process(0.01)
+	var stun_charged_before_hit := stun_tower.stun_charge_remaining_sec > 0.0 and is_equal_approx(stun_monster.hp, stun_hp_before)
+	stun_tower._process(PrototypeTower.STUN_CHARGE_DURATION_SEC + 0.01)
+	var stun_ok := stun_charged_before_hit \
+		and stun_monster.hp < stun_hp_before \
+		and stun_monster.stun_remaining_sec > 0.0 \
+		and not get_tree().get_nodes_in_group("tower_hit_effects").is_empty()
+	_free_attack_test_nodes(stun_tower, stun_monster)
+
+	var passed := melee_ok and dot_ok and slow_ok and ranged_ok and stun_ok
+	if passed:
+		print("Automated attack style test passed: HITSCAN_PROJECTILES_STATUS_VFX")
+	else:
+		push_error("Automated attack style test failed: melee=%s dot=%s slow=%s ranged=%s stun=%s" % [melee_ok, dot_ok, slow_ok, ranged_ok, stun_ok])
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
+func _create_attack_test_tower(turret_id: String, spawn_position: Vector2) -> PrototypeTower:
+	var tower := TowerScript.new() as PrototypeTower
+	tower.position = spawn_position
+	tower.setup(database.get_turret_data(turret_id), 0)
+	battlefield_world.add_child(tower)
+	return tower
+
+
+func _create_attack_test_monster(spawn_x: float) -> PrototypeMonster:
+	var monster := MonsterScript.new() as PrototypeMonster
+	monster.setup(database.get_monster_data("boss1"), movement_path)
+	monster.position = monster.center_position_for_floor_contact(Vector2(spawn_x, COMBAT_LANE_Y[0]))
+	monster.path_index = 3
+	monster.move_state = PrototypeMonster.MoveState.WALKING
+	monster.scale = Vector2.ONE
+	battlefield_world.add_child(monster)
+	return monster
+
+
+func _latest_attack_test_projectile() -> PrototypeTowerProjectile:
+	var projectiles := get_tree().get_nodes_in_group("tower_projectiles")
+	return projectiles.back() as PrototypeTowerProjectile if not projectiles.is_empty() else null
+
+
+func _free_attack_test_nodes(tower: PrototypeTower, monster: PrototypeMonster) -> void:
+	if is_instance_valid(tower):
+		tower.free()
+	if is_instance_valid(monster):
+		monster.free()
+	for group_name in ["tower_projectiles", "tower_hit_effects"]:
+		for node in get_tree().get_nodes_in_group(group_name):
+			if is_instance_valid(node):
+				node.free()
+
+
+# 불파괴 터렛, 보상, 시간 전환 시 적 유지, 마지막 보스 웨이브 전멸 승리를 함께 검증한다.
 func _run_wave_features_automated_test() -> void:
 	_place_tower(tower_slots[0], false, "turretMelee1")
 	var test_tower := towers[0]
 	var monster_data := database.get_monster_data("normal1")
 	var passing_monster := MonsterScript.new() as PrototypeMonster
 	passing_monster.setup(monster_data, movement_path)
-	add_child(passing_monster)
-	passing_monster.position = Vector2(test_tower.position.x, COMBAT_LANE_Y[0])
-	passing_monster.path_index = 2
+	battlefield_world.add_child(passing_monster)
+	passing_monster.position = passing_monster.center_position_for_floor_contact(Vector2(test_tower.position.x, COMBAT_LANE_Y[0]))
+	passing_monster.path_index = 3
 	passing_monster.move_state = PrototypeMonster.MoveState.WALKING
 	passing_monster.scale = Vector2.ONE
 	monsters.append(passing_monster)
@@ -1218,9 +1590,9 @@ func _run_wave_features_automated_test() -> void:
 	# 실제 처치 콜백이 데이터 보상 지급, +n G 표시와 사망 위치 동전을 함께 생성하는지 확인한다.
 	var reward_monster := MonsterScript.new() as PrototypeMonster
 	reward_monster.setup(monster_data, movement_path)
-	reward_monster.position = Vector2(820.0, COMBAT_LANE_Y[0])
+	reward_monster.position = reward_monster.center_position_for_floor_contact(Vector2(820.0, COMBAT_LANE_Y[0]))
 	reward_monster.reward_gold = 2
-	add_child(reward_monster)
+	battlefield_world.add_child(reward_monster)
 	monsters.append(reward_monster)
 	var gold_before_reward := gold
 	_on_monster_defeated(reward_monster)
@@ -1228,18 +1600,59 @@ func _run_wave_features_automated_test() -> void:
 		and gold_gain_label.visible \
 		and gold_gain_label.text == "+ 2 G" \
 		and not get_tree().get_nodes_in_group("reward_coin_popups").is_empty()
+	var ordinary_kill_kept_wave_running := phase == Phase.WAVE and current_wave_number == 1
 	reward_monster.queue_free()
-	_complete_wave()
-	var day_state_ok := phase_label.visible and phase_label.text.ends_with("초") and not wave_label.visible and not speed_button.visible and pause_button.visible and action_button.visible
-	var speed_reset := game_speed_multiplier == 1 and is_equal_approx(Engine.time_scale, 1.0)
+	# 기준시간 전환 직전의 적은 다음 웨이브가 시작되어도 전장과 추적 배열에 남아야 한다.
+	var carryover_monster := MonsterScript.new() as PrototypeMonster
+	carryover_monster.setup(monster_data, movement_path)
+	battlefield_world.add_child(carryover_monster)
+	monsters.append(carryover_monster)
+	current_wave_number = 1
+	wave_remaining_sec = 0.01
+	_process(0.02)
+	var wave_advanced_immediately := phase == Phase.WAVE \
+		and current_wave_number == 2 \
+		and is_equal_approx(wave_remaining_sec, database.define_float("waveTimeSec", 50.0)) \
+		and not phase_label.visible \
+		and wave_label.visible
+	var carryover_preserved := is_instance_valid(carryover_monster) and monsters.has(carryover_monster)
+	var speed_preserved := game_speed_multiplier == 3 and is_equal_approx(Engine.time_scale, 3.0)
 	_on_pause_button_pressed()
 	var options_opened := options_menu_open and options_overlay.visible and get_tree().paused
 	_on_pause_button_pressed()
 	var options_closed := not options_menu_open and not options_overlay.visible and not get_tree().paused
-	var passed := night_state_ok and triple_speed_applied and tower_remained_fixed and reward_feedback_ok and day_state_ok and speed_reset and options_opened and options_closed and phase == Phase.READY
+	current_wave_number = database.define_int("totalWaveCount", 1)
+	current_wave_spawn_entries = [
+		{"monster_id": "boss1"},
+		{"monster_id": "boss1"},
+	]
+	next_spawn_index = current_wave_spawn_entries.size()
+	spawned_count = current_wave_spawn_entries.size()
+	wave_remaining_sec = 0.01
+	_process(0.02)
+	var final_wave_waits_for_boss := phase == Phase.WAVE and wave_remaining_sec == 0.0
+	# 보스 한 기 처치만으로는 승리하지 않고, 보스 웨이브와 이전 웨이브 잔존 적을 모두 처치해야 한다.
+	var first_boss := MonsterScript.new() as PrototypeMonster
+	var second_boss := MonsterScript.new() as PrototypeMonster
+	first_boss.setup(database.get_monster_data("boss1"), movement_path)
+	second_boss.setup(database.get_monster_data("boss1"), movement_path)
+	battlefield_world.add_child(first_boss)
+	battlefield_world.add_child(second_boss)
+	monsters.append(first_boss)
+	monsters.append(second_boss)
+	_on_monster_defeated(first_boss)
+	var first_boss_did_not_win := phase == Phase.WAVE
+	_on_monster_defeated(second_boss)
+	var boss_wave_waited_for_carryover := phase == Phase.WAVE and monsters.has(carryover_monster)
+	_on_monster_defeated(carryover_monster)
+	var full_clear_victory := phase == Phase.VICTORY
+	first_boss.queue_free()
+	second_boss.queue_free()
+	carryover_monster.queue_free()
+	var passed := night_state_ok and triple_speed_applied and tower_remained_fixed and reward_feedback_ok and ordinary_kill_kept_wave_running and wave_advanced_immediately and carryover_preserved and speed_preserved and options_opened and options_closed and final_wave_waits_for_boss and first_boss_did_not_win and boss_wave_waited_for_carryover and full_clear_victory
 	automated_test_mode = true
 	if passed:
-		print("Automated wave feature test passed: INDESTRUCTIBLE_TOWER_DAY_NIGHT_SPEED_REWARD")
+		print("Automated wave feature test passed: TIMED_PERSISTENCE_FULL_BOSS_WAVE_CLEAR")
 	else:
 		push_error("Automated wave feature test failed.")
 	Engine.time_scale = 1.0
@@ -1429,7 +1842,48 @@ func _tower_slot_layout_is_valid() -> bool:
 	return true
 
 
-# 리롤 비용 10→15 증가와 다음 정비 단계의 기본 비용 초기화를 검증한다.
+# 네 카메라 정지점과 경계 제한, 오브젝트 무축소 조건을 헤드리스 환경에서 검증한다.
+func _run_camera_navigation_automated_test() -> void:
+	_set_battlefield_view_index(1, true)
+	var middle_view_valid := battlefield_view_index == 1 \
+		and is_equal_approx(battlefield_world.position.y, float(BATTLEFIELD_CAMERA_Y[1])) \
+		and is_equal_approx(battlefield_background.position.y, float(BATTLEFIELD_CAMERA_Y[1]))
+	_set_battlefield_view_index(99, true)
+	var bottom_index := BATTLEFIELD_CAMERA_Y.size() - 1
+	var bottom_clamped := battlefield_view_index == bottom_index \
+		and is_equal_approx(battlefield_world.position.y, float(BATTLEFIELD_CAMERA_Y[bottom_index])) \
+		and is_equal_approx(battlefield_background.position.y, float(BATTLEFIELD_CAMERA_Y[bottom_index]))
+	_set_battlefield_view_index(-99, true)
+	var top_clamped := battlefield_view_index == 0 \
+		and is_equal_approx(battlefield_world.position.y, float(BATTLEFIELD_CAMERA_Y[0])) \
+		and is_equal_approx(battlefield_background.position.y, float(BATTLEFIELD_CAMERA_Y[0]))
+	# 카메라 기능은 월드의 위치만 바꾸며 적·터렛을 작게 만드는 scale 변경을 사용하지 않는다.
+	var object_scale_preserved := battlefield_world.scale == Vector2.ONE and battlefield_background.scale == Vector2.ONE
+	var reference_frame_clipped := battlefield_background_clip.clip_contents and battlefield_background_clip.size == REFERENCE_VIEWPORT_SIZE
+	# 각 2층 전투 화면의 아래쪽 접촉선이 상점 카드 위로 충분한 안전 여백을 가져야 한다.
+	var shop_clearance_valid := true
+	for view_index in range(1, BATTLEFIELD_CAMERA_Y.size()):
+		var lower_floor_index := view_index - 1
+		var lower_contact_screen_y: float = float(COMBAT_LANE_Y[lower_floor_index]) + float(BATTLEFIELD_CAMERA_Y[view_index])
+		shop_clearance_valid = shop_clearance_valid and lower_contact_screen_y <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 70.0
+	# 지상 등장 애니메이션 중간에도 스케일된 몸체의 발끝은 경로 접촉선에 고정돼야 한다.
+	var spawn_test_monster := MonsterScript.new() as PrototypeMonster
+	spawn_test_monster.setup(database.get_monster_data("normal1"), movement_path)
+	battlefield_world.add_child(spawn_test_monster)
+	spawn_test_monster._process(0.12)
+	var scaled_spawn_bottom := spawn_test_monster.position.y + spawn_test_monster.body_bottom_offset_y * spawn_test_monster.scale.y
+	var grounded_spawn_valid := is_equal_approx(scaled_spawn_bottom, GROUND_LANE_Y)
+	spawn_test_monster.free()
+	var passed := middle_view_valid and bottom_clamped and top_clamped and object_scale_preserved and reference_frame_clipped and shop_clearance_valid and grounded_spawn_valid
+	if passed:
+		print("Automated camera navigation test passed: FOUR_STOPS_NO_ZOOM")
+	else:
+		push_error("Automated camera navigation test failed.")
+	Engine.time_scale = 1.0
+	get_tree().quit(0 if passed else 1)
+
+
+# 리롤 비용 10→15 증가와 전체 게임 초기화 시 기본 비용 복원을 검증한다.
 func _run_economy_automated_test() -> void:
 	var starting_gold := gold
 	var base_cost := database.define_int("rerollCost", 10)
@@ -1440,10 +1894,12 @@ func _run_economy_automated_test() -> void:
 	_on_reroll_button_pressed()
 	var expected_gold := starting_gold - base_cost - (base_cost + plus_cost)
 	var passed := first_cost == base_cost and second_cost == base_cost + plus_cost and gold == expected_gold
-	_begin_preparation(false)
-	passed = passed and _current_reroll_cost() == base_cost and gold == expected_gold
+	_reset_game()
+	passed = passed \
+		and _current_reroll_cost() == base_cost \
+		and gold == database.define_int("initialGold", 100)
 	if passed:
-		print("Automated economy test passed: REROLL_10_15_RESET")
+		print("Automated economy test passed: REROLL_10_15_RUN_RESET")
 	else:
 		push_error("Automated economy test failed.")
 	Engine.time_scale = 1.0
@@ -1466,14 +1922,14 @@ func _spawn_monster() -> float:
 	monster.setup(monster_data, movement_path)
 	monster.defeated.connect(_on_monster_defeated)
 	monster.reached_deepest_floor.connect(_on_monster_reached_deepest_floor)
-	add_child(monster)
+	battlefield_world.add_child(monster)
 	monsters.append(monster)
 	spawned_count += 1
 	_update_interface()
 	return float(spawn_entry.get("delay_after_sec", fallback_interval))
 
 
-# 처치된 몬스터를 목록에서 제거하고 Monster.rewardGold 지급과 두 가지 보상 피드백을 실행한다.
+# 처치된 몬스터를 목록에서 제거하고 보상을 지급한 뒤 마지막 보스 웨이브 전멸 여부를 확인한다.
 func _on_monster_defeated(monster: PrototypeMonster) -> void:
 	monsters.erase(monster)
 	defeated_count += 1
@@ -1482,13 +1938,14 @@ func _on_monster_defeated(monster: PrototypeMonster) -> void:
 	_show_gold_gain_feedback(reward_amount)
 	gold += reward_amount
 	_update_interface()
+	_check_final_wave_victory()
 
 
 # 몬스터의 마지막 월드 좌표에 작은 동전 팝업을 추가한다.
 func _spawn_reward_coin(spawn_position: Vector2) -> void:
 	var coin_popup := RewardCoinPopupScript.new() as PrototypeRewardCoinPopup
 	coin_popup.setup(spawn_position)
-	add_child(coin_popup)
+	battlefield_world.add_child(coin_popup)
 
 
 # 골드 제어부 안의 +n G 문구를 위로 살짝 띄우고 사라지게 하며 연속 처치 시 애니메이션을 갱신한다.
@@ -1509,25 +1966,35 @@ func _show_gold_gain_feedback(reward_amount: int) -> void:
 	gold_gain_tween.tween_callback(func() -> void: gold_gain_label.visible = false)
 
 
-# failAllowedMonster 대신 확정 규칙인 B3 최심부 코어 도달만 패배로 처리한다.
+# 별도 코어 그래픽 없이 B3 왼쪽 경로 끝 좌표 도달만 패배로 처리한다.
 func _on_monster_reached_deepest_floor(monster: PrototypeMonster) -> void:
 	monsters.erase(monster)
 	if phase == Phase.WAVE:
 		_set_phase(Phase.DEFEAT)
 
 
-# 밤의 모든 몬스터를 처치하면 다음 낮 또는 최종 승리로 전환한다.
-func _complete_wave() -> void:
-	if current_wave_number >= database.define_int("totalWaveCount", 1):
-		_set_phase(Phase.VICTORY)
+# 기준시간이 끝나도 기존 적과 투사체를 유지하고 낮 단계를 거치지 않은 채 다음 웨이브를 추가로 시작한다.
+func _start_next_wave_immediately() -> void:
+	var next_wave_number := current_wave_number + 1
+	var next_wave_entries := database.get_wave_spawn_entries("wave%d" % next_wave_number)
+	if next_wave_entries.is_empty():
+		push_error("Next wave has no SpawnTable entries: wave%d" % next_wave_number)
 		return
-	current_wave_number += 1
-	_begin_preparation(false)
-	status_label.text = "밤 방어 완료 · 낮 시작"
-	_update_interface()
-	# 헤드리스 전체 승리 테스트는 사용자 입력이 없으므로 다음 정비 단계를 즉시 건너뛴다.
-	if automated_test_mode:
-		call_deferred("_start_wave")
+	current_wave_number = next_wave_number
+	current_wave_spawn_entries = next_wave_entries
+	status_label.text = ""
+	_start_wave(false)
+
+
+# 마지막 웨이브의 모든 개체가 생성됐고 이전 웨이브 잔존 적까지 전부 사라졌을 때만 승리한다.
+func _check_final_wave_victory() -> void:
+	if phase != Phase.WAVE:
+		return
+	if current_wave_number < database.define_int("totalWaveCount", 1):
+		return
+	if spawned_count < current_wave_spawn_entries.size() or not monsters.is_empty():
+		return
+	_set_phase(Phase.VICTORY)
 
 # 단계에 맞춰 터렛 공격, 슬롯 입력, 몬스터 진행, HUD를 일괄 전환한다.
 func _set_phase(next_phase: Phase) -> void:
@@ -1615,6 +2082,7 @@ func _reset_game() -> void:
 		if is_instance_valid(coin_popup):
 			coin_popup.queue_free()
 	current_wave_number = 1
+	_set_battlefield_view_index(0, true)
 	_configure_shop_rng()
 	_begin_preparation(true)
 
@@ -1623,7 +2091,8 @@ func _reset_game() -> void:
 # reset_run=false일 때는 기존 골드와 살아 있는 터렛을 보존한다.
 func _begin_preparation(reset_run: bool) -> void:
 	if reset_run:
-		gold = database.define_int("initialGold", 100)
+		# 테스트 모드는 밸런스 데이터와 분리된 디버그 전용 시작 골드를 사용한다.
+		gold = TEST_START_GOLD if test_mode else database.define_int("initialGold", 100)
 	reroll_count = 0
 	preparation_remaining_sec = database.define_float("prepareTimeSec", 20.0)
 	current_wave_spawn_entries = database.get_wave_spawn_entries("wave%d" % current_wave_number)
@@ -1636,7 +2105,13 @@ func _begin_preparation(reset_run: bool) -> void:
 
 # ShopGacha 확률로 카드 ID를 새로 뽑고 카드에 타입·능력치·가격을 표시한다.
 func _refresh_shop_cards() -> void:
-	shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
+	if test_mode:
+		# 테스트 환경에서는 다섯 종류의 Tier 1 포탑을 항상 같은 순서로 노출한다.
+		shop_turret_ids.clear()
+		for card_index in shop_cards.size():
+			shop_turret_ids.append(str(TEST_SHOP_TURRET_IDS[card_index % TEST_SHOP_TURRET_IDS.size()]))
+	else:
+		shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
 	shop_card_available.clear()
 	for card_index in shop_cards.size():
 		shop_card_available.append(true)
@@ -1719,21 +2194,10 @@ func _update_interface() -> void:
 			action_button.visible = false
 
 
-# 동일 구도의 낮·밤 AI 생성 배경을 단계 값으로 교차 페이드하고 독립형 HUD를 덧그린다.
+# 고정 HUD와 상점 제어 장식만 그리고, 화면 전체 배경은 독립된 수직 카메라 노드에 맡긴다.
 func _draw() -> void:
-	# 낮 배경은 항상 바탕에 두고 밤 배경의 알파를 올려 구조물이 흔들리지 않는 자연스러운 전환을 만든다.
-	_draw_environment_background(DAY_ENVIRONMENT_BACKGROUND, Color.WHITE)
-	if night_visual_amount > 0.001:
-		_draw_environment_background(NIGHT_ENVIRONMENT_BACKGROUND, Color(1.0, 1.0, 1.0, night_visual_amount))
-
 	# 전체 폭 상단 판넬 대신 낮/밤과 웨이브만 담는 독립형 반원 HUD를 표시한다.
 	_draw_day_night_hud()
-
-	# Deepest-floor breach core.
-	draw_circle(Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]), 36.0, Color("5b2432"))
-	draw_circle(Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]), 21.0, Color("ff6475"))
-	draw_line(Vector2(PATH_LEFT_X - 11.0, COMBAT_LANE_Y[2] - 11.0), Vector2(PATH_LEFT_X + 11.0, COMBAT_LANE_Y[2] + 11.0), Color.WHITE, 4.0)
-	draw_line(Vector2(PATH_LEFT_X + 11.0, COMBAT_LANE_Y[2] - 11.0), Vector2(PATH_LEFT_X - 11.0, COMBAT_LANE_Y[2] + 11.0), Color.WHITE, 4.0)
 
 	# 전체 폭 상점 판넬은 제거하고 골드·리롤 제어부만 독립 판넬로 유지한다.
 	draw_style_box(_make_panel_style(Color("4a435f"), Color("81799a"), 15, 4), Rect2(38.0, 790.0, 224.0, 270.0))
@@ -1780,19 +2244,3 @@ func _make_panel_style(background_color: Color, border_color: Color, radius: int
 		style.shadow_size = 6
 		style.shadow_offset = Vector2(0.0, 7.0)
 	return style
-
-
-# 한 배경의 전장 부분과 하단 창고 부분을 같은 방식으로 분할 렌더링해 낮·밤 정렬을 공유한다.
-func _draw_environment_background(texture: Texture2D, modulation: Color) -> void:
-	draw_texture_rect_region(
-		texture,
-		Rect2(0.0, 0.0, REFERENCE_VIEWPORT_SIZE.x, SHOP_AREA_TOP_Y),
-		Rect2(0.0, 0.0, BACKGROUND_SOURCE_SIZE.x, BACKGROUND_SOURCE_SHOP_Y),
-		modulation
-	)
-	draw_texture_rect_region(
-		texture,
-		Rect2(0.0, SHOP_AREA_TOP_Y, REFERENCE_VIEWPORT_SIZE.x, SHOP_AREA_BOTTOM_Y - SHOP_AREA_TOP_Y),
-		Rect2(0.0, BACKGROUND_SOURCE_SHOP_Y, BACKGROUND_SOURCE_SIZE.x, BACKGROUND_SOURCE_SIZE.y - BACKGROUND_SOURCE_SHOP_Y),
-		modulation
-	)

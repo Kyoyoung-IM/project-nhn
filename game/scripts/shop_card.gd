@@ -2,7 +2,9 @@ class_name PrototypeShopCard
 extends Button
 
 # 상점의 터렛 한 칸을 담당한다.
-# 기본 상태에는 이미지형 도형·이름·가격만 표시하고, 호버하면 효과와 전투 능력치를 펼쳐 보여준다.
+# 기본 상태에는 투명 배경 스프라이트·이름·가격만 표시하고, 호버하면 효과와 전투 능력치를 펼쳐 보여준다.
+
+const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
 
 # 카드에 표시할 데이터와 공통 한글 폰트다.
 var tower_data: Dictionary = {}
@@ -91,13 +93,9 @@ func _draw() -> void:
 		_draw_hover_state()
 
 
-# 기본 상태는 큰 터렛 이미지형 도형 아래에 이름과 가격만 배치한다.
+# 기본 상태는 별도 이미지 판넬 없이 승인된 Tier 1 스프라이트와 이름·가격만 배치한다.
 func _draw_default_state() -> void:
-	var tower_color := Color(str(tower_data.get("color_hex", "68d8c1")))
-	var image_rect := Rect2(13.0, 13.0, size.x - 26.0, 156.0)
-	draw_style_box(_make_card_style(tower_color.darkened(0.48), CARD_INK, 11, 4), image_rect)
-	draw_style_box(_make_card_style(Color(1.0, 1.0, 1.0, 0.08), Color.TRANSPARENT, 8, 0), Rect2(20.0, 20.0, size.x - 40.0, 44.0))
-	_draw_tower_icon(Vector2(size.x * 0.5, 91.0), tower_color, 1.5)
+	_draw_tower_sprite()
 	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 205.0, 26, CARD_CREAM)
 	var price_panel_color := Color("5b4935") if card_affordable else Color("4c4c55")
 	var price_border_color := Color("d6a93f") if card_affordable else Color("7d7d87")
@@ -132,30 +130,17 @@ func _effect_description() -> String:
 			return "효과 · 장거리 단일 공격"
 
 
-# 실제 이미지 에셋이 추가되기 전까지 터렛 타입을 구분하는 더미 도형을 이미지 영역에 그린다.
-func _draw_tower_icon(center: Vector2, color: Color, icon_scale: float) -> void:
-	draw_circle(center, 27.0 * icon_scale, Color("203342"))
-	draw_circle(center, 21.0 * icon_scale, color)
+# 카드 상단에는 타입별 Tier 1 본체를 투명 배경 그대로 크게 보여준다.
+# DOT 불꽃도 전장과 같은 별도 텍스처를 겹쳐 향후 이펙트 교체 경로를 통일한다.
+func _draw_tower_sprite() -> void:
 	var turret_type := str(tower_data.get("type", "RANGED"))
-	match turret_type:
-		"MELEE":
-			draw_colored_polygon(PackedVector2Array([
-				center + Vector2(-6.0, -34.0) * icon_scale,
-				center + Vector2(6.0, -34.0) * icon_scale,
-				center + Vector2(13.0, -3.0) * icon_scale,
-				center + Vector2(-12.0, -3.0) * icon_scale,
-			]), color.lightened(0.28))
-		"DOT":
-			draw_circle(center + Vector2(0.0, -17.0) * icon_scale, 12.0 * icon_scale, color.lightened(0.3))
-			draw_circle(center + Vector2(0.0, -17.0) * icon_scale, 5.0 * icon_scale, Color("2a1738"))
-		"STUN":
-			draw_line(center + Vector2(-7.0, -34.0) * icon_scale, center + Vector2(5.0, -21.0) * icon_scale, Color("f3fbff"), 5.0 * icon_scale)
-			draw_line(center + Vector2(5.0, -21.0) * icon_scale, center + Vector2(-5.0, -8.0) * icon_scale, Color("f3fbff"), 5.0 * icon_scale)
-		"SLOW":
-			draw_line(center + Vector2(0.0, -35.0) * icon_scale, center + Vector2(0.0, -4.0) * icon_scale, Color("efffff"), 4.0 * icon_scale)
-			draw_line(center + Vector2(-13.0, -27.0) * icon_scale, center + Vector2(13.0, -12.0) * icon_scale, Color("efffff"), 4.0 * icon_scale)
-		_:
-			draw_rect(Rect2(center + Vector2(-8.0, -36.0) * icon_scale, Vector2(16.0, 34.0) * icon_scale), color.lightened(0.35), true)
+	var body_size := 158.0
+	var body_rect := Rect2((size.x - body_size) * 0.5, 174.0 - body_size, body_size, body_size)
+	draw_texture_rect(TowerVisualAssetsScript.body_texture(turret_type, 1), body_rect, false)
+	if turret_type == "DOT":
+		var flame_size := 80.0
+		var flame_rect := Rect2((size.x - flame_size) * 0.5, 79.0 - flame_size, flame_size, flame_size)
+		draw_texture_rect(TowerVisualAssetsScript.dot_flame_texture(1), flame_rect, false)
 
 
 # draw_string의 기준선을 숨기고 카드 폭 전체를 사용해 한 줄 텍스트를 가운데 정렬한다.

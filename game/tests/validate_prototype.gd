@@ -5,6 +5,9 @@ extends SceneTree
 
 # 실제 게임과 동일한 로더를 사용해야 테스트와 런타임 검증이 어긋나지 않는다.
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
+const TowerScript := preload("res://scripts/tower.gd")
+const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
+const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
 
 # 읽기 전용 데이터 테이블의 대표 오브젝트 ID다. 원본 오탈자 spped1도 그대로 보존한다.
 const EXPECTED_TURRET_IDS := ["turretMelee1", "turretDot1", "turretStun1", "turretSlow1", "turretRanged1"]
@@ -85,9 +88,9 @@ func _init() -> void:
 	if not is_equal_approx(float(dot_turret.get("cc_value", 0.0)), 0.5):
 		_fail("percentage ccValue must be normalized to a 0-1 ratio")
 		return
-	# 2026-08-04 최신 turret 시트의 사거리 변경이 런타임 슬롯 간격(180px)으로 정확히 변환돼야 한다.
-	if not is_equal_approx(float(dot_turret.get("range_px", -1.0)), 36.0):
-		_fail("turretDot1 range must match the latest source value 0.2 slots")
+	# DOT는 기획자 확정에 따라 rangeValue=1.5를 사용하고, 나머지 원거리형은 range=2를 180px 슬롯 간격으로 변환한다.
+	if not is_equal_approx(float(dot_turret.get("range_px", -1.0)), 270.0):
+		_fail("turretDot1 range must use rangeValue 1.5 slots")
 		return
 	if not is_equal_approx(float(database.get_turret_data("turretStun1").get("range_px", -1.0)), 360.0):
 		_fail("turretStun1 range must match the latest source value 2 slots")
@@ -95,6 +98,37 @@ func _init() -> void:
 	if not is_equal_approx(float(database.get_turret_data("turretSlow1").get("range_px", -1.0)), 360.0):
 		_fail("turretSlow1 range must match the latest source value 2 slots")
 		return
+	# 모든 5종의 실제 불투명 그림 경계가 유효하고 Tier별 목표 면적이 계속 증가하는지 검사한다.
+	for turret_type in ["MELEE", "RANGED", "DOT", "SLOW", "STUN"]:
+		var previous_visible_side := 0.0
+		for tier in range(1, 5):
+			var texture: Texture2D = TowerVisualAssetsScript.body_texture(turret_type, tier)
+			var bounds: Rect2 = TowerVisualAssetsScript.body_visible_bounds(turret_type, tier)
+			if bounds.size.x <= 0.0 or bounds.size.y <= 0.0 or bounds.end.x > texture.get_width() or bounds.end.y > texture.get_height():
+				_fail("tower visible bounds are outside the texture: %s tier %d" % [turret_type, tier])
+				return
+			var target_side: float = TowerScript.body_visible_area_side(turret_type, tier)
+			var runtime_scale: float = TowerScript._scale_for_visible_area(bounds, target_side)
+			var normalized_visible_side := sqrt(bounds.size.x * bounds.size.y) * runtime_scale
+			if normalized_visible_side <= previous_visible_side or not is_equal_approx(normalized_visible_side, target_side):
+				_fail("tower visual size must grow consistently: %s tier %d" % [turret_type, tier])
+				return
+			previous_visible_side = normalized_visible_side
+	# 지속 포탑 Tier 4 idle 불꽃은 원본의 분리된 좌측 공격 조각을 제외한 AtlasTexture여야 한다.
+	if TowerVisualAssetsScript.dot_flame_texture(4).get_size() != Vector2(184.0, 192.0):
+		_fail("DOT tier 4 idle flame must use the cropped main-flame region")
+		return
+	if TowerVisualAssetsScript.dot_front_texture(3).get_size() != Vector2(256.0, 242.0) or TowerVisualAssetsScript.dot_front_texture(4).get_size() != Vector2(256.0, 189.0):
+		_fail("DOT tier 3 and 4 must provide separate front body layers")
+		return
+	# 세 전투 플랫폼에서 계산한 밤 배경 보정 결과가 낮 기준선과 1px 안팎으로 일치해야 한다.
+	var night_source_rows := [805.0, 1041.0, 1282.0]
+	var day_target_rows := [847.0, 1081.0, 1320.0]
+	for row_index in night_source_rows.size():
+		var aligned_row: float = BattlefieldWorldScript.NIGHT_VERTICAL_OFFSET_SOURCE_PX + night_source_rows[row_index] * BattlefieldWorldScript.NIGHT_VERTICAL_SCALE
+		if absf(aligned_row - day_target_rows[row_index]) > 1.25:
+			_fail("night background alignment drifted at platform %d" % (row_index + 1))
+			return
 
 	print("Prototype data validation passed.")
 	quit(0)

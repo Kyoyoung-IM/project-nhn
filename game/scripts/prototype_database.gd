@@ -98,13 +98,15 @@ func get_turret_data(turret_id: String) -> Dictionary:
 	var raw: Dictionary = turrets_by_id[turret_id]
 	var extension: Dictionary = raw.get("prototypeExtensions", {})
 	var range_slots := float(raw.get("range", 0.0))
-	# 원본 설명에 따라 range=0이면 rangeValue도 슬롯 간격 단위로 해석한다.
-	var effective_range_slots := float(raw.get("rangeValue", 0.0)) if range_slots <= 0.0 else range_slots
+	var range_value_slots := float(raw.get("rangeValue", 0.0))
+	var turret_type := str(raw.get("type", "RANGED")).to_upper()
+	# 원본의 range=0 폴백은 유지하고, 기획자 확정에 따라 DOT 화염방사기는 rangeValue를 실제 공격 사거리로 사용한다.
+	var effective_range_slots := range_value_slots if range_slots <= 0.0 or (turret_type == "DOT" and range_value_slots > 0.0) else range_slots
 	var range_px := effective_range_slots * SLOT_SPACING_PX
 	return {
 		"id": turret_id,
 		"display_name": str(extension.get("displayName", turret_id)),
-		"type": str(raw.get("type", "RANGED")),
+		"type": turret_type,
 		"next_turret_id": str(raw.get("nextTurretId", "-1")),
 		"is_shop": bool(raw.get("isShop", false)),
 		"base_price": int(raw.get("basePrice", -1)),

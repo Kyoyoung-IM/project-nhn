@@ -36,6 +36,7 @@ var path_points := PackedVector2Array()
 var path_index: int = 0
 var move_state: MoveState = MoveState.SPAWNING
 var spawn_animation_sec: float = 0.24
+var spawn_floor_contact_position := Vector2.ZERO
 
 # 한 층의 왼쪽 출구에서 다음 층 오른쪽 입구로 이동하는 축소/확대 연출 상태다.
 var floor_transfer_active: bool = false
@@ -43,6 +44,9 @@ var floor_transfer_repositioned: bool = false
 var floor_transfer_remaining_sec: float = 0.0
 var floor_transfer_destination_index: int = -1
 var floor_transfer_duration_sec: float = 0.36
+
+# 경로 좌표는 몬스터 중심이 아니라 발판에 닿아야 하는 바닥 접촉점으로 전달된다.
+var body_bottom_offset_y: float = 16.0
 
 
 # 로더가 정규화한 몬스터 데이터와 공유 이동 경로를 복사해 초기 상태를 만든다.
@@ -55,19 +59,39 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	move_speed_px_sec = float(config.get("move_speed_px_sec", 1.0))
 	reward_gold = int(config.get("reward_gold", 0))
 	body_color = Color(str(config.get("color_hex", "d96772")))
+	body_bottom_offset_y = _body_bottom_offset_for_type(monster_type)
 	stun_remaining_sec = 0.0
 	slow_remaining_sec = 0.0
 	slow_multiplier = 1.0
 	dot_remaining_sec = 0.0
 	dot_tick_damage = 0.0
 	dot_tick_cooldown_sec = 0.0
-	path_points = movement_path
+	path_points.clear()
+	for floor_contact_point in movement_path:
+		path_points.append(center_position_for_floor_contact(floor_contact_point))
 	position = path_points[0]
+	spawn_floor_contact_position = position + Vector2(0.0, body_bottom_offset_y)
 	path_index = 0
 	move_state = MoveState.SPAWNING
 	scale = Vector2.ZERO
 	add_to_group("prototype_monsters")
 	queue_redraw()
+
+
+# 더미 도형의 실제 최하단을 중심점 기준으로 반환해 종류별 뜨거나 파묻히는 차이를 없앤다.
+static func _body_bottom_offset_for_type(type_value: String) -> float:
+	match type_value:
+		"SPEED":
+			return 12.0
+		"TANK":
+			return 17.0
+		"BOSS":
+			return 22.0
+	return 16.0
+
+
+func center_position_for_floor_contact(floor_contact_position: Vector2) -> Vector2:
+	return floor_contact_position - Vector2(0.0, body_bottom_offset_y)
 
 
 # 상태 이상, 등장 연출과 웨이포인트 이동을 우선순위대로 처리한다.
@@ -79,8 +103,11 @@ func _process(delta: float) -> void:
 		spawn_animation_sec -= delta
 		var reveal := clampf(1.0 - spawn_animation_sec / 0.24, 0.0, 1.0)
 		scale = Vector2.ONE * reveal
+		# 중심 확대 중에도 도형의 실제 발끝을 지면에 고정해 지상 진입 시 공중부양처럼 보이지 않게 한다.
+		position = spawn_floor_contact_position - Vector2(0.0, body_bottom_offset_y * reveal)
 		if spawn_animation_sec <= 0.0:
 			scale = Vector2.ONE
+			position = center_position_for_floor_contact(spawn_floor_contact_position)
 			move_state = MoveState.WALKING
 		return
 
@@ -112,9 +139,9 @@ func _process(delta: float) -> void:
 			_reach_deepest_floor()
 
 
-# 홀수 경로 인덱스 1/3/5는 각 층의 왼쪽 출구이므로 하강 연출을 시작한다.
+# 경로 인덱스 2는 지상 광산 입구, 4/6은 B1/B2 왼쪽 출구이므로 하강 연출을 시작한다.
 func _is_floor_transfer_origin() -> bool:
-	return path_index == 1 or path_index == 3 or path_index == 5
+	return path_index == 2 or path_index == 4 or path_index == 6
 
 
 # 다음 전투층의 오른쪽 입구를 목적지로 지정하고 DESCENDING 상태로 바꾼다.
@@ -194,19 +221,19 @@ func _process_status_effects(delta: float) -> void:
 	queue_redraw()
 
 
-# 지상 진입 구간을 제외하고 터렛이 공격할 수 있는 전투층인지 반환한다.
+# 지상 진입과 층간 하강을 제외하고 터렛이 공격할 수 있는 전투층인지 반환한다.
 func is_in_combat_floor() -> bool:
-	return path_index >= 2 and move_state != MoveState.DEAD and move_state != MoveState.EXIT
+	return current_combat_floor() >= 0 and not floor_transfer_active and move_state != MoveState.DEAD and move_state != MoveState.EXIT
 
 
 # 경로 인덱스를 B1=0, B2=1, B3=2로 변환한다. 전투층 밖이면 -1이다.
 func current_combat_floor() -> int:
 	match path_index:
-		2:
+		3:
 			return 0
-		4:
+		5:
 			return 1
-		6:
+		7:
 			return 2
 	return -1
 
