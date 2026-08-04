@@ -1667,8 +1667,9 @@ func _update_shop_cards() -> void:
 		card.self_modulate = Color.WHITE
 		var tower_data := database.get_turret_data(shop_turret_ids[card_index])
 		var tower_cost := int(tower_data.get("base_price", 0))
-		var interactable := _is_shop_available() and shop_card_available[card_index] and gold >= tower_cost
-		card.set_card_state(shop_card_available[card_index], card_index == selected_shop_card, interactable)
+		var affordable := gold >= tower_cost
+		var interactable := _is_shop_available() and shop_card_available[card_index] and affordable
+		card.set_card_state(shop_card_available[card_index], card_index == selected_shop_card, interactable, affordable)
 	if reroll_button != null:
 		var reroll_cost := _current_reroll_cost()
 		var can_reroll := _is_shop_available() and gold >= reroll_cost

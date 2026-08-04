@@ -17,7 +17,7 @@
 - 몬스터: `displayName`, `colorHex`
 - Define: `shopCardCount`, `rngSeed`, `sellRefundRate` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용하며, `sellRefundRate=0.5`는 기획 확정 전 임시값)
 
-2026-08-04 최신 원본의 `totalWaveCount=4`, `rerollPlusCost=5`, `spawnOrderInterval=0.5`와 고유한 `wave3.spawnOrder`를 로컬 사본에 반영했다.
+2026-08-04 최신 원본의 `totalWaveCount=4`, `rerollPlusCost=5`, `spawnOrderInterval=0.5`, 고유한 `wave3.spawnOrder`와 터렛별 최신 `range`·`rangeValue`를 로컬 사본에 반영했다.
 
 `failAllowedMonster`는 원본 컬럼 호환을 위해 보존하지만 현재 게임 오버 판정에는 사용하지 않는다.
 
