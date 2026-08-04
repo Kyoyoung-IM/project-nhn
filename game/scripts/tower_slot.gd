@@ -83,18 +83,37 @@ func _on_mouse_exited() -> void:
 
 # 빈 슬롯의 + 기호, 점유 상태, 호버 테두리를 코드 도형으로 그린다.
 func _draw() -> void:
-	var fill := Color("314152") if is_empty() else Color("222b38")
+	# 점유 슬롯은 터렛 외형만 보이게 완전히 숨긴다. 점유가 해제되면 queue_redraw로 빈 슬롯 표시가 복원된다.
+	if not is_empty():
+		return
+	# 기본 설치 가능 영역은 배경을 덜 가리는 30% 불투명 연두색으로 통일한다.
+	var fill := Color(0.48, 0.78, 0.22, 0.30)
 	if drag_eligible:
-		fill = Color("294b43")
-	var border := Color("60778a")
+		fill = Color(0.36, 0.82, 0.30, 0.78)
+	var border := Color(0.70, 1.00, 0.38, 0.30)
 	if drag_targeted:
-		border = Color("ffe278")
+		border = Color(0.95, 1.00, 0.55, 0.95)
 	elif drag_eligible:
-		border = Color("7fe6a3")
+		border = Color(0.70, 1.00, 0.42, 0.90)
 	elif hovered and interaction_enabled:
-		border = Color("9fe8dc")
-	draw_rect(Rect2(-41.0, -24.0, 82.0, 48.0), fill, true)
-	draw_rect(Rect2(-41.0, -24.0, 82.0, 48.0), border, false, 4.0 if drag_targeted else 2.0)
+		border = Color(0.83, 1.00, 0.55, 0.82)
+	# 슬롯도 카드와 같은 둥근 판넬과 아래 그림자를 사용해 설치 UI라는 점을 명확히 한다.
+	draw_style_box(_make_slot_style(Color(0.04, 0.10, 0.03, 0.15), Color.TRANSPARENT, 12, 0), Rect2(-43.0, -20.0, 86.0, 50.0))
+	draw_style_box(_make_slot_style(fill, Color(0.12, 0.22, 0.08, 0.30), 12, 5), Rect2(-43.0, -27.0, 86.0, 52.0))
+	draw_style_box(_make_slot_style(Color.TRANSPARENT, border, 9, 3 if not drag_targeted else 5), Rect2(-37.0, -21.0, 74.0, 40.0))
 	if is_empty():
-		draw_line(Vector2(-9.0, 0.0), Vector2(9.0, 0.0), Color("8ca2b5"), 3.0)
-		draw_line(Vector2(0.0, -9.0), Vector2(0.0, 9.0), Color("8ca2b5"), 3.0)
+		var plus_color := Color(0.90, 1.00, 0.66, 0.90) if hovered or drag_eligible else Color(0.82, 1.00, 0.56, 0.30)
+		draw_line(Vector2(-10.0, -1.0), Vector2(10.0, -1.0), Color(0.10, 0.20, 0.07, 0.30), 7.0)
+		draw_line(Vector2(0.0, -11.0), Vector2(0.0, 9.0), Color(0.10, 0.20, 0.07, 0.30), 7.0)
+		draw_line(Vector2(-10.0, -2.0), Vector2(10.0, -2.0), plus_color, 4.0)
+		draw_line(Vector2(0.0, -12.0), Vector2(0.0, 8.0), plus_color, 4.0)
+
+
+# 코드 도형 슬롯의 모서리와 외곽선을 일관되게 만드는 작은 스타일 도우미다.
+func _make_slot_style(background_color: Color, border_color: Color, radius: int, border_width: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background_color
+	style.border_color = border_color
+	style.set_border_width_all(border_width)
+	style.set_corner_radius_all(radius)
+	return style
