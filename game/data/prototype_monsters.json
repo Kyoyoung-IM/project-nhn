@@ -2,7 +2,7 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / monster",
-    "note": "Read-only source snapshot. displayName and colorHex are local visual prototype extensions; source IDs including spped1/spped2 are preserved. This branch does not add monster attack fields."
+    "note": "Read-only source snapshot verified 2026-08-05; source values are unchanged from 2026-08-04. displayName and colorHex are local visual prototype extensions; source IDs including spped1/spped2 are preserved. This branch does not add monster attack fields."
   },
   "rows": [
     {
