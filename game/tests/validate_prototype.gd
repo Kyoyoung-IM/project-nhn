@@ -51,12 +51,28 @@ func _init() -> void:
 		return
 	for turret_id in EXPECTED_TURRET_IDS:
 		var turret := database.get_turret_data(turret_id)
-		if turret.is_empty() or float(turret.get("max_hp", 0.0)) <= 0.0:
+		if turret.is_empty() or float(turret.get("damage", 0.0)) <= 0.0:
 			_fail("missing prototype turret object: %s" % turret_id)
 			return
+		# 상점 Tier 1부터 네 단계가 끊김 없이 이어져 런타임 머지가 항상 상위 스탯을 찾을 수 있어야 한다.
+		var current_turret := turret
+		for expected_tier in range(1, 5):
+			if int(current_turret.get("tier", -1)) != expected_tier:
+				_fail("turret merge chain has an invalid tier: %s expected %d" % [str(current_turret.get("id", "")), expected_tier])
+				return
+			var next_turret_id := str(current_turret.get("next_turret_id", "-1"))
+			if expected_tier == 4:
+				if next_turret_id != "-1":
+					_fail("tier 4 turret must end the merge chain: %s" % str(current_turret.get("id", "")))
+					return
+			else:
+				current_turret = database.get_turret_data(next_turret_id)
+				if current_turret.is_empty():
+					_fail("turret merge chain is missing next data: %s" % next_turret_id)
+					return
 	for monster_id in EXPECTED_MONSTER_IDS:
 		var monster := database.get_monster_data(monster_id)
-		if monster.is_empty() or float(monster.get("attack_damage", 0.0)) <= 0.0:
+		if monster.is_empty() or float(monster.get("max_hp", 0.0)) <= 0.0:
 			_fail("missing prototype monster object: %s" % monster_id)
 			return
 	if int(database.get_monster_data("boss1").get("reward_gold", 0)) != 555555:

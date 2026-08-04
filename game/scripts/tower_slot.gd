@@ -16,7 +16,7 @@ var occupant: PrototypeTower = null
 var interaction_enabled: bool = true
 var hovered: bool = false
 
-# 터렛 드래그 중 같은 층의 빈 슬롯인지, 현재 드롭 대상으로 선택됐는지 표시한다.
+# 터렛 드래그 중 같은 층의 이동·머지 가능 슬롯인지, 현재 드롭 대상으로 선택됐는지 표시한다.
 var drag_eligible: bool = false
 var drag_targeted: bool = false
 
@@ -53,7 +53,7 @@ func is_empty() -> bool:
 	return occupant == null or not is_instance_valid(occupant)
 
 
-# 드래그 가능한 같은 층 빈 슬롯과 현재 커서 아래 드롭 슬롯의 강조 상태를 갱신한다.
+# 드래그 가능한 같은 층의 빈 슬롯·머지 슬롯과 현재 커서 아래 드롭 슬롯의 강조 상태를 갱신한다.
 func set_drag_state(eligible: bool, targeted: bool) -> void:
 	drag_eligible = eligible
 	drag_targeted = targeted

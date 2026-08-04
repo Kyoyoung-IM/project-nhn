@@ -108,7 +108,6 @@ func get_turret_data(turret_id: String) -> Dictionary:
 		"next_turret_id": str(raw.get("nextTurretId", "-1")),
 		"is_shop": bool(raw.get("isShop", false)),
 		"base_price": int(raw.get("basePrice", -1)),
-		"max_hp": float(extension.get("maxHp", 1.0)),
 		"damage": float(raw.get("damage", 1.0)),
 		"attack_interval_sec": float(raw.get("attackspeed", 1.0)),
 		"range_px": range_px,
@@ -121,7 +120,7 @@ func get_turret_data(turret_id: String) -> Dictionary:
 	}
 
 
-# Monster 원본 행과 prototypeExtensions 공격 값을 런타임 형식으로 합친다.
+# Monster 원본 행과 표시용 prototypeExtensions 값을 런타임 형식으로 합친다.
 func get_monster_data(monster_id: String) -> Dictionary:
 	if not monsters_by_id.has(monster_id):
 		return {}
@@ -135,9 +134,6 @@ func get_monster_data(monster_id: String) -> Dictionary:
 		"move_speed_multiplier": float(raw.get("moveSpeed", 1.0)),
 		"move_speed_px_sec": 88.0 * float(raw.get("moveSpeed", 1.0)),
 		"reward_gold": int(raw.get("rewardGold", 0)),
-		"attack_damage": float(extension.get("attackDamage", 1.0)),
-		"attack_interval_sec": float(extension.get("attackIntervalSec", 1.0)),
-		"attack_range_px": float(extension.get("attackRange", 55.0)),
 		"color_hex": str(extension.get("colorHex", "d96772")),
 		"prefab_resource": str(raw.get("prefabResource", "")),
 	}
@@ -349,8 +345,18 @@ func _validate_cross_references() -> void:
 	for turret_id in turrets_by_id:
 		var turret: Dictionary = turrets_by_id[turret_id]
 		var next_id := str(turret.get("nextTurretId", "-1"))
-		if next_id != "-1" and not turrets_by_id.has(next_id):
-			validation_errors.append("nextTurretId does not exist: %s -> %s" % [turret_id, next_id])
+		if next_id != "-1":
+			if not turrets_by_id.has(next_id):
+				validation_errors.append("nextTurretId does not exist: %s -> %s" % [turret_id, next_id])
+			else:
+				# 수동 머지는 이 연결을 그대로 사용하므로 다음 행의 타입과 Tier 연속성도 함께 검증한다.
+				var next_turret: Dictionary = turrets_by_id[next_id]
+				var extension: Dictionary = turret.get("prototypeExtensions", {})
+				var next_extension: Dictionary = next_turret.get("prototypeExtensions", {})
+				if str(next_turret.get("type", "")) != str(turret.get("type", "")):
+					validation_errors.append("nextTurretId must keep turret type: %s -> %s" % [turret_id, next_id])
+				if int(next_extension.get("tier", -1)) != int(extension.get("tier", -1)) + 1:
+					validation_errors.append("nextTurretId must advance exactly one tier: %s -> %s" % [turret_id, next_id])
 		if bool(turret.get("isShop", false)) and int(turret.get("basePrice", -1)) < 0:
 			validation_errors.append("shop turret must have a non-negative basePrice: %s" % turret_id)
 
@@ -366,7 +372,7 @@ func _validate_cross_references() -> void:
 		if not spawn_orders_by_wave.has(wave_group):
 			spawn_orders_by_wave[wave_group] = {}
 		var used_orders: Dictionary = spawn_orders_by_wave[wave_group]
-		# 중복 spawnOrder는 REQUEST.md의 결정에 따라 원본 행 순서를 유지하므로 오류로 처리하지 않는다.
+		# 중복 spawnOrder는 Design Request/20260803 REQUEST.md의 결정에 따라 원본 행 순서를 유지하므로 오류로 처리하지 않는다.
 		used_orders[order] = true
 
 	var probability_sum := 0.0
