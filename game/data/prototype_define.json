@@ -2,7 +2,7 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / define",
-    "note": "Read-only snapshot. totalWaveCount=4, rerollPlusCost=5 and spawnOrderIntervalSec=10 are local placeholders for missing source data. See Design Request/20260803 REQUEST.md."
+    "note": "Read-only source snapshot updated 2026-08-04. sellRefundRate=0.5 remains a local placeholder; see Design Request/20260804 REQUEST.md."
   },
   "values": {
     "prepareTimeSec": 20.0,
@@ -12,11 +12,12 @@
     "rerollCost": 10.0,
     "rerollPlusCost": 5.0,
     "failAllowedMonster": 0.0,
-    "monsterSpawnInterval": 0.4
+    "monsterSpawnInterval": 0.4,
+    "spawnOrderInterval": 0.5
   },
   "prototypeExtensions": {
     "shopCardCount": 5,
     "rngSeed": 20260803,
-    "spawnOrderIntervalSec": 10.0
+    "sellRefundRate": 0.5
   }
 }

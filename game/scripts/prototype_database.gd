@@ -140,11 +140,11 @@ func get_monster_data(monster_id: String) -> Dictionary:
 
 
 # SpawnTable을 실제 개체 단위로 펼치고 각 개체 뒤에 적용할 스폰 대기시간을 함께 반환한다.
-# 같은 Spawn Order 안에서는 원본 0.4초를, 서로 다른 Order로 넘어갈 때는 임시 확장값 10초를 사용한다.
+# 같은 Spawn Order 안에서는 monsterSpawnInterval을, 서로 다른 Order로 넘어갈 때는 최신 define의 spawnOrderInterval을 사용한다.
 func get_wave_spawn_entries(wave_group: String) -> Array[Dictionary]:
 	var matching_rows := _ordered_spawn_rows(wave_group)
 	var individual_interval := define_float("monsterSpawnInterval", 0.4)
-	var order_interval := extension_float("spawnOrderIntervalSec", 10.0)
+	var order_interval := define_float("spawnOrderInterval", 0.5)
 	var entries: Array[Dictionary] = []
 	for row_index in matching_rows.size():
 		var row: Dictionary = matching_rows[row_index]
@@ -152,7 +152,7 @@ func get_wave_spawn_entries(wave_group: String) -> Array[Dictionary]:
 		var spawn_order := int(row.get("spawnOrder", -1))
 		for monster_index in monster_count:
 			var delay_after_sec := individual_interval
-			# 현재 행의 마지막 개체 뒤에서 다음 행의 Order가 달라질 때만 그룹 간 10초를 적용한다.
+			# 현재 행의 마지막 개체 뒤에서 다음 행의 Order가 달라질 때만 그룹 간 간격을 적용한다.
 			if monster_index == monster_count - 1 and row_index < matching_rows.size() - 1:
 				var next_order := int(matching_rows[row_index + 1].get("spawnOrder", -1))
 				if next_order != spawn_order:
@@ -173,20 +173,13 @@ func get_wave_monster_ids(wave_group: String) -> Array[String]:
 	return monster_ids
 
 
-# 순서가 고유한 웨이브는 spawnOrder로 정렬하고, 중복 순서가 있으면 확정 규칙대로 원본 행 순서를 유지한다.
+# 최신 테이블의 고유한 spawnOrder를 기준으로 웨이브 행을 오름차순 정렬한다.
 func _ordered_spawn_rows(wave_group: String) -> Array[Dictionary]:
 	var matching_rows: Array[Dictionary] = []
-	var used_orders: Dictionary = {}
-	var has_duplicate_order := false
 	for row in spawn_rows:
 		if str(row.get("waveGroup", "")) == wave_group:
 			matching_rows.append(row)
-			var order := int(row.get("spawnOrder", -1))
-			if used_orders.has(order):
-				has_duplicate_order = true
-			used_orders[order] = true
-	if not has_duplicate_order:
-		matching_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["spawnOrder"]) < int(b["spawnOrder"]))
+	matching_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["spawnOrder"]) < int(b["spawnOrder"]))
 	return matching_rows
 
 
@@ -323,7 +316,7 @@ func _load_shop_rows(rows: Array) -> void:
 # Define 필수 키, 양수/음수 범위, 고정 상점 카드 수를 검증한다.
 # failAllowedMonster는 존재 여부만 보장하며 게임 오버 계산에는 사용하지 않는다.
 func _validate_define() -> void:
-	for key in ["prepareTimeSec", "totalWaveCount", "waveTimeSec", "initialGold", "rerollCost", "rerollPlusCost", "failAllowedMonster", "monsterSpawnInterval"]:
+	for key in ["prepareTimeSec", "totalWaveCount", "waveTimeSec", "initialGold", "rerollCost", "rerollPlusCost", "failAllowedMonster", "monsterSpawnInterval", "spawnOrderInterval"]:
 		if not define_values.has(key):
 			validation_errors.append("Define key is missing: %s" % key)
 	if define_float("prepareTimeSec", -1.0) < 0.0:
@@ -336,8 +329,10 @@ func _validate_define() -> void:
 		validation_errors.append("reroll costs must not be negative")
 	if extension_int("shopCardCount", 0) != 5:
 		validation_errors.append("prototype shopCardCount must remain 5")
-	if extension_float("spawnOrderIntervalSec", 0.0) <= 0.0:
-		validation_errors.append("prototype spawnOrderIntervalSec must be positive")
+	if define_float("spawnOrderInterval", 0.0) <= 0.0:
+		validation_errors.append("spawnOrderInterval must be positive")
+	if extension_float("sellRefundRate", -1.0) < 0.0 or extension_float("sellRefundRate", -1.0) > 1.0:
+		validation_errors.append("prototype sellRefundRate must be between 0 and 1")
 
 
 # 머지 트리, 몬스터 참조, 스폰 순서, 상점 확률 합계, 웨이브 누락을 검사한다.
@@ -372,7 +367,8 @@ func _validate_cross_references() -> void:
 		if not spawn_orders_by_wave.has(wave_group):
 			spawn_orders_by_wave[wave_group] = {}
 		var used_orders: Dictionary = spawn_orders_by_wave[wave_group]
-		# 중복 spawnOrder는 Design Request/20260803 REQUEST.md의 결정에 따라 원본 행 순서를 유지하므로 오류로 처리하지 않는다.
+		if used_orders.has(order):
+			validation_errors.append("SpawnTable has duplicate spawnOrder: %s / %d" % [wave_group, order])
 		used_orders[order] = true
 
 	var probability_sum := 0.0

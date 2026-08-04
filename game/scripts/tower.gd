@@ -23,6 +23,10 @@ var cc_value: float = 0.0
 var tower_color := Color("68d8c1")
 var floor_index: int = 0
 
+# 이 터렛을 만들기 위해 실제로 지불한 골드 총액이다.
+# 머지할 때 두 재료의 값을 합쳐 상위 Tier에 넘기므로 판매가는 원본 구매 이력을 보존한다.
+var invested_gold: int = 0
+
 # 공격 재사용 대기시간 및 짧은 광선 피드백 상태다.
 var cooldown_sec: float = 0.0
 var enabled: bool = true
@@ -35,7 +39,7 @@ var upgrade_effect_remaining_sec: float = 0.0
 
 
 # 로더가 만든 내부 설정을 복사하고 해당 층의 터렛 그룹에 등록한다.
-func setup(config: Dictionary, assigned_floor_index: int) -> void:
+func setup(config: Dictionary, assigned_floor_index: int, assigned_invested_gold: int = 0) -> void:
 	turret_id = str(config.get("id", ""))
 	display_name = str(config.get("display_name", turret_id))
 	turret_type = str(config.get("type", "RANGED"))
@@ -48,6 +52,7 @@ func setup(config: Dictionary, assigned_floor_index: int) -> void:
 	cc_value = float(config.get("cc_value", 0.0))
 	tower_color = Color(str(config.get("color_hex", "68d8c1")))
 	floor_index = assigned_floor_index
+	invested_gold = maxi(0, assigned_invested_gold)
 	cooldown_sec = 0.0
 	add_to_group("prototype_towers")
 	queue_redraw()

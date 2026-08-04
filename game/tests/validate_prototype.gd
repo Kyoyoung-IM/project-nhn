@@ -27,10 +27,13 @@ func _init() -> void:
 		_fail("rerollPlusCost must not be negative")
 		return
 	if database.define_int("totalWaveCount", -1) != 4:
-		_fail("prototype totalWaveCount must temporarily remain 4 until wave5 is supplied")
+		_fail("totalWaveCount must match the updated source value 4")
 		return
-	if not is_equal_approx(database.extension_float("spawnOrderIntervalSec", -1.0), 10.0):
-		_fail("prototype spawnOrderIntervalSec must temporarily remain 10 seconds")
+	if not is_equal_approx(database.define_float("spawnOrderInterval", -1.0), 0.5):
+		_fail("spawnOrderInterval must match the updated source value 0.5 seconds")
+		return
+	if not is_equal_approx(database.extension_float("sellRefundRate", -1.0), 0.5):
+		_fail("prototype sellRefundRate must remain 0.5 until the source field is supplied")
 		return
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
@@ -39,15 +42,15 @@ func _init() -> void:
 		_fail("wave3 must preserve all source rows and expand to 29 monsters")
 		return
 	var wave3 := database.get_wave_monster_ids("wave3")
-	if wave3[0] != "tank1" or wave3[4] != "spped1" or wave3[5] != "tank1":
-		_fail("wave3 duplicate spawnOrder rows must preserve source row order")
+	if wave3[0] != "tank1" or wave3[4] != "tank1" or wave3[8] != "spped1":
+		_fail("wave3 must follow the updated unique spawnOrder values")
 		return
 	if database.get_wave_monster_ids("wave2")[0] != "tank1":
 		_fail("waves without duplicate spawnOrder must remain ordered by spawnOrder")
 		return
 	var wave1_schedule := database.get_wave_spawn_entries("wave1")
-	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[1].get("delay_after_sec", -1.0)), 10.0):
-		_fail("spawn entries must use 0.4 seconds inside an order and 10 seconds between orders")
+	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[1].get("delay_after_sec", -1.0)), 0.5):
+		_fail("spawn entries must use source values 0.4 seconds inside an order and 0.5 seconds between orders")
 		return
 	for turret_id in EXPECTED_TURRET_IDS:
 		var turret := database.get_turret_data(turret_id)
