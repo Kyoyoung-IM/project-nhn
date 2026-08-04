@@ -7,6 +7,9 @@ extends Area2D
 # 프로토타입 게임 컨트롤러가 구매한 터렛을 배치할 때 받는 신호다.
 signal pressed(slot: PrototypeTowerSlot)
 
+# 슬롯 표시는 평상시 완전히 숨기고 배치·이동 드래그 중에만 전체 30% 불투명도로 노출한다.
+const ACTIVE_SLOT_OPACITY := 0.30
+
 # 데이터상 위치: floor_index는 B1~B3(0~2), slot_index는 층 안의 0~4다.
 var floor_index: int = 0
 var slot_index: int = 0
@@ -25,6 +28,7 @@ var drag_targeted: bool = false
 func setup(new_floor_index: int, new_slot_index: int) -> void:
 	floor_index = new_floor_index
 	slot_index = new_slot_index
+	self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	input_pickable = true
 	var collision := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
@@ -57,6 +61,7 @@ func is_empty() -> bool:
 func set_drag_state(eligible: bool, targeted: bool) -> void:
 	drag_eligible = eligible
 	drag_targeted = targeted
+	self_modulate.a = ACTIVE_SLOT_OPACITY if drag_eligible or drag_targeted else 0.0
 	queue_redraw()
 
 
@@ -86,25 +91,25 @@ func _draw() -> void:
 	# 점유 슬롯은 터렛 외형만 보이게 완전히 숨긴다. 점유가 해제되면 queue_redraw로 빈 슬롯 표시가 복원된다.
 	if not is_empty():
 		return
-	# 기본 설치 가능 영역은 배경을 덜 가리는 30% 불투명 연두색으로 통일한다.
-	var fill := Color(0.48, 0.78, 0.22, 0.30)
+	# 내부 도형은 불투명하게 그리고 CanvasItem 전체에 30%를 적용해 겹친 선도 한 번에 같은 투명도로 제어한다.
+	var fill := Color(0.48, 0.78, 0.22, 1.0)
 	if drag_eligible:
-		fill = Color(0.36, 0.82, 0.30, 0.78)
-	var border := Color(0.70, 1.00, 0.38, 0.30)
+		fill = Color(0.36, 0.82, 0.30, 1.0)
+	var border := Color(0.70, 1.00, 0.38, 1.0)
 	if drag_targeted:
-		border = Color(0.95, 1.00, 0.55, 0.95)
+		border = Color(0.95, 1.00, 0.55, 1.0)
 	elif drag_eligible:
-		border = Color(0.70, 1.00, 0.42, 0.90)
+		border = Color(0.70, 1.00, 0.42, 1.0)
 	elif hovered and interaction_enabled:
-		border = Color(0.83, 1.00, 0.55, 0.82)
+		border = Color(0.83, 1.00, 0.55, 1.0)
 	# 슬롯도 카드와 같은 둥근 판넬과 아래 그림자를 사용해 설치 UI라는 점을 명확히 한다.
-	draw_style_box(_make_slot_style(Color(0.04, 0.10, 0.03, 0.15), Color.TRANSPARENT, 12, 0), Rect2(-43.0, -20.0, 86.0, 50.0))
-	draw_style_box(_make_slot_style(fill, Color(0.12, 0.22, 0.08, 0.30), 12, 5), Rect2(-43.0, -27.0, 86.0, 52.0))
+	draw_style_box(_make_slot_style(Color(0.04, 0.10, 0.03, 0.50), Color.TRANSPARENT, 12, 0), Rect2(-43.0, -20.0, 86.0, 50.0))
+	draw_style_box(_make_slot_style(fill, Color(0.12, 0.22, 0.08, 1.0), 12, 5), Rect2(-43.0, -27.0, 86.0, 52.0))
 	draw_style_box(_make_slot_style(Color.TRANSPARENT, border, 9, 3 if not drag_targeted else 5), Rect2(-37.0, -21.0, 74.0, 40.0))
 	if is_empty():
-		var plus_color := Color(0.90, 1.00, 0.66, 0.90) if hovered or drag_eligible else Color(0.82, 1.00, 0.56, 0.30)
-		draw_line(Vector2(-10.0, -1.0), Vector2(10.0, -1.0), Color(0.10, 0.20, 0.07, 0.30), 7.0)
-		draw_line(Vector2(0.0, -11.0), Vector2(0.0, 9.0), Color(0.10, 0.20, 0.07, 0.30), 7.0)
+		var plus_color := Color(0.90, 1.00, 0.66, 1.0)
+		draw_line(Vector2(-10.0, -1.0), Vector2(10.0, -1.0), Color(0.10, 0.20, 0.07, 1.0), 7.0)
+		draw_line(Vector2(0.0, -11.0), Vector2(0.0, 9.0), Color(0.10, 0.20, 0.07, 1.0), 7.0)
 		draw_line(Vector2(-10.0, -2.0), Vector2(10.0, -2.0), plus_color, 4.0)
 		draw_line(Vector2(0.0, -12.0), Vector2(0.0, 8.0), plus_color, 4.0)
 

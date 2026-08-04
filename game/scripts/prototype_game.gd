@@ -9,6 +9,7 @@ const TowerScript := preload("res://scripts/tower.gd")
 const TowerSlotScript := preload("res://scripts/tower_slot.gd")
 const ShopCardScript := preload("res://scripts/shop_card.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
+const RewardCoinPopupScript := preload("res://scripts/reward_coin_popup.gd")
 # 둥근 획의 Jua를 공통 UI 글꼴로 사용해 캐주얼 RPG의 굵고 친근한 인상을 만든다.
 const GAME_FONT := preload("res://assets/fonts/Jua-Regular.ttf")
 # Jua에 없는 ▶ 기호는 기존 로컬 Noto Sans KR로 렌더링해 Web에서도 대체문자 없이 표시한다.
@@ -129,8 +130,11 @@ var automated_test_elapsed_sec: float = 0.0
 
 # 런타임에 생성하는 주요 HUD 참조다.
 var phase_label: Label
+var wave_title_label: Label
 var wave_label: Label
 var gold_label: Label
+var gold_gain_label: Label
+var gold_gain_tween: Tween
 var status_label: Label
 var action_button: Button
 var reroll_button: Button
@@ -664,19 +668,32 @@ func _build_interface() -> void:
 	add_child(interface_canvas)
 
 	# 중앙 원형 배지는 낮에는 남은 시간, 밤에는 웨이브 정보 중 하나만 표시한다.
-	phase_label = _make_label(interface_canvas, Vector2(95.0, 112.0), Vector2(150.0, 92.0), 26)
+	phase_label = _make_label(interface_canvas, Vector2(105.0, 132.0), Vector2(130.0, 52.0), 26)
 	phase_label.text = ""
 	phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	phase_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	phase_label.add_theme_color_override("font_color", UI_CREAM)
 
-	wave_label = _make_label(interface_canvas, Vector2(95.0, 112.0), Vector2(150.0, 92.0), 24)
+	# 두 줄을 한 Label에 넣지 않고 제목과 숫자를 분리해 각각의 실제 글자 높이를 원 중심에 맞춘다.
+	wave_title_label = _make_label(interface_canvas, Vector2(105.0, 126.0), Vector2(130.0, 30.0), 21)
+	wave_title_label.text = "WAVE"
+	wave_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wave_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	wave_label = _make_label(interface_canvas, Vector2(105.0, 153.0), Vector2(130.0, 40.0), 25)
 	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wave_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	gold_label = _make_label(interface_canvas, Vector2(50.0, 816.0), Vector2(200.0, 54.0), 27)
+	# 보유 골드는 획득 애니메이션 유무와 관계없이 금색 캡슐 정중앙을 유지한다.
+	gold_label = _make_label(interface_canvas, Vector2(50.0, 814.0), Vector2(200.0, 58.0), 27)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_label.add_theme_color_override("font_color", UI_GOLD)
+	# +n G는 판넬에 종속된 줄이 아니라 보유 골드와 같은 수평 중심에서 위로 떠오르는 독립 피드백이다.
+	gold_gain_label = _make_label(interface_canvas, Vector2(50.0, 800.0), Vector2(200.0, 34.0), 21)
+	gold_gain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	gold_gain_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	gold_gain_label.add_theme_color_override("font_color", Color("fff2a6"))
+	gold_gain_label.visible = false
+	gold_gain_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# 구매·판매 로직의 짧은 메시지 저장소는 유지하지만 승인된 화면에서는 알림 영역을 노출하지 않는다.
 	status_label = _make_label(interface_canvas, Vector2.ZERO, Vector2.ZERO, 1)
@@ -1198,6 +1215,20 @@ func _run_wave_features_automated_test() -> void:
 	var tower_remained_fixed := is_instance_valid(test_tower) and towers.has(test_tower) and passing_monster.position.x < monster_start_x
 	monsters.erase(passing_monster)
 	passing_monster.queue_free()
+	# 실제 처치 콜백이 데이터 보상 지급, +n G 표시와 사망 위치 동전을 함께 생성하는지 확인한다.
+	var reward_monster := MonsterScript.new() as PrototypeMonster
+	reward_monster.setup(monster_data, movement_path)
+	reward_monster.position = Vector2(820.0, COMBAT_LANE_Y[0])
+	reward_monster.reward_gold = 2
+	add_child(reward_monster)
+	monsters.append(reward_monster)
+	var gold_before_reward := gold
+	_on_monster_defeated(reward_monster)
+	var reward_feedback_ok := gold == gold_before_reward + 2 \
+		and gold_gain_label.visible \
+		and gold_gain_label.text == "+ 2 G" \
+		and not get_tree().get_nodes_in_group("reward_coin_popups").is_empty()
+	reward_monster.queue_free()
 	_complete_wave()
 	var day_state_ok := phase_label.visible and phase_label.text.ends_with("초") and not wave_label.visible and not speed_button.visible and pause_button.visible and action_button.visible
 	var speed_reset := game_speed_multiplier == 1 and is_equal_approx(Engine.time_scale, 1.0)
@@ -1205,10 +1236,10 @@ func _run_wave_features_automated_test() -> void:
 	var options_opened := options_menu_open and options_overlay.visible and get_tree().paused
 	_on_pause_button_pressed()
 	var options_closed := not options_menu_open and not options_overlay.visible and not get_tree().paused
-	var passed := night_state_ok and triple_speed_applied and tower_remained_fixed and day_state_ok and speed_reset and options_opened and options_closed and phase == Phase.READY
+	var passed := night_state_ok and triple_speed_applied and tower_remained_fixed and reward_feedback_ok and day_state_ok and speed_reset and options_opened and options_closed and phase == Phase.READY
 	automated_test_mode = true
 	if passed:
-		print("Automated wave feature test passed: INDESTRUCTIBLE_TOWER_DAY_NIGHT_SPEED")
+		print("Automated wave feature test passed: INDESTRUCTIBLE_TOWER_DAY_NIGHT_SPEED_REWARD")
 	else:
 		push_error("Automated wave feature test failed.")
 	Engine.time_scale = 1.0
@@ -1294,11 +1325,19 @@ func _run_drag_automated_test() -> void:
 	var origin := tower_slots[0]
 	var same_floor_target := tower_slots[1]
 	var other_floor_target := tower_slots[5]
+	# 평상시 0%, 조작 중 30%, 조작 종료 후 0%로 복원되는 슬롯 표시 규칙을 직접 확인한다.
+	var slot_hidden_at_idle := is_zero_approx(same_floor_target.self_modulate.a)
+	same_floor_target.set_drag_state(true, false)
+	var slot_visible_during_drag := is_equal_approx(same_floor_target.self_modulate.a, PrototypeTowerSlot.ACTIVE_SLOT_OPACITY)
+	same_floor_target.set_drag_state(false, false)
+	var slot_hidden_after_drag := is_zero_approx(same_floor_target.self_modulate.a)
 	_place_tower(origin, false, "turretMelee1")
 	var tower := towers[0]
 	var cross_floor_rejected := not _relocate_tower(tower, other_floor_target)
 	var same_floor_moved := _relocate_tower(tower, same_floor_target)
-	var passed := _tower_slot_layout_is_valid() and cross_floor_rejected and same_floor_moved and origin.is_empty() and same_floor_target.occupant == tower and tower.position == same_floor_target.position
+	var passed := slot_hidden_at_idle and slot_visible_during_drag and slot_hidden_after_drag \
+		and _tower_slot_layout_is_valid() and cross_floor_rejected and same_floor_moved \
+		and origin.is_empty() and same_floor_target.occupant == tower and tower.position == same_floor_target.position
 	if passed:
 		print("Automated drag test passed: SAME_FLOOR_ONLY")
 	else:
@@ -1434,12 +1473,40 @@ func _spawn_monster() -> float:
 	return float(spawn_entry.get("delay_after_sec", fallback_interval))
 
 
-# 처치된 몬스터를 목록에서 제거하고 Monster.rewardGold를 지급한다.
+# 처치된 몬스터를 목록에서 제거하고 Monster.rewardGold 지급과 두 가지 보상 피드백을 실행한다.
 func _on_monster_defeated(monster: PrototypeMonster) -> void:
 	monsters.erase(monster)
 	defeated_count += 1
-	gold += monster.reward_gold
+	var reward_amount := monster.reward_gold
+	_spawn_reward_coin(monster.position)
+	_show_gold_gain_feedback(reward_amount)
+	gold += reward_amount
 	_update_interface()
+
+
+# 몬스터의 마지막 월드 좌표에 작은 동전 팝업을 추가한다.
+func _spawn_reward_coin(spawn_position: Vector2) -> void:
+	var coin_popup := RewardCoinPopupScript.new() as PrototypeRewardCoinPopup
+	coin_popup.setup(spawn_position)
+	add_child(coin_popup)
+
+
+# 골드 제어부 안의 +n G 문구를 위로 살짝 띄우고 사라지게 하며 연속 처치 시 애니메이션을 갱신한다.
+func _show_gold_gain_feedback(reward_amount: int) -> void:
+	if gold_gain_label == null:
+		return
+	if gold_gain_tween != null and gold_gain_tween.is_valid():
+		gold_gain_tween.kill()
+	gold_gain_label.text = "+ %d G" % reward_amount
+	gold_gain_label.position = Vector2(50.0, 800.0)
+	gold_gain_label.modulate = Color.WHITE
+	gold_gain_label.visible = true
+	gold_gain_tween = create_tween()
+	gold_gain_tween.set_ignore_time_scale(true)
+	gold_gain_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	gold_gain_tween.tween_property(gold_gain_label, "position:y", 764.0, 0.68)
+	gold_gain_tween.parallel().tween_property(gold_gain_label, "modulate:a", 0.0, 0.42).set_delay(0.32)
+	gold_gain_tween.tween_callback(func() -> void: gold_gain_label.visible = false)
 
 
 # failAllowedMonster 대신 확정 규칙인 B3 최심부 코어 도달만 패배로 처리한다.
@@ -1540,6 +1607,13 @@ func _reset_game() -> void:
 	for slot in tower_slots:
 		slot.clear_occupant()
 	tower_slot_by_instance_id.clear()
+	if gold_gain_tween != null and gold_gain_tween.is_valid():
+		gold_gain_tween.kill()
+	if gold_gain_label != null:
+		gold_gain_label.visible = false
+	for coin_popup in get_tree().get_nodes_in_group("reward_coin_popups"):
+		if is_instance_valid(coin_popup):
+			coin_popup.queue_free()
 	current_wave_number = 1
 	_configure_shop_rng()
 	_begin_preparation(true)
@@ -1588,6 +1662,9 @@ func _update_shop_cards() -> void:
 		return
 	for card_index in shop_cards.size():
 		var card := shop_cards[card_index]
+		# 낮·밤 배경 교차 페이드는 CanvasLayer 상점 카드의 밝기에 영향을 주지 않는다.
+		card.modulate = Color.WHITE
+		card.self_modulate = Color.WHITE
 		var tower_data := database.get_turret_data(shop_turret_ids[card_index])
 		var tower_cost := int(tower_data.get("base_price", 0))
 		var interactable := _is_shop_available() and shop_card_available[card_index] and gold >= tower_cost
@@ -1610,28 +1687,32 @@ func _update_interface() -> void:
 		return
 	var wave_total := current_wave_spawn_entries.size()
 	var total_wave_count := database.define_int("totalWaveCount", 1)
-	wave_label.text = "WAVE\n%d / %d" % [current_wave_number, total_wave_count]
+	wave_label.text = "%d / %d" % [current_wave_number, total_wave_count]
 	gold_label.text = "GOLD  %d" % gold
 	match phase:
 		Phase.READY:
 			phase_label.text = "%d초" % ceili(preparation_remaining_sec)
 			phase_label.visible = true
+			wave_title_label.visible = false
 			wave_label.visible = false
 			action_button.text = "%d번째 밤 시작" % current_wave_number
 			action_button.disabled = false
 			action_button.visible = true
 		Phase.WAVE:
 			phase_label.visible = false
+			wave_title_label.visible = true
 			wave_label.visible = true
 			status_label.text = "밤 방어 중  %d / %d 처치" % [defeated_count, wave_total]
 			action_button.visible = false
 		Phase.VICTORY:
 			phase_label.visible = false
+			wave_title_label.visible = false
 			wave_label.visible = false
 			status_label.text = "방어 성공"
 			action_button.visible = false
 		Phase.DEFEAT:
 			phase_label.visible = false
+			wave_title_label.visible = true
 			wave_label.visible = true
 			status_label.text = "최심부 침입 · 패배"
 			action_button.visible = false

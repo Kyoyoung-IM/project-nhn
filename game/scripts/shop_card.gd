@@ -25,6 +25,9 @@ const CARD_GOLD := Color("f6c653")
 # 네이티브 Button 배경과 텍스트를 비우고 카드 전체를 코드 도형으로 그리도록 준비한다.
 func setup(font: Font) -> void:
 	game_font = font
+	# 상점은 낮·밤 배경 색조와 분리된 HUD이므로 항상 원본 밝기를 유지한다.
+	modulate = Color.WHITE
+	self_modulate = Color.WHITE
 	text = ""
 	flat = true
 	focus_mode = Control.FOCUS_NONE
@@ -74,16 +77,18 @@ func _draw() -> void:
 		_draw_centered_text("상점 준비 중", 145.0, 24, Color("d8e7ef"))
 		return
 
-	if card_hovered:
-		_draw_hover_state()
-	else:
-		_draw_default_state()
-
+	_draw_default_state()
 	if not card_available:
 		draw_style_box(_make_card_style(Color(0.05, 0.045, 0.09, 0.82), CARD_INK, 16, 5), Rect2(0.0, 0.0, size.x, size.y - 7.0))
 		_draw_centered_text("구매 완료", size.y * 0.56, 27, Color("d7dee5"))
 	elif not card_interactable:
 		draw_style_box(_make_card_style(Color(0.05, 0.045, 0.09, 0.48), Color.TRANSPARENT, 16, 0), Rect2(0.0, 0.0, size.x, size.y - 7.0))
+
+	# 호버 상세는 구매 완료·골드 부족 레이어보다 나중에 그려 어떤 카드에서도 정보를 최상단에 표시한다.
+	if card_hovered:
+		# 기본 이미지·이름·가격까지 카드 전체를 80% 딤드한 뒤 상세 정보만 최상단에 다시 그린다.
+		draw_style_box(_make_card_style(Color(0.025, 0.02, 0.055, 0.80), Color.TRANSPARENT, 16, 0), Rect2(0.0, 0.0, size.x, size.y - 7.0))
+		_draw_hover_state()
 
 
 # 기본 상태는 큰 터렛 이미지형 도형 아래에 이름과 가격만 배치한다.
@@ -95,21 +100,17 @@ func _draw_default_state() -> void:
 	_draw_tower_icon(Vector2(size.x * 0.5, 91.0), tower_color, 1.5)
 	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 205.0, 26, CARD_CREAM)
 	draw_style_box(_make_card_style(Color("5b4935"), Color("d6a93f"), 12, 3), Rect2(73.0, 220.0, size.x - 146.0, 38.0))
-	draw_circle(Vector2(size.x * 0.5 - 42.0, 239.0), 7.0, CARD_GOLD)
-	_draw_centered_text("%d G" % int(tower_data.get("base_price", 0)), 248.0, 22, CARD_GOLD)
+	_draw_centered_price("%d G" % int(tower_data.get("base_price", 0)), 239.0, 22)
 
 
-# 호버 상태는 카드 상단 이름, 흐리게 남은 이미지, 효과 설명과 핵심 능력치를 표시한다.
+# 호버 상태는 딤드된 카드 위에 가격과 이미지를 제외한 이름·효과·핵심 능력치만 중앙 배치한다.
 func _draw_hover_state() -> void:
-	var tower_color := Color(str(tower_data.get("color_hex", "68d8c1")))
-	draw_style_box(_make_card_style(Color("603326"), CARD_INK, 11, 4), Rect2(13.0, 13.0, size.x - 26.0, 126.0))
-	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 43.0, 26, CARD_CREAM)
-	_draw_tower_icon(Vector2(size.x * 0.5, 93.0), tower_color.darkened(0.18), 1.05)
-	draw_line(Vector2(25.0, 150.0), Vector2(size.x - 25.0, 150.0), Color("81799a"), 3.0)
-	_draw_centered_text(_effect_description(), 178.0, 20, Color("fff1dc"))
-	_draw_centered_text("공격력  %.0f" % float(tower_data.get("damage", 0.0)), 207.0, 19, Color("e5ddf3"))
-	_draw_centered_text("주기 %.2fs   사거리 %.0f" % [float(tower_data.get("attack_interval_sec", 0.0)), float(tower_data.get("range_px", 0.0))], 232.0, 18, Color("c9c0db"))
-	_draw_centered_text("%d G" % int(tower_data.get("base_price", 0)), 258.0, 21, CARD_GOLD)
+	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 60.0, 29, CARD_CREAM)
+	draw_line(Vector2(31.0, 78.0), Vector2(size.x - 31.0, 78.0), Color("81799a"), 3.0)
+	_draw_centered_text(_effect_description(), 120.0, 21, Color("fff1dc"))
+	_draw_centered_text("공격력  %.0f" % float(tower_data.get("damage", 0.0)), 165.0, 21, Color("f1eafa"))
+	_draw_centered_text("공격 주기  %.2f초" % float(tower_data.get("attack_interval_sec", 0.0)), 202.0, 20, Color("d9d0e8"))
+	_draw_centered_text("사거리  %.0f" % float(tower_data.get("range_px", 0.0)), 238.0, 20, Color("d9d0e8"))
 
 
 # 터렛 유형별 효과를 플레이어가 바로 이해할 수 있는 짧은 문장으로 변환한다.
@@ -159,6 +160,20 @@ func _draw_centered_text(value: String, baseline_y: float, font_size: int, color
 	# 작은 그림자를 먼저 그려 밝은 이미지 영역에서도 둥근 폰트의 외곽이 무너지지 않게 한다.
 	draw_string(game_font, Vector2(2.0, baseline_y + 3.0), value, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, Color(0.04, 0.03, 0.07, 0.86))
 	draw_string(game_font, Vector2(0.0, baseline_y), value, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, color)
+
+
+# 동전과 가격 문자열의 실제 폭을 합산해 두 요소 전체가 가격 캡슐의 중앙에 오도록 배치한다.
+func _draw_centered_price(value: String, center_y: float, font_size: int) -> void:
+	var text_width := game_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
+	var coin_diameter := 14.0
+	var gap := 9.0
+	var group_width := coin_diameter + gap + text_width
+	var group_left := (size.x - group_width) * 0.5
+	var coin_center := Vector2(group_left + coin_diameter * 0.5, center_y)
+	var text_position := Vector2(group_left + coin_diameter + gap, center_y + font_size * 0.38)
+	draw_circle(coin_center, coin_diameter * 0.5, CARD_GOLD)
+	draw_string(game_font, text_position + Vector2(2.0, 3.0), value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(0.04, 0.03, 0.07, 0.86))
+	draw_string(game_font, text_position, value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, CARD_GOLD)
 
 
 # 카드 내부에서 반복 사용하는 둥근 StyleBoxFlat을 생성한다.
