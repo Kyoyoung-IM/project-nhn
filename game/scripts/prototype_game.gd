@@ -865,12 +865,13 @@ func _build_interface() -> void:
 	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wave_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# 보유 골드는 획득 애니메이션 유무와 관계없이 금색 캡슐 정중앙을 유지한다.
-	gold_label = _make_label(interface_canvas, Vector2(108.0, 808.0), Vector2(148.0, 72.0), 25)
+	# 왼쪽 동전 장식을 제외한 금색 표시 영역의 실제 중심에 보유량 숫자를 맞춘다.
+	gold_label = _make_label(interface_canvas, Vector2(82.0, 808.0), Vector2(154.0, 72.0), 25)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_label.add_theme_color_override("font_color", UI_GOLD)
 	# +n G는 판넬에 종속된 줄이 아니라 보유 골드와 같은 수평 중심에서 위로 떠오르는 독립 피드백이다.
-	gold_gain_label = _make_label(interface_canvas, Vector2(108.0, 795.0), Vector2(148.0, 34.0), 21)
+	gold_gain_label = _make_label(interface_canvas, Vector2(82.0, 795.0), Vector2(154.0, 34.0), 21)
 	gold_gain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gold_gain_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_gain_label.add_theme_color_override("font_color", Color("fff2a6"))
@@ -886,6 +887,7 @@ func _build_interface() -> void:
 	action_button.position = Vector2(1450.0, 38.0)
 	action_button.size = Vector2(330.0, 60.0)
 	action_button.text = "1 웨이브 시작"
+	action_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	action_button.focus_mode = Control.FOCUS_NONE
 	action_button.add_theme_font_override("font", GAME_FONT)
 	action_button.add_theme_font_size_override("font_size", 26)
@@ -911,6 +913,7 @@ func _build_interface() -> void:
 	reroll_button.position = Vector2(38.0, 884.0)
 	reroll_button.size = Vector2(224.0, 176.0)
 	reroll_button.text = "새로고침\n%d G" % _current_reroll_cost()
+	reroll_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	reroll_button.focus_mode = Control.FOCUS_NONE
 	reroll_button.add_theme_font_override("font", GAME_FONT)
 	reroll_button.add_theme_font_size_override("font_size", 22)
@@ -1051,6 +1054,7 @@ func _make_options_button(parent: Node, button_position: Vector2, button_text: S
 	button.position = button_position
 	button.size = Vector2(340.0, 78.0)
 	button.text = button_text
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.focus_mode = Control.FOCUS_NONE
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.add_theme_font_override("font", GAME_FONT)
@@ -1117,6 +1121,7 @@ func _create_speed_controls(parent: Node) -> void:
 	speed_button.position = Vector2(1600.0, 38.0)
 	speed_button.size = Vector2(180.0, 60.0)
 	speed_button.text = "▶"
+	speed_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	speed_button.focus_mode = Control.FOCUS_NONE
 	speed_button.add_theme_font_override("font", SYMBOL_FONT)
 	speed_button.add_theme_font_size_override("font_size", 26)
@@ -1304,6 +1309,7 @@ func _make_circle_button_style(background_color: Color, border_color: Color, pre
 func _make_texture_button_style(texture: Texture2D, pressed_offset: int = 0) -> StyleBoxTexture:
 	var style := StyleBoxTexture.new()
 	style.texture = texture
+	# 이미지 고유 여백은 보존한다. 눌림 상태의 세로 피드백만 최소한으로 추가한다.
 	style.content_margin_top = float(pressed_offset)
 	return style
 
@@ -2368,7 +2374,7 @@ func _update_interface() -> void:
 	var wave_total := current_wave_spawn_entries.size()
 	var total_wave_count := database.define_int("totalWaveCount", 1)
 	wave_label.text = "%d / %d" % [current_wave_number, total_wave_count]
-	gold_label.text = "GOLD  %d" % gold
+	gold_label.text = "%d" % gold
 	match phase:
 		Phase.READY:
 			phase_label.text = "%d초" % ceili(preparation_remaining_sec)
