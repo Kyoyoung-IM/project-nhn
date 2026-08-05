@@ -22,8 +22,8 @@ const DAY_NIGHT_SUN_ICON := preload("res://assets/ui/day_night_sun_icon_v1.png")
 const DAY_NIGHT_MOON_ICON := preload("res://assets/ui/day_night_moon_icon_v1.png")
 const SHOP_CONTROLS_PANEL := preload("res://assets/ui/generated/shop_controls_panel_v1.png")
 const OPTIONS_PANEL_TEXTURE := preload("res://assets/ui/generated/options_panel_v1.png")
-const SPEED_CAPSULE_TEXTURE := preload("res://assets/ui/generated/speed_capsule_v1.png")
-const PAUSE_BUTTON_TEXTURE := preload("res://assets/ui/generated/pause_button_v1.png")
+const SPEED_CAPSULE_TEXTURE := preload("res://assets/ui/generated/speed_capsule_v2.png")
+const PAUSE_BUTTON_TEXTURE := preload("res://assets/ui/generated/pause_button_v2.png")
 
 # 레퍼런스 UI에서 추출한 공통 팔레트다. 기능별 강조색만 바꾸고 짙은 외곽선은 공유한다.
 const UI_INK := Color("171827")
@@ -1161,7 +1161,8 @@ func _create_speed_controls(parent: Node) -> void:
 	pause_button.add_theme_font_size_override("font_size", 27)
 	pause_button.pressed.connect(_on_pause_button_pressed)
 	_clear_button_background(pause_button)
-	pause_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
+	# 배경과 텍스트가 비어 있으므로 투명도 조절 없이 입력 전용 사각 영역만 유지한다.
+	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	parent.add_child(pause_button)
 	_update_speed_controls()
 
@@ -1348,12 +1349,6 @@ func _make_button_backplate(parent: Node, texture: Texture2D, backplate_position
 	backplate.texture = texture
 	backplate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	backplate.stretch_mode = TextureRect.STRETCH_SCALE
-	# 생성 PNG 내부가 약 20% 알파로 저장되어 배경색과 섞이므로 RGB는 유지하고 알파만 복원한다.
-	var opacity_shader := Shader.new()
-	opacity_shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 source = texture(TEXTURE, UV);\n\tvec3 restored_rgb = source.rgb;\n\tif (source.r > source.b * 1.5 && source.g > source.b * 1.25) {\n\t\trestored_rgb *= vec3(1.12, 1.22, 1.80);\n\t}\n\tCOLOR = vec4(clamp(restored_rgb, vec3(0.0), vec3(1.0)), clamp(source.a * 4.5, 0.0, 1.0));\n}"
-	var opacity_material := ShaderMaterial.new()
-	opacity_material.shader = opacity_shader
-	backplate.material = opacity_material
 	backplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(backplate)
 	return backplate

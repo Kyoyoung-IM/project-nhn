@@ -24,6 +24,7 @@ const CARD_PANEL := Color("443e5a")
 const CARD_PANEL_LIGHT := Color("5b5273")
 const CARD_CREAM := Color("fff0c5")
 const CARD_GOLD := Color("f6c653")
+const PRICE_BAR_RECT := Rect2(34.0, 212.0, 238.0, 46.0)
 
 
 # 네이티브 Button 배경과 텍스트를 비우고 카드 전체를 코드 도형으로 그리도록 준비한다.
@@ -101,7 +102,7 @@ func _draw_default_state() -> void:
 	# 골드가 부족하면 카드 전체가 아니라 생성 프레임의 금화·가격 영역만 회색으로 가린다.
 	if not card_affordable:
 		draw_style_box(_make_card_style(Color(0.22, 0.22, 0.25, 0.86), Color("777783"), 9, 2), Rect2(48.0, 214.0, size.x - 66.0, 42.0))
-	_draw_centered_price("%d G" % int(tower_data.get("base_price", 0)), 232.0, 22, price_color)
+	_draw_centered_price("%d G" % int(tower_data.get("base_price", 0)), 22, price_color)
 
 
 # 호버 상태는 딤드된 카드 위에 가격과 이미지를 제외한 이름·효과·핵심 능력치만 중앙 배치한다.
@@ -151,12 +152,12 @@ func _draw_centered_text(value: String, baseline_y: float, font_size: int, color
 
 
 # 가격 문자열의 실제 픽셀 폭을 측정해 카드 전체의 기하학적 중심에 고정한다.
-func _draw_centered_price(value: String, center_y: float, font_size: int, price_color: Color) -> void:
-	var measured_size := game_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
-	var price_text_x := (size.x - measured_size.x) * 0.5
-	var baseline := center_y + font_size * 0.38
-	draw_string(game_font, Vector2(price_text_x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(0.04, 0.03, 0.07, 0.86))
-	draw_string(game_font, Vector2(price_text_x, baseline), value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, price_color)
+func _draw_centered_price(value: String, font_size: int, price_color: Color) -> void:
+	var ascent := game_font.get_ascent(font_size)
+	var descent := game_font.get_descent(font_size)
+	var baseline := PRICE_BAR_RECT.position.y + (PRICE_BAR_RECT.size.y + ascent - descent) * 0.5
+	draw_string(game_font, Vector2(PRICE_BAR_RECT.position.x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_CENTER, PRICE_BAR_RECT.size.x, font_size, Color(0.04, 0.03, 0.07, 0.86))
+	draw_string(game_font, Vector2(PRICE_BAR_RECT.position.x, baseline), value, HORIZONTAL_ALIGNMENT_CENTER, PRICE_BAR_RECT.size.x, font_size, price_color)
 
 
 # 카드 내부에서 반복 사용하는 둥근 StyleBoxFlat을 생성한다.
