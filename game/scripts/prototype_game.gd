@@ -1350,7 +1350,7 @@ func _make_button_backplate(parent: Node, texture: Texture2D, backplate_position
 	backplate.stretch_mode = TextureRect.STRETCH_SCALE
 	# 생성 PNG 내부가 약 20% 알파로 저장되어 배경색과 섞이므로 RGB는 유지하고 알파만 복원한다.
 	var opacity_shader := Shader.new()
-	opacity_shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 source = texture(TEXTURE, UV);\n\tCOLOR = vec4(source.rgb, clamp(source.a * 4.5, 0.0, 1.0));\n}"
+	opacity_shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 source = texture(TEXTURE, UV);\n\tvec3 restored_rgb = source.rgb;\n\tif (source.r > source.b * 1.5 && source.g > source.b * 1.25) {\n\t\trestored_rgb *= vec3(1.12, 1.22, 1.80);\n\t}\n\tCOLOR = vec4(clamp(restored_rgb, vec3(0.0), vec3(1.0)), clamp(source.a * 4.5, 0.0, 1.0));\n}"
 	var opacity_material := ShaderMaterial.new()
 	opacity_material.shader = opacity_shader
 	backplate.material = opacity_material

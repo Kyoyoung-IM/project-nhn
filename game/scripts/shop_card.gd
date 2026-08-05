@@ -150,13 +150,13 @@ func _draw_centered_text(value: String, baseline_y: float, font_size: int, color
 	draw_string(game_font, Vector2(0.0, baseline_y), value, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, color)
 
 
-# 생성 프레임의 금화 오른쪽에 남는 실제 가격 캡슐 영역을 기준으로 문자열을 중앙 정렬한다.
+# 가격 문자열의 실제 픽셀 폭을 측정해 카드 전체의 기하학적 중심에 고정한다.
 func _draw_centered_price(value: String, center_y: float, font_size: int, price_color: Color) -> void:
-	var price_text_x := 84.0
-	var price_text_width := size.x - price_text_x - 20.0
+	var measured_size := game_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
+	var price_text_x := (size.x - measured_size.x) * 0.5
 	var baseline := center_y + font_size * 0.38
-	draw_string(game_font, Vector2(price_text_x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_CENTER, price_text_width, font_size, Color(0.04, 0.03, 0.07, 0.86))
-	draw_string(game_font, Vector2(price_text_x, baseline), value, HORIZONTAL_ALIGNMENT_CENTER, price_text_width, font_size, price_color)
+	draw_string(game_font, Vector2(price_text_x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(0.04, 0.03, 0.07, 0.86))
+	draw_string(game_font, Vector2(price_text_x, baseline), value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, price_color)
 
 
 # 카드 내부에서 반복 사용하는 둥근 StyleBoxFlat을 생성한다.
