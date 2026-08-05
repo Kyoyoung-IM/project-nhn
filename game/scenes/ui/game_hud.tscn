@@ -1,0 +1,289 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
+[ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
+[ext_resource type="Texture2D" path="res://assets/ui/day_night_sun_icon_v1.png" id="3_sun"]
+[ext_resource type="Texture2D" path="res://assets/ui/day_night_moon_icon_v1.png" id="4_moon"]
+[ext_resource type="Texture2D" path="res://assets/ui/generated/shop_controls_panel_v1.png" id="5_shop_controls"]
+[ext_resource type="Texture2D" path="res://assets/ui/generated/speed_capsule_v2.png" id="6_speed"]
+[ext_resource type="Texture2D" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
+[ext_resource type="PackedScene" path="res://scenes/ui/shop_card.tscn" id="8_card"]
+
+[node name="GameHUD" type="CanvasLayer"]
+
+[node name="Layout" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="DayNightHUD" type="Control" parent="Layout"]
+layout_mode = 0
+offset_left = -80.0
+offset_top = -5.0
+offset_right = 420.0
+offset_bottom = 245.0
+mouse_filter = 2
+
+[node name="DayFrame" type="TextureRect" parent="Layout/DayNightHUD"]
+layout_mode = 0
+offset_right = 500.0
+offset_bottom = 250.0
+mouse_filter = 2
+texture = ExtResource("1_day")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="NightFrame" type="TextureRect" parent="Layout/DayNightHUD"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 500.0
+offset_bottom = 250.0
+mouse_filter = 2
+texture = ExtResource("2_night")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="SunIcon" type="TextureRect" parent="Layout/DayNightHUD"]
+layout_mode = 0
+offset_left = 221.0
+offset_top = 48.0
+offset_right = 279.0
+offset_bottom = 106.0
+pivot_offset = Vector2(29, 29)
+mouse_filter = 2
+texture = ExtResource("3_sun")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MoonIcon" type="TextureRect" parent="Layout/DayNightHUD"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 309.0
+offset_top = 136.0
+offset_right = 367.0
+offset_bottom = 194.0
+pivot_offset = Vector2(29, 29)
+mouse_filter = 2
+texture = ExtResource("4_moon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PhaseLabel" type="Label" parent="Layout/DayNightHUD"]
+layout_mode = 0
+offset_left = 185.0
+offset_top = 137.0
+offset_right = 315.0
+offset_bottom = 189.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WaveTitleLabel" type="Label" parent="Layout/DayNightHUD"]
+layout_mode = 0
+offset_left = 185.0
+offset_top = 131.0
+offset_right = 315.0
+offset_bottom = 161.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 21
+text = "WAVE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WaveLabel" type="Label" parent="Layout/DayNightHUD"]
+layout_mode = 0
+offset_left = 185.0
+offset_top = 158.0
+offset_right = 315.0
+offset_bottom = 198.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 25
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TopControls" type="Control" parent="Layout"]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 120.0
+mouse_filter = 2
+
+[node name="TestModeBadge" type="Label" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1260.0
+offset_top = 38.0
+offset_right = 1420.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 27
+text = "TEST"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ActionBackplate" type="TextureRect" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1450.0
+offset_top = 38.0
+offset_right = 1780.0
+offset_bottom = 98.0
+mouse_filter = 2
+texture = ExtResource("6_speed")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="ActionButton" type="Button" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1450.0
+offset_top = 38.0
+offset_right = 1780.0
+offset_bottom = 98.0
+focus_mode = 0
+text = "1 웨이브 시작"
+flat = true
+
+[node name="ActionLabel" type="Label" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1450.0
+offset_top = 38.0
+offset_right = 1780.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SpeedBackplate" type="TextureRect" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1600.0
+offset_top = 38.0
+offset_right = 1780.0
+offset_bottom = 98.0
+mouse_filter = 2
+texture = ExtResource("6_speed")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="SpeedButton" type="Button" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1600.0
+offset_top = 38.0
+offset_right = 1780.0
+offset_bottom = 98.0
+focus_mode = 0
+flat = true
+
+[node name="SpeedLabel" type="Label" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1600.0
+offset_top = 38.0
+offset_right = 1780.0
+offset_bottom = 98.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PauseBackplate" type="TextureRect" parent="Layout/TopControls"]
+layout_mode = 0
+offset_left = 1810.0
+offset_top = 34.0
+offset_right = 1878.0
+offset_bottom = 102.0
+mouse_filter = 2
+texture = ExtResource("7_pause")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="PauseButton" type="Button" parent="Layout/TopControls"]
+process_mode = 3
+layout_mode = 0
+offset_left = 1810.0
+offset_top = 34.0
+offset_right = 1878.0
+offset_bottom = 102.0
+focus_mode = 0
+flat = true
+
+[node name="ShopUI" type="Control" parent="Layout"]
+layout_mode = 0
+offset_top = 790.0
+offset_right = 1920.0
+offset_bottom = 1060.0
+mouse_filter = 2
+
+[node name="ControlsBackplate" type="TextureRect" parent="Layout/ShopUI"]
+layout_mode = 0
+offset_left = 24.0
+offset_right = 274.0
+offset_bottom = 270.0
+mouse_filter = 2
+texture = ExtResource("5_shop_controls")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="GoldLabel" type="Label" parent="Layout/ShopUI"]
+layout_mode = 0
+offset_left = 82.0
+offset_top = 18.0
+offset_right = 236.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 25
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RerollButton" type="Button" parent="Layout/ShopUI"]
+layout_mode = 0
+offset_left = 38.0
+offset_top = 94.0
+offset_right = 262.0
+offset_bottom = 270.0
+focus_mode = 0
+text = "새로고침\n10 G"
+alignment = 1
+
+[node name="ShopCard1" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+layout_mode = 0
+offset_left = 280.0
+offset_right = 586.0
+
+[node name="ShopCard2" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+layout_mode = 0
+offset_left = 602.0
+offset_right = 908.0
+
+[node name="ShopCard3" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+layout_mode = 0
+offset_left = 924.0
+offset_right = 1230.0
+
+[node name="ShopCard4" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+layout_mode = 0
+offset_left = 1246.0
+offset_right = 1552.0
+
+[node name="ShopCard5" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+layout_mode = 0
+offset_left = 1568.0
+offset_right = 1874.0
+
+[node name="GoldGainLabel" type="Label" parent="Layout"]
+visible = false
+layout_mode = 0
+offset_left = 82.0
+offset_top = 795.0
+offset_right = 236.0
+offset_bottom = 829.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 21
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="Layout"]
+visible = false
+layout_mode = 0
+offset_right = 1.0
+offset_bottom = 1.0
+mouse_filter = 2

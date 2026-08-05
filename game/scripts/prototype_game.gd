@@ -7,23 +7,16 @@ extends Node2D
 const MonsterScript := preload("res://scripts/monster.gd")
 const TowerScript := preload("res://scripts/tower.gd")
 const TowerSlotScript := preload("res://scripts/tower_slot.gd")
-const ShopCardScript := preload("res://scripts/shop_card.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const RewardCoinPopupScript := preload("res://scripts/reward_coin_popup.gd")
 const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
 const TestBalancePanelScript := preload("res://scripts/test_balance_panel.gd")
+const GAME_HUD_SCENE := preload("res://scenes/ui/game_hud.tscn")
 # 둥근 획의 Jua를 공통 UI 글꼴로 사용해 캐주얼 RPG의 굵고 친근한 인상을 만든다.
 const GAME_FONT := preload("res://assets/fonts/Jua-Regular.ttf")
 # Jua에 없는 ▶ 기호는 기존 로컬 Noto Sans KR로 렌더링해 Web에서도 대체문자 없이 표시한다.
 const SYMBOL_FONT := preload("res://assets/fonts/NotoSansKR.ttf")
-const DAY_NIGHT_HUD_DAY_FRAME := preload("res://assets/ui/day_night_hud_day_frame_v2.png")
-const DAY_NIGHT_HUD_NIGHT_FRAME := preload("res://assets/ui/day_night_hud_night_frame_v2.png")
-const DAY_NIGHT_SUN_ICON := preload("res://assets/ui/day_night_sun_icon_v1.png")
-const DAY_NIGHT_MOON_ICON := preload("res://assets/ui/day_night_moon_icon_v1.png")
-const SHOP_CONTROLS_PANEL := preload("res://assets/ui/generated/shop_controls_panel_v1.png")
 const OPTIONS_PANEL_TEXTURE := preload("res://assets/ui/generated/options_panel_v1.png")
-const SPEED_CAPSULE_TEXTURE := preload("res://assets/ui/generated/speed_capsule_v2.png")
-const PAUSE_BUTTON_TEXTURE := preload("res://assets/ui/generated/pause_button_v2.png")
 
 # 레퍼런스 UI에서 추출한 공통 팔레트다. 기능별 강조색만 바꾸고 짙은 외곽선은 공유한다.
 const UI_INK := Color("171827")
@@ -132,7 +125,7 @@ var night_visual_amount: float = 0.0:
 		night_visual_amount = clampf(value, 0.0, 1.0)
 		if is_instance_valid(battlefield_background):
 			battlefield_background.night_visual_amount = night_visual_amount
-		queue_redraw()
+		_update_day_night_hud_nodes()
 var day_night_tween: Tween
 
 # 기준 화면에 제한된 배경과 마스킹된 전투 오브젝트 월드, 현재 층 쌍과 전환 Tween을 추적한다.
@@ -184,6 +177,12 @@ var speed_button_backplate: TextureRect
 var pause_button_backplate: TextureRect
 var action_button_label: Label
 var speed_button_label: Label
+var day_night_hud: Control
+var day_frame: TextureRect
+var night_frame: TextureRect
+var sun_icon: TextureRect
+var moon_icon: TextureRect
+var gold_gain_base_position := Vector2.ZERO
 var options_overlay: Control
 var options_menu_open: bool = false
 var options_test_mode_button: Button
@@ -427,7 +426,8 @@ func _shop_card_at_pointer(viewport_pointer: Vector2) -> int:
 	var canvas_pointer := viewport_pointer - interface_canvas.offset
 	for card_index in shop_cards.size():
 		var card := shop_cards[card_index]
-		if card.visible and Rect2(card.position, card.size).has_point(canvas_pointer):
+		# 카드를 ShopUI 아래에서 자유롭게 재배치해도 부모 좌표와 무관하게 실제 화면 영역을 판정한다.
+		if card.visible and card.get_global_rect().has_point(canvas_pointer):
 			return card_index
 	return -1
 
@@ -849,94 +849,92 @@ func _set_battlefield_view_index(requested_index: int, instant: bool = false) ->
 	battlefield_camera_tween.parallel().tween_property(battlefield_background, "position:y", target_y, BATTLEFIELD_CAMERA_TRANSITION_SEC)
 
 
-# 상단 정보, 하단 상점, 웨이브/리롤 버튼을 CanvasLayer에 생성한다.
+# 상단 HUD와 하단 상점을 편집 가능한 씬에서 불러오고 게임 로직 참조만 연결한다.
 func _build_interface() -> void:
-	interface_canvas = CanvasLayer.new()
+	interface_canvas = GAME_HUD_SCENE.instantiate() as CanvasLayer
 	add_child(interface_canvas)
 
-	# 중앙 원형 배지는 낮에는 남은 시간, 밤에는 웨이브 정보 중 하나만 표시한다.
-	phase_label = _make_label(interface_canvas, Vector2(105.0, 132.0), Vector2(130.0, 52.0), 26)
-	phase_label.text = ""
-	phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	phase_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var layout := interface_canvas.get_node("Layout") as Control
+	day_night_hud = layout.get_node("DayNightHUD") as Control
+	day_frame = day_night_hud.get_node("DayFrame") as TextureRect
+	night_frame = day_night_hud.get_node("NightFrame") as TextureRect
+	sun_icon = day_night_hud.get_node("SunIcon") as TextureRect
+	moon_icon = day_night_hud.get_node("MoonIcon") as TextureRect
+	phase_label = day_night_hud.get_node("PhaseLabel") as Label
+	wave_title_label = day_night_hud.get_node("WaveTitleLabel") as Label
+	wave_label = day_night_hud.get_node("WaveLabel") as Label
+
+	var top_controls := layout.get_node("TopControls") as Control
+	test_mode_badge = top_controls.get_node("TestModeBadge") as Label
+	action_button_backplate = top_controls.get_node("ActionBackplate") as TextureRect
+	action_button = top_controls.get_node("ActionButton") as Button
+	action_button_label = top_controls.get_node("ActionLabel") as Label
+	speed_button_backplate = top_controls.get_node("SpeedBackplate") as TextureRect
+	speed_button = top_controls.get_node("SpeedButton") as Button
+	speed_button_label = top_controls.get_node("SpeedLabel") as Label
+	pause_button_backplate = top_controls.get_node("PauseBackplate") as TextureRect
+	pause_button = top_controls.get_node("PauseButton") as Button
+
+	var shop_ui := layout.get_node("ShopUI") as Control
+	gold_label = shop_ui.get_node("GoldLabel") as Label
+	reroll_button = shop_ui.get_node("RerollButton") as Button
+	gold_gain_label = layout.get_node("GoldGainLabel") as Label
+	status_label = layout.get_node("StatusLabel") as Label
+	gold_gain_base_position = gold_gain_label.position
+
+	# 폰트와 색은 런타임 테마로 유지하되 위치와 크기는 전부 game_hud.tscn에서 편집한다.
+	for label in [phase_label, wave_title_label, wave_label, gold_label, gold_gain_label, status_label, action_button_label, test_mode_badge]:
+		label.add_theme_font_override("font", GAME_FONT)
+		label.add_theme_color_override("font_outline_color", Color(0.07, 0.06, 0.11, 0.9))
+		label.add_theme_constant_override("outline_size", 4)
 	phase_label.add_theme_color_override("font_color", UI_CREAM)
-
-	# 두 줄을 한 Label에 넣지 않고 제목과 숫자를 분리해 각각의 실제 글자 높이를 원 중심에 맞춘다.
-	wave_title_label = _make_label(interface_canvas, Vector2(105.0, 126.0), Vector2(130.0, 30.0), 21)
-	wave_title_label.text = "WAVE"
-	wave_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	wave_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	wave_label = _make_label(interface_canvas, Vector2(105.0, 153.0), Vector2(130.0, 40.0), 25)
-	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	wave_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# 보유 골드는 획득 애니메이션 유무와 관계없이 금색 캡슐 정중앙을 유지한다.
-	# 왼쪽 동전 장식을 제외한 금색 표시 영역의 실제 중심에 보유량 숫자를 맞춘다.
-	gold_label = _make_label(interface_canvas, Vector2(82.0, 808.0), Vector2(154.0, 72.0), 25)
-	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_label.add_theme_color_override("font_color", UI_GOLD)
-	# +n G는 판넬에 종속된 줄이 아니라 보유 골드와 같은 수평 중심에서 위로 떠오르는 독립 피드백이다.
-	gold_gain_label = _make_label(interface_canvas, Vector2(82.0, 795.0), Vector2(154.0, 34.0), 21)
-	gold_gain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gold_gain_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_gain_label.add_theme_color_override("font_color", Color("fff2a6"))
-	gold_gain_label.visible = false
-	gold_gain_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	action_button_label.add_theme_color_override("font_color", Color("34283a"))
+	test_mode_badge.add_theme_color_override("font_color", Color.WHITE)
+	test_mode_badge.add_theme_stylebox_override("normal", _make_panel_style(UI_RED, UI_INK, 18, 5, true))
 
-	# 구매·판매 로직의 짧은 메시지 저장소는 유지하지만 승인된 화면에서는 알림 영역을 노출하지 않는다.
-	status_label = _make_label(interface_canvas, Vector2.ZERO, Vector2.ZERO, 1)
-	status_label.visible = false
-	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	action_button_backplate = _make_button_backplate(interface_canvas, SPEED_CAPSULE_TEXTURE, Vector2(1450.0, 38.0), Vector2(330.0, 60.0))
-	action_button = Button.new()
-	action_button.position = Vector2(1450.0, 38.0)
-	action_button.size = Vector2(330.0, 60.0)
 	action_button.text = "1 웨이브 시작"
-	action_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	action_button.focus_mode = Control.FOCUS_NONE
 	action_button.add_theme_font_override("font", GAME_FONT)
 	action_button.add_theme_font_size_override("font_size", 26)
 	_clear_button_background(action_button)
 	action_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	_configure_button_text(action_button, Color("34283a"), Color("34283a"), Color("827b8b"))
 	action_button.pressed.connect(_on_action_button_pressed)
-	interface_canvas.add_child(action_button)
-	action_button_label = _make_label(interface_canvas, action_button.position, action_button.size, 26)
-	action_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	action_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	action_button_label.add_theme_color_override("font_color", Color("34283a"))
-	action_button_label.add_theme_color_override("font_outline_color", UI_INK)
-	action_button_label.add_theme_constant_override("outline_size", 4)
-	action_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_speed_controls(interface_canvas)
 
-	# 테스트 환경임을 일반 플레이와 명확히 구분하는 작은 고정 배지를 상단에 표시한다.
-	test_mode_badge = _make_label(interface_canvas, Vector2(1260.0, 38.0), Vector2(160.0, 60.0), 27)
-	test_mode_badge.text = "TEST"
-	test_mode_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	test_mode_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	test_mode_badge.add_theme_color_override("font_color", Color.WHITE)
-	test_mode_badge.add_theme_stylebox_override("normal", _make_panel_style(UI_RED, UI_INK, 18, 5, true))
-	test_mode_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	speed_button.add_theme_font_override("font", SYMBOL_FONT)
+	speed_button.add_theme_font_size_override("font_size", 26)
+	speed_button_label.add_theme_font_override("font", SYMBOL_FONT)
+	speed_button_label.add_theme_color_override("font_color", Color("34283a"))
+	speed_button_label.add_theme_color_override("font_outline_color", UI_INK)
+	speed_button_label.add_theme_constant_override("outline_size", 4)
+	_clear_button_background(speed_button)
+	speed_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
+	speed_button.pressed.connect(_on_speed_button_pressed)
+	pause_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	_clear_button_background(pause_button)
+	pause_button.pressed.connect(_on_pause_button_pressed)
 
-	reroll_button = Button.new()
-	reroll_button.position = Vector2(38.0, 884.0)
-	reroll_button.size = Vector2(224.0, 176.0)
 	reroll_button.text = "새로고침\n%d G" % _current_reroll_cost()
-	reroll_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	reroll_button.focus_mode = Control.FOCUS_NONE
 	reroll_button.add_theme_font_override("font", GAME_FONT)
 	reroll_button.add_theme_font_size_override("font_size", 22)
-	# 생성 패널의 큰 중앙 픽토그램을 가리지 않도록 텍스트 영역을 버튼 하단으로 제한한다.
 	reroll_button.add_theme_stylebox_override("normal", _make_overlay_button_style(Color.TRANSPARENT, 94.0))
 	reroll_button.add_theme_stylebox_override("hover", _make_overlay_button_style(Color(1.0, 1.0, 1.0, 0.10), 94.0))
 	reroll_button.add_theme_stylebox_override("pressed", _make_overlay_button_style(Color(0.02, 0.08, 0.10, 0.16), 98.0))
 	reroll_button.add_theme_stylebox_override("disabled", _make_overlay_button_style(Color(0.08, 0.08, 0.10, 0.34), 94.0))
 	_configure_button_text(reroll_button, Color.WHITE, Color.WHITE, Color("9994a7"))
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
-	interface_canvas.add_child(reroll_button)
-	_create_shop_cards(interface_canvas)
+
+	var card_count := mini(database.extension_int("shopCardCount", 5), 5)
+	for card_index in card_count:
+		var card := shop_ui.get_node("ShopCard%d" % (card_index + 1)) as PrototypeShopCard
+		card.setup(GAME_FONT)
+		shop_cards.append(card)
+		shop_card_available.append(true)
+		shop_turret_ids.append("")
+
+	_update_day_night_hud_nodes()
+	_update_speed_controls()
 	_create_sell_zone_feedback(interface_canvas)
 	_create_options_menu(interface_canvas)
 	_create_test_balance_panel(interface_canvas)
@@ -1126,47 +1124,6 @@ func _on_options_quit_pressed() -> void:
 	get_tree().quit()
 
 
-# 우측 상단에 밤 전용 배속 캡슐과 항상 표시되는 원형 일시정지 버튼을 만든다.
-func _create_speed_controls(parent: Node) -> void:
-	speed_button_backplate = _make_button_backplate(parent, SPEED_CAPSULE_TEXTURE, Vector2(1600.0, 38.0), Vector2(180.0, 60.0))
-	speed_button = Button.new()
-	speed_button.position = Vector2(1600.0, 38.0)
-	speed_button.size = Vector2(180.0, 60.0)
-	speed_button.text = "▶"
-	speed_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	speed_button.focus_mode = Control.FOCUS_NONE
-	speed_button.add_theme_font_override("font", SYMBOL_FONT)
-	speed_button.add_theme_font_size_override("font_size", 26)
-	speed_button.pressed.connect(_on_speed_button_pressed)
-	_clear_button_background(speed_button)
-	speed_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
-	parent.add_child(speed_button)
-	speed_button_label = _make_label(parent, speed_button.position, speed_button.size, 26)
-	speed_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	speed_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	speed_button_label.add_theme_font_override("font", SYMBOL_FONT)
-	speed_button_label.add_theme_color_override("font_color", Color("34283a"))
-	speed_button_label.add_theme_color_override("font_outline_color", UI_INK)
-	speed_button_label.add_theme_constant_override("outline_size", 4)
-	speed_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	pause_button_backplate = _make_button_backplate(parent, PAUSE_BUTTON_TEXTURE, Vector2(1810.0, 34.0), Vector2(68.0, 68.0))
-	pause_button = Button.new()
-	pause_button.position = Vector2(1810.0, 34.0)
-	pause_button.size = Vector2(68.0, 68.0)
-	pause_button.text = ""
-	pause_button.focus_mode = Control.FOCUS_NONE
-	pause_button.process_mode = Node.PROCESS_MODE_ALWAYS
-	pause_button.add_theme_font_override("font", GAME_FONT)
-	pause_button.add_theme_font_size_override("font_size", 27)
-	pause_button.pressed.connect(_on_pause_button_pressed)
-	_clear_button_background(pause_button)
-	# 배경과 텍스트가 비어 있으므로 투명도 조절 없이 입력 전용 사각 영역만 유지한다.
-	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	parent.add_child(pause_button)
-	_update_speed_controls()
-
-
 # 일반 밤은 1→2→3배, 테스트 환경의 밤은 1→3→5→10배 순서로 순환한다.
 func _on_speed_button_pressed() -> void:
 	if phase != Phase.WAVE or automated_test_mode:
@@ -1332,28 +1289,6 @@ func _make_circle_button_style(background_color: Color, border_color: Color, pre
 	return style
 
 
-# 생성형 UI 텍스처를 Button 배경으로 사용하고 눌림 상태에서는 내용만 조금 아래로 이동한다.
-func _make_texture_button_style(texture: Texture2D, pressed_offset: int = 0) -> StyleBoxTexture:
-	var style := StyleBoxTexture.new()
-	style.texture = texture
-	# 이미지 고유 여백은 보존한다. 눌림 상태의 세로 피드백만 최소한으로 추가한다.
-	style.content_margin_top = float(pressed_offset)
-	return style
-
-
-# 생성형 버튼 이미지를 투명 입력 버튼 뒤에 독립 배치해 원본 RGB가 테마 상태에 의해 변하지 않게 한다.
-func _make_button_backplate(parent: Node, texture: Texture2D, backplate_position: Vector2, backplate_size: Vector2) -> TextureRect:
-	var backplate := TextureRect.new()
-	backplate.position = backplate_position
-	backplate.size = backplate_size
-	backplate.texture = texture
-	backplate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	backplate.stretch_mode = TextureRect.STRETCH_SCALE
-	backplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(backplate)
-	return backplate
-
-
 # 클릭 판정과 글자만 Button이 담당하도록 모든 상태 배경을 투명하게 만든다.
 func _clear_button_background(button: Button) -> void:
 	for style_name in ["normal", "hover", "pressed", "disabled", "focus"]:
@@ -1392,21 +1327,6 @@ func _create_tower_slots() -> void:
 			slot.pressed.connect(_on_tower_slot_pressed)
 			battlefield_world.add_child(slot)
 			tower_slots.append(slot)
-
-
-# PDF/AGENTS에 확정된 5칸 TFT형 상점 카드 버튼을 만든다.
-# 카드의 실제 내용은 매 정비 단계마다 _refresh_shop_cards에서 채운다.
-func _create_shop_cards(canvas: CanvasLayer) -> void:
-	var card_count := database.extension_int("shopCardCount", 5)
-	for card_index in card_count:
-		var card := ShopCardScript.new() as PrototypeShopCard
-		card.position = Vector2(280.0 + card_index * 322.0, 790.0)
-		card.size = Vector2(306.0, 270.0)
-		card.setup(GAME_FONT)
-		canvas.add_child(card)
-		shop_cards.append(card)
-		shop_card_available.append(true)
-		shop_turret_ids.append("")
 
 
 # 화면의 진행 버튼은 낮에 밤을 조기 시작하는 단일 역할만 담당한다.
@@ -2203,13 +2123,14 @@ func _show_gold_gain_feedback(reward_amount: int) -> void:
 	if gold_gain_tween != null and gold_gain_tween.is_valid():
 		gold_gain_tween.kill()
 	gold_gain_label.text = "+ %d G" % reward_amount
-	gold_gain_label.position = Vector2(50.0, 800.0)
+	# 시작점은 game_hud.tscn에서 배치한 위치를 사용해 편집기 조정값을 보존한다.
+	gold_gain_label.position = gold_gain_base_position
 	gold_gain_label.modulate = Color.WHITE
 	gold_gain_label.visible = true
 	gold_gain_tween = create_tween()
 	gold_gain_tween.set_ignore_time_scale(true)
 	gold_gain_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	gold_gain_tween.tween_property(gold_gain_label, "position:y", 764.0, 0.68)
+	gold_gain_tween.tween_property(gold_gain_label, "position:y", gold_gain_base_position.y - 36.0, 0.68)
 	gold_gain_tween.parallel().tween_property(gold_gain_label, "modulate:a", 0.0, 0.42).set_delay(0.32)
 	gold_gain_tween.tween_callback(func() -> void: gold_gain_label.visible = false)
 
@@ -2468,40 +2389,28 @@ func _update_interface() -> void:
 				action_button_label.visible = false
 
 
-# 고정 HUD와 상점 제어 장식만 그리고, 화면 전체 배경은 독립된 수직 카메라 노드에 맡긴다.
-func _draw() -> void:
-	# 전체 폭 상단 판넬 대신 낮/밤과 웨이브만 담는 독립형 반원 HUD를 표시한다.
-	_draw_day_night_hud()
+# 낮·밤 프레임과 아이콘은 씬 노드로 유지해 편집기에서 크기와 기준 위치를 직접 조절한다.
+func _update_day_night_hud_nodes() -> void:
+	if not is_instance_valid(day_night_hud) or not is_instance_valid(night_frame):
+		return
+	night_frame.modulate = Color(1.0, 1.0, 1.0, night_visual_amount)
 
-	# 카드와 같은 높이의 생성형 상점 제어판에 골드 영역과 큰 리롤 버튼을 함께 담는다.
-	draw_texture_rect(SHOP_CONTROLS_PANEL, Rect2(24.0, 790.0, 250.0, 270.0), false)
-
-
-# 생성한 낮·밤 HUD 프레임을 교차시키고 해·달을 반원 내부 궤도에서 회전시킨다.
-func _draw_day_night_hud() -> void:
-	var frame_rect := Rect2(-80.0, -5.0, 500.0, 250.0)
-	draw_texture_rect(DAY_NIGHT_HUD_DAY_FRAME, frame_rect, false)
-	if night_visual_amount > 0.001:
-		draw_texture_rect(DAY_NIGHT_HUD_NIGHT_FRAME, frame_rect, false, Color(1.0, 1.0, 1.0, night_visual_amount))
-
-	# 아이콘 반지름을 프레임 안쪽으로 제한하고, 서로 반대 방향에서 꼭대기로 교대시킨다.
-	var orbit_center := Vector2(170.0, 160.0)
+	# 기존 반원 궤도는 유지하되 위치는 DayNightHUD 로컬 좌표로 계산한다.
+	var orbit_center := Vector2(250.0, 165.0)
 	var orbit_radius := 88.0
 	var sun_angle := -PI * 0.5 - night_visual_amount * PI * 0.5
 	var moon_angle := -night_visual_amount * PI * 0.5
-	var sun_position := orbit_center + Vector2(cos(sun_angle), sin(sun_angle)) * orbit_radius
-	var moon_position := orbit_center + Vector2(cos(moon_angle), sin(moon_angle)) * orbit_radius
-	_draw_orbiting_hud_icon(DAY_NIGHT_SUN_ICON, sun_position, 58.0, night_visual_amount * TAU, 1.0 - night_visual_amount)
-	_draw_orbiting_hud_icon(DAY_NIGHT_MOON_ICON, moon_position, 58.0, -night_visual_amount * PI * 0.5, night_visual_amount)
+	_set_hud_orbit_icon(sun_icon, orbit_center + Vector2(cos(sun_angle), sin(sun_angle)) * orbit_radius, night_visual_amount * TAU, 1.0 - night_visual_amount)
+	_set_hud_orbit_icon(moon_icon, orbit_center + Vector2(cos(moon_angle), sin(moon_angle)) * orbit_radius, -night_visual_amount * PI * 0.5, night_visual_amount)
 
 
-# 생성 아이콘은 중심 기준으로 회전해도 58px 안전 영역 밖으로 나가지 않게 그린다.
-func _draw_orbiting_hud_icon(texture: Texture2D, icon_position: Vector2, icon_size: float, rotation_radians: float, opacity: float) -> void:
-	if opacity <= 0.001:
+func _set_hud_orbit_icon(icon: TextureRect, center_position: Vector2, rotation_radians: float, opacity: float) -> void:
+	if not is_instance_valid(icon):
 		return
-	draw_set_transform(icon_position, rotation_radians, Vector2.ONE)
-	draw_texture_rect(texture, Rect2(Vector2(-icon_size * 0.5, -icon_size * 0.5), Vector2(icon_size, icon_size)), false, Color(1.0, 1.0, 1.0, opacity))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	icon.position = center_position - icon.size * 0.5
+	icon.pivot_offset = icon.size * 0.5
+	icon.rotation = rotation_radians
+	icon.modulate = Color(1.0, 1.0, 1.0, opacity)
 
 
 # Node2D 그리기에서도 재사용할 수 있는 둥근 판넬 스타일을 만든다.
