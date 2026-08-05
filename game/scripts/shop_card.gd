@@ -96,12 +96,12 @@ func _draw() -> void:
 # 기본 상태는 별도 이미지 판넬 없이 승인된 Tier 1 스프라이트와 이름·가격만 배치한다.
 func _draw_default_state() -> void:
 	_draw_tower_sprite()
-	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 194.0, 24, CARD_CREAM)
+	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 190.0, 24, CARD_CREAM)
 	var price_color := CARD_GOLD if card_affordable else Color("a0a0aa")
 	# 골드가 부족하면 카드 전체가 아니라 생성 프레임의 금화·가격 영역만 회색으로 가린다.
 	if not card_affordable:
 		draw_style_box(_make_card_style(Color(0.22, 0.22, 0.25, 0.86), Color("777783"), 9, 2), Rect2(48.0, 214.0, size.x - 66.0, 42.0))
-	_draw_centered_price("%d G" % int(tower_data.get("base_price", 0)), 239.0, 22, price_color)
+	_draw_centered_price("%d G" % int(tower_data.get("base_price", 0)), 232.0, 22, price_color)
 
 
 # 호버 상태는 딤드된 카드 위에 가격과 이미지를 제외한 이름·효과·핵심 능력치만 중앙 배치한다.
