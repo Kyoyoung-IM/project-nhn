@@ -159,6 +159,10 @@ var gold_gain_base_position := Vector2.ZERO
 var options_overlay: Control
 var options_menu_open: bool = false
 var options_test_mode_button: Button
+var game_over_overlay: Control
+var game_over_restart_button: Button
+var game_over_quit_button: Button
+var game_over_tween: Tween
 var test_mode_badge: Label
 var test_balance_panel: PrototypeTestBalancePanel
 var sell_zone_overlay: TextureRect
@@ -872,6 +876,11 @@ func _build_interface() -> void:
 	gold_gain_label = layout.get_node("GoldGainLabel") as Label
 	status_label = layout.get_node("StatusLabel") as Label
 	gold_gain_base_position = gold_gain_label.position
+	game_over_overlay = layout.get_node("GameOverOverlay") as Control
+	game_over_restart_button = game_over_overlay.get_node("RestartButton") as Button
+	game_over_quit_button = game_over_overlay.get_node("QuitButton") as Button
+	game_over_restart_button.pressed.connect(_on_game_over_restart_pressed)
+	game_over_quit_button.pressed.connect(_on_game_over_quit_pressed)
 
 	# 폰트와 색은 런타임 테마로 유지하되 위치와 크기는 전부 game_hud.tscn에서 편집한다.
 	for label in [phase_label, wave_title_label, wave_label, gold_label, gold_gain_label, status_label, action_button_label, test_mode_badge]:
@@ -1113,6 +1122,42 @@ func _on_options_quit_pressed() -> void:
 	_set_options_menu_visible(false)
 	Engine.time_scale = 1.0
 	get_tree().quit()
+
+
+# 게임 오버 화면의 다시 시작은 현재 판을 완전히 초기화하고 새 낮 단계에서 재개한다.
+func _on_game_over_restart_pressed() -> void:
+	if phase != Phase.DEFEAT:
+		return
+	Engine.time_scale = 1.0
+	_reset_game()
+
+
+func _on_game_over_quit_pressed() -> void:
+	if phase != Phase.DEFEAT:
+		return
+	Engine.time_scale = 1.0
+	get_tree().quit()
+
+
+# 패배 진입 시 편집 가능한 오버레이 씬을 짧게 페이드인하고 다른 단계에서는 즉시 숨긴다.
+func _set_game_over_visible(show_overlay: bool, instant: bool = false) -> void:
+	if game_over_overlay == null:
+		return
+	if game_over_tween != null and game_over_tween.is_valid():
+		game_over_tween.kill()
+	if not show_overlay:
+		game_over_overlay.visible = false
+		game_over_overlay.modulate.a = 1.0
+		return
+	game_over_overlay.visible = true
+	if instant:
+		game_over_overlay.modulate.a = 1.0
+		return
+	game_over_overlay.modulate.a = 0.0
+	game_over_tween = create_tween()
+	game_over_tween.set_ignore_time_scale(true)
+	game_over_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	game_over_tween.tween_property(game_over_overlay, "modulate:a", 1.0, 0.32)
 
 
 # 일반 밤은 1→2→3배, 테스트 환경의 밤은 1→3→5→10배 순서로 순환한다.
@@ -2186,6 +2231,7 @@ func _set_phase(next_phase: Phase) -> void:
 			Engine.time_scale = 1.0
 	_update_speed_controls()
 	_update_shop_cards()
+	_set_game_over_visible(phase == Phase.DEFEAT, automated_test_mode)
 	if phase == Phase.DEFEAT:
 		for monster in monsters:
 			if is_instance_valid(monster):
@@ -2378,9 +2424,9 @@ func _update_interface() -> void:
 				action_button_label.visible = false
 		Phase.DEFEAT:
 			phase_label.visible = false
-			wave_title_label.visible = true
-			wave_label.visible = true
-			status_label.text = "최심부 침입 · 패배"
+			wave_title_label.visible = false
+			wave_label.visible = false
+			status_label.text = ""
 			action_button.visible = false
 			if action_button_backplate != null:
 				action_button_backplate.visible = false

@@ -1,0 +1,186 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/generated/game_over_title_v1.png" id="1_title"]
+[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleRestartNormal"]
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+bg_color = Color(0.117647, 0.501961, 0.470588, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.960784, 0.776471, 0.32549, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0156863, 0.0196078, 0.0392157, 0.75)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleRestartHover"]
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+bg_color = Color(0.168627, 0.65098, 0.596078, 1)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(1, 0.886275, 0.505882, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0156863, 0.0196078, 0.0392157, 0.75)
+shadow_size = 9
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleRestartPressed"]
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 10.0
+bg_color = Color(0.0862745, 0.384314, 0.368627, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.87451, 0.67451, 0.223529, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0156863, 0.0196078, 0.0392157, 0.65)
+shadow_size = 5
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleQuitNormal"]
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+bg_color = Color(0.52549, 0.2, 0.239216, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.960784, 0.776471, 0.32549, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0156863, 0.0196078, 0.0392157, 0.75)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleQuitHover"]
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+bg_color = Color(0.690196, 0.258824, 0.298039, 1)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(1, 0.886275, 0.505882, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0156863, 0.0196078, 0.0392157, 0.75)
+shadow_size = 9
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleQuitPressed"]
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 10.0
+bg_color = Color(0.4, 0.145098, 0.180392, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.87451, 0.67451, 0.223529, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0156863, 0.0196078, 0.0392157, 0.65)
+shadow_size = 5
+shadow_offset = Vector2(0, 3)
+
+[node name="GameOverOverlay" type="Control"]
+visible = false
+z_index = 80
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 0
+process_mode = 3
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+color = Color(0.0117647, 0.0156863, 0.0392157, 0.82)
+
+[node name="TitleImage" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 360.0
+offset_top = 105.0
+offset_right = 1560.0
+offset_bottom = 780.0
+mouse_filter = 2
+texture = ExtResource("1_title")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RestartButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 650.0
+offset_top = 790.0
+offset_right = 930.0
+offset_bottom = 884.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.901961, 1)
+theme_override_colors/font_pressed_color = Color(0.960784, 0.776471, 0.32549, 1)
+theme_override_colors/font_outline_color = Color(0.0352941, 0.0313725, 0.0745098, 0.92)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 34
+theme_override_styles/normal = SubResource("StyleRestartNormal")
+theme_override_styles/hover = SubResource("StyleRestartHover")
+theme_override_styles/pressed = SubResource("StyleRestartPressed")
+text = "다시 시작"
+
+[node name="QuitButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 990.0
+offset_top = 790.0
+offset_right = 1270.0
+offset_bottom = 884.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.901961, 1)
+theme_override_colors/font_pressed_color = Color(0.960784, 0.776471, 0.32549, 1)
+theme_override_colors/font_outline_color = Color(0.0352941, 0.0313725, 0.0745098, 0.92)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 34
+theme_override_styles/normal = SubResource("StyleQuitNormal")
+theme_override_styles/hover = SubResource("StyleQuitHover")
+theme_override_styles/pressed = SubResource("StyleQuitPressed")
+text = "게임 종료"

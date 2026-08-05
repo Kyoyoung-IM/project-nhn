@@ -37,7 +37,40 @@ func _run() -> void:
 		_fail("shop price label is not centered inside the editable price area")
 		return
 
-	print("Editable HUD layout validation passed: SCENE_NODES_AND_SHOP_INPUT_READY")
+	var game_over_overlay := hud.get_node_or_null("Layout/GameOverOverlay") as Control
+	if game_over_overlay == null:
+		_fail("editable game-over overlay is missing")
+		return
+	var game_over_title := game_over_overlay.get_node_or_null("TitleImage") as TextureRect
+	var game_over_restart := game_over_overlay.get_node_or_null("RestartButton") as Button
+	var game_over_quit := game_over_overlay.get_node_or_null("QuitButton") as Button
+	if game_over_title == null or game_over_title.texture == null or game_over_restart == null or game_over_quit == null:
+		_fail("game-over title or controls are incomplete")
+		return
+	if game_over_overlay.visible:
+		_fail("game-over overlay must be hidden before defeat")
+		return
+
+	# 패배 단계에서 생성형 타이틀 오버레이만 표시되고 이전 상태 문구는 중복되지 않는지 확인한다.
+	game._set_phase(3)
+	await process_frame
+	if not game_over_overlay.visible:
+		_fail("game-over overlay did not open on defeat")
+		return
+	var status_label := hud.get_node("Layout/StatusLabel") as Label
+	var wave_title_label := hud.get_node("Layout/DayNightHUD/WaveTitleLabel") as Label
+	var wave_label := hud.get_node("Layout/DayNightHUD/WaveLabel") as Label
+	if not status_label.text.is_empty() or wave_title_label.visible or wave_label.visible:
+		_fail("legacy defeat text is still visible behind the game-over artwork")
+		return
+
+	game._on_game_over_restart_pressed()
+	await process_frame
+	if game_over_overlay.visible or int(game.get("phase")) != 0:
+		_fail("game-over restart did not return to the ready phase")
+		return
+
+	print("Editable HUD layout validation passed: SCENE_NODES_SHOP_AND_GAME_OVER_READY")
 	quit(0)
 
 

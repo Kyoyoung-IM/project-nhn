@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
 [ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/generated/speed_capsule_v2.png" id="6_speed"]
 [ext_resource type="Texture2D" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_card.tscn" id="8_card"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
 
 [node name="GameHUD" type="CanvasLayer"]
 
@@ -287,3 +288,5 @@ layout_mode = 0
 offset_right = 1.0
 offset_bottom = 1.0
 mouse_filter = 2
+
+[node name="GameOverOverlay" parent="Layout" instance=ExtResource("9_game_over")]
