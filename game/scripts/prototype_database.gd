@@ -402,6 +402,17 @@ func roll_shop_turret_ids(rng: RandomNumberGenerator, count: int) -> Array[Strin
 	return result
 
 
+# Returns each Tier 1 shop turret once, preserving the ShopGacha row order.
+# Test mode uses this list so every turret type is always available without changing source data.
+func all_shop_turret_ids() -> Array[String]:
+	var result: Array[String] = []
+	for row in shop_rows:
+		var turret_id := str(row.get("turretIndex", ""))
+		if not turret_id.is_empty() and not result.has(turret_id):
+			result.append(turret_id)
+	return result
+
+
 # 시트의 `50%` 형식과 숫자 비율을 모두 0~1 실수로 정규화한다.
 func _ratio_value(value: Variant) -> float:
 	var text := str(value).strip_edges()

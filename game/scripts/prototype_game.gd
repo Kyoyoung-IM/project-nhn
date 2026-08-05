@@ -290,7 +290,8 @@ func _process(delta: float) -> void:
 			return
 
 	if phase == Phase.READY:
-		if not automated_test_mode and tower_visual_test_type.is_empty():
+		# Test mode advances waves only through the explicit start controls.
+		if not test_mode and not automated_test_mode and tower_visual_test_type.is_empty():
 			var previous_second := ceili(preparation_remaining_sec)
 			preparation_remaining_sec = maxf(0.0, preparation_remaining_sec - delta)
 			if ceili(preparation_remaining_sec) != previous_second:
@@ -306,7 +307,7 @@ func _process(delta: float) -> void:
 	# 마지막 웨이브에는 다음 웨이브가 없으므로 타이머를 0에 고정하고 보스 처치/최심부 도달 판정을 기다린다.
 	if wave_remaining_sec > 0.0:
 		wave_remaining_sec = maxf(0.0, wave_remaining_sec - delta)
-		if wave_remaining_sec <= 0.0 and current_wave_number < database.define_int("totalWaveCount", 1):
+		if wave_remaining_sec <= 0.0 and not test_mode and current_wave_number < database.define_int("totalWaveCount", 1):
 			_start_next_wave_immediately()
 			return
 
@@ -1458,12 +1459,16 @@ func _start_automated_test() -> void:
 # 테스트 전용 환경이 일반 시작 조건, 수동 보상·웨이브 점프·런타임 편집과 기존 고배속을 함께 제공하는지 검증한다.
 func _run_test_environment_automated_test() -> void:
 	var normal_start_gold_ok := gold == database.define_int("initialGold", 100)
-	var random_shop_ok := shop_turret_ids.size() == shop_cards.size()
-	for turret_id in shop_turret_ids:
-		random_shop_ok = random_shop_ok and not database.get_turret_data(turret_id).is_empty()
+	var expected_test_shop := database.all_shop_turret_ids()
+	var full_shop_ok := shop_turret_ids == expected_test_shop and shop_turret_ids.size() == shop_cards.size()
 	var panel_visible_ok := test_balance_panel != null and test_balance_panel.visible
+	var preparation_before_manual_step := preparation_remaining_sec
+	_process(1.0)
+	var manual_ready_ok := phase == Phase.READY and is_equal_approx(preparation_remaining_sec, preparation_before_manual_step)
 	_on_test_grant_gold_requested(9999)
 	var manual_gold_ok := gold == database.define_int("initialGold", 100) + 9999
+	_on_reroll_button_pressed()
+	var reroll_full_shop_ok := shop_turret_ids == expected_test_shop
 	var original_damage := float(database.get_turret_data("turretMelee1").get("damage", 0.0))
 	var edit_errors := database.apply_balance_edits("Turret", [{"row_id": "turretMelee1", "column": "damage", "value": str(original_damage + 7.0)}])
 	_on_test_runtime_data_changed("Turret")
@@ -1473,6 +1478,9 @@ func _run_test_environment_automated_test() -> void:
 	var source_reset_ok := is_equal_approx(float(database.get_turret_data("turretMelee1").get("damage", 0.0)), original_damage)
 	_on_test_start_wave_requested(2)
 	var wave_jump_ok := current_wave_number == 2 and phase == Phase.WAVE and not current_wave_spawn_entries.is_empty()
+	wave_remaining_sec = 0.01
+	_process(0.02)
+	var manual_next_wave_ok := current_wave_number == 2 and phase == Phase.WAVE and is_zero_approx(wave_remaining_sec)
 	# 실제 버튼 경로를 열어 테스트 배속이 3→5→10→1로 순환하는지 확인한다.
 	automated_test_mode = false
 	var observed_speed_cycle: Array[int] = []
@@ -1487,21 +1495,24 @@ func _run_test_environment_automated_test() -> void:
 	var test_button_ok := options_test_mode_button != null and options_test_mode_button.text == "일반 모드로 돌아가기"
 	var passed := test_mode \
 		and normal_start_gold_ok \
-		and random_shop_ok \
+		and full_shop_ok \
+		and reroll_full_shop_ok \
+		and manual_ready_ok \
 		and panel_visible_ok \
 		and manual_gold_ok \
 		and runtime_edit_ok \
 		and source_reset_ok \
 		and wave_jump_ok \
+		and manual_next_wave_ok \
 		and test_mode_badge != null \
 		and test_mode_badge.visible \
 		and speed_values_ok \
 		and stun_hover_height_ok \
 		and test_button_ok
 	if passed:
-		print("Automated test environment passed: NORMAL_START_MANUAL_TOOLS_RUNTIME_TABLE_SPEED_10X")
+		print("Automated test environment passed: MANUAL_WAVES_FULL_SHOP_RUNTIME_TABLE_SPEED_10X")
 	else:
-		push_error("Automated test environment failed: normal=%s random_shop=%s panel=%s gold=%s edit=%s reset=%s wave=%s speed=%s button=%s" % [normal_start_gold_ok, random_shop_ok, panel_visible_ok, manual_gold_ok, runtime_edit_ok, source_reset_ok, wave_jump_ok, speed_values_ok, test_button_ok])
+		push_error("Automated test environment failed: normal=%s full_shop=%s reroll_shop=%s manual_ready=%s panel=%s gold=%s edit=%s reset=%s wave=%s manual_next=%s speed=%s button=%s" % [normal_start_gold_ok, full_shop_ok, reroll_full_shop_ok, manual_ready_ok, panel_visible_ok, manual_gold_ok, runtime_edit_ok, source_reset_ok, wave_jump_ok, manual_next_wave_ok, speed_values_ok, test_button_ok])
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -2227,8 +2238,13 @@ func _begin_preparation(reset_run: bool) -> void:
 
 # ShopGacha 확률로 카드 ID를 새로 뽑고 카드에 타입·능력치·가격을 표시한다.
 func _refresh_shop_cards() -> void:
-	# 테스트 모드도 일반 ShopGacha를 사용하며 재현성은 테스트 모드의 고정 RNG 시드가 담당한다.
-	shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
+	# Test mode exposes every Tier 1 type once; normal mode keeps the ShopGacha roll.
+	shop_turret_ids = database.all_shop_turret_ids() if test_mode else database.roll_shop_turret_ids(shop_rng, shop_cards.size())
+	# Keep the UI safe if a malformed table temporarily provides fewer rows than card slots.
+	while shop_turret_ids.size() < shop_cards.size():
+		shop_turret_ids.append(database.first_shop_turret_id())
+	if shop_turret_ids.size() > shop_cards.size():
+		shop_turret_ids.resize(shop_cards.size())
 	shop_card_available.clear()
 	for card_index in shop_cards.size():
 		shop_card_available.append(true)
