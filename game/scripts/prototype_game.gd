@@ -179,6 +179,11 @@ var action_button: Button
 var reroll_button: Button
 var speed_button: Button
 var pause_button: Button
+var action_button_backplate: TextureRect
+var speed_button_backplate: TextureRect
+var pause_button_backplate: TextureRect
+var action_button_label: Label
+var speed_button_label: Label
 var options_overlay: Control
 var options_menu_open: bool = false
 var options_test_mode_button: Button
@@ -883,6 +888,7 @@ func _build_interface() -> void:
 	status_label.visible = false
 	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	action_button_backplate = _make_button_backplate(interface_canvas, SPEED_CAPSULE_TEXTURE, Vector2(1450.0, 38.0), Vector2(330.0, 60.0))
 	action_button = Button.new()
 	action_button.position = Vector2(1450.0, 38.0)
 	action_button.size = Vector2(330.0, 60.0)
@@ -891,13 +897,18 @@ func _build_interface() -> void:
 	action_button.focus_mode = Control.FOCUS_NONE
 	action_button.add_theme_font_override("font", GAME_FONT)
 	action_button.add_theme_font_size_override("font_size", 26)
-	action_button.add_theme_stylebox_override("normal", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
-	action_button.add_theme_stylebox_override("hover", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
-	action_button.add_theme_stylebox_override("pressed", _make_texture_button_style(SPEED_CAPSULE_TEXTURE, 2))
-	action_button.add_theme_stylebox_override("disabled", _make_button_style(Color("504b5c"), Color("716b80")))
+	_clear_button_background(action_button)
+	action_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	_configure_button_text(action_button, Color("34283a"), Color("34283a"), Color("827b8b"))
 	action_button.pressed.connect(_on_action_button_pressed)
 	interface_canvas.add_child(action_button)
+	action_button_label = _make_label(interface_canvas, action_button.position, action_button.size, 26)
+	action_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	action_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	action_button_label.add_theme_color_override("font_color", Color("34283a"))
+	action_button_label.add_theme_color_override("font_outline_color", UI_INK)
+	action_button_label.add_theme_constant_override("outline_size", 4)
+	action_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_create_speed_controls(interface_canvas)
 
 	# 테스트 환경임을 일반 플레이와 명확히 구분하는 작은 고정 배지를 상단에 표시한다.
@@ -1117,6 +1128,7 @@ func _on_options_quit_pressed() -> void:
 
 # 우측 상단에 밤 전용 배속 캡슐과 항상 표시되는 원형 일시정지 버튼을 만든다.
 func _create_speed_controls(parent: Node) -> void:
+	speed_button_backplate = _make_button_backplate(parent, SPEED_CAPSULE_TEXTURE, Vector2(1600.0, 38.0), Vector2(180.0, 60.0))
 	speed_button = Button.new()
 	speed_button.position = Vector2(1600.0, 38.0)
 	speed_button.size = Vector2(180.0, 60.0)
@@ -1126,8 +1138,19 @@ func _create_speed_controls(parent: Node) -> void:
 	speed_button.add_theme_font_override("font", SYMBOL_FONT)
 	speed_button.add_theme_font_size_override("font_size", 26)
 	speed_button.pressed.connect(_on_speed_button_pressed)
+	_clear_button_background(speed_button)
+	speed_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	parent.add_child(speed_button)
+	speed_button_label = _make_label(parent, speed_button.position, speed_button.size, 26)
+	speed_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speed_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	speed_button_label.add_theme_font_override("font", SYMBOL_FONT)
+	speed_button_label.add_theme_color_override("font_color", Color("34283a"))
+	speed_button_label.add_theme_color_override("font_outline_color", UI_INK)
+	speed_button_label.add_theme_constant_override("outline_size", 4)
+	speed_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	pause_button_backplate = _make_button_backplate(parent, PAUSE_BUTTON_TEXTURE, Vector2(1810.0, 34.0), Vector2(68.0, 68.0))
 	pause_button = Button.new()
 	pause_button.position = Vector2(1810.0, 34.0)
 	pause_button.size = Vector2(68.0, 68.0)
@@ -1137,6 +1160,8 @@ func _create_speed_controls(parent: Node) -> void:
 	pause_button.add_theme_font_override("font", GAME_FONT)
 	pause_button.add_theme_font_size_override("font_size", 27)
 	pause_button.pressed.connect(_on_pause_button_pressed)
+	_clear_button_background(pause_button)
+	pause_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	parent.add_child(pause_button)
 	_update_speed_controls()
 
@@ -1169,17 +1194,18 @@ func _update_speed_controls() -> void:
 		_:
 			speed_button.text = "▶"
 	speed_button.visible = phase == Phase.WAVE
+	if speed_button_backplate != null:
+		speed_button_backplate.visible = speed_button.visible
+	if speed_button_label != null:
+		speed_button_label.text = speed_button.text
+		speed_button_label.visible = speed_button.visible
 	speed_button.disabled = phase != Phase.WAVE or automated_test_mode
-	speed_button.add_theme_stylebox_override("normal", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
-	speed_button.add_theme_stylebox_override("hover", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
-	speed_button.add_theme_stylebox_override("pressed", _make_texture_button_style(SPEED_CAPSULE_TEXTURE, 2))
 	_configure_button_text(speed_button, Color("34283a"), Color("34283a"), Color("9994a7"))
 	if pause_button != null:
 		pause_button.visible = true
+		if pause_button_backplate != null:
+			pause_button_backplate.visible = true
 		pause_button.disabled = automated_test_mode
-		pause_button.add_theme_stylebox_override("normal", _make_texture_button_style(PAUSE_BUTTON_TEXTURE))
-		pause_button.add_theme_stylebox_override("hover", _make_texture_button_style(PAUSE_BUTTON_TEXTURE))
-		pause_button.add_theme_stylebox_override("pressed", _make_texture_button_style(PAUSE_BUTTON_TEXTURE, 2))
 		_configure_button_text(pause_button, UI_CREAM, Color.WHITE, Color("9994a7"))
 
 
@@ -1312,6 +1338,31 @@ func _make_texture_button_style(texture: Texture2D, pressed_offset: int = 0) -> 
 	# 이미지 고유 여백은 보존한다. 눌림 상태의 세로 피드백만 최소한으로 추가한다.
 	style.content_margin_top = float(pressed_offset)
 	return style
+
+
+# 생성형 버튼 이미지를 투명 입력 버튼 뒤에 독립 배치해 원본 RGB가 테마 상태에 의해 변하지 않게 한다.
+func _make_button_backplate(parent: Node, texture: Texture2D, backplate_position: Vector2, backplate_size: Vector2) -> TextureRect:
+	var backplate := TextureRect.new()
+	backplate.position = backplate_position
+	backplate.size = backplate_size
+	backplate.texture = texture
+	backplate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backplate.stretch_mode = TextureRect.STRETCH_SCALE
+	# 생성 PNG 내부가 약 20% 알파로 저장되어 배경색과 섞이므로 RGB는 유지하고 알파만 복원한다.
+	var opacity_shader := Shader.new()
+	opacity_shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 source = texture(TEXTURE, UV);\n\tCOLOR = vec4(source.rgb, clamp(source.a * 4.5, 0.0, 1.0));\n}"
+	var opacity_material := ShaderMaterial.new()
+	opacity_material.shader = opacity_shader
+	backplate.material = opacity_material
+	backplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(backplate)
+	return backplate
+
+
+# 클릭 판정과 글자만 Button이 담당하도록 모든 상태 배경을 투명하게 만든다.
+func _clear_button_background(button: Button) -> void:
+	for style_name in ["normal", "hover", "pressed", "disabled", "focus"]:
+		button.add_theme_stylebox_override(style_name, StyleBoxEmpty.new())
 
 
 # 배경 이미지 위에 놓인 입력 버튼은 투명 오버레이와 텍스트 여백만 담당한다.
@@ -2382,26 +2433,44 @@ func _update_interface() -> void:
 			wave_title_label.visible = false
 			wave_label.visible = false
 			action_button.text = "%d번째 밤 시작" % current_wave_number
+			if action_button_label != null:
+				action_button_label.text = action_button.text
 			action_button.disabled = false
 			action_button.visible = true
+			if action_button_backplate != null:
+				action_button_backplate.visible = true
+			if action_button_label != null:
+				action_button_label.visible = true
 		Phase.WAVE:
 			phase_label.visible = false
 			wave_title_label.visible = true
 			wave_label.visible = true
 			status_label.text = "밤 방어 중  %d / %d 처치" % [defeated_count, wave_total]
 			action_button.visible = false
+			if action_button_backplate != null:
+				action_button_backplate.visible = false
+			if action_button_label != null:
+				action_button_label.visible = false
 		Phase.VICTORY:
 			phase_label.visible = false
 			wave_title_label.visible = false
 			wave_label.visible = false
 			status_label.text = "방어 성공"
 			action_button.visible = false
+			if action_button_backplate != null:
+				action_button_backplate.visible = false
+			if action_button_label != null:
+				action_button_label.visible = false
 		Phase.DEFEAT:
 			phase_label.visible = false
 			wave_title_label.visible = true
 			wave_label.visible = true
 			status_label.text = "최심부 침입 · 패배"
 			action_button.visible = false
+			if action_button_backplate != null:
+				action_button_backplate.visible = false
+			if action_button_label != null:
+				action_button_label.visible = false
 
 
 # 고정 HUD와 상점 제어 장식만 그리고, 화면 전체 배경은 독립된 수직 카메라 노드에 맡긴다.
