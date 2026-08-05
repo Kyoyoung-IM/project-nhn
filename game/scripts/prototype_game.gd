@@ -1745,11 +1745,11 @@ func _run_drag_automated_test() -> void:
 	var same_floor_target := tower_slots[1]
 	var other_floor_target := tower_slots[5]
 	# 평상시 0%, 조작 중 30%, 조작 종료 후 0%로 복원되는 슬롯 표시 규칙을 직접 확인한다.
-	var slot_hidden_at_idle := is_zero_approx(same_floor_target.self_modulate.a)
+	var slot_hidden_at_idle := not same_floor_target.visual.visible and is_zero_approx(same_floor_target.visual.modulate.a)
 	same_floor_target.set_drag_state(true, false)
-	var slot_visible_during_drag := is_equal_approx(same_floor_target.self_modulate.a, PrototypeTowerSlot.ACTIVE_SLOT_OPACITY)
+	var slot_visible_during_drag := same_floor_target.visual.visible and is_equal_approx(same_floor_target.visual.modulate.a, PrototypeTowerSlot.ACTIVE_SLOT_OPACITY)
 	same_floor_target.set_drag_state(false, false)
-	var slot_hidden_after_drag := is_zero_approx(same_floor_target.self_modulate.a)
+	var slot_hidden_after_drag := not same_floor_target.visual.visible and is_zero_approx(same_floor_target.visual.modulate.a)
 	_place_tower(origin, false, "turretMelee1")
 	var tower := towers[0]
 	var cross_floor_rejected := not _relocate_tower(tower, other_floor_target)

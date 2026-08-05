@@ -44,7 +44,6 @@ func _ready() -> void:
 func setup(new_floor_index: int, new_slot_index: int) -> void:
 	floor_index = new_floor_index
 	slot_index = new_slot_index
-	self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	input_pickable = true
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
@@ -72,7 +71,6 @@ func is_empty() -> bool:
 func set_drag_state(eligible: bool, targeted: bool) -> void:
 	drag_eligible = eligible
 	drag_targeted = targeted
-	self_modulate.a = ACTIVE_SLOT_OPACITY if drag_eligible or drag_targeted else 0.0
 	_update_visual()
 
 
@@ -101,7 +99,11 @@ func _on_mouse_exited() -> void:
 func _update_visual() -> void:
 	if visual == null or fill_panel == null or border_panel == null:
 		return
-	visual.visible = is_empty()
+	# Area2D.self_modulate는 자식 Control에 전파되지 않으므로 실제 표시 루트의 알파를 갱신한다.
+	var should_show := is_empty() and (drag_eligible or drag_targeted)
+	visual.modulate.a = ACTIVE_SLOT_OPACITY if should_show else 0.0
+	# 0% 알파뿐 아니라 렌더링 자체도 꺼 초기 상태나 조작 종료 시 슬롯이 확실히 숨겨지게 한다.
+	visual.visible = should_show
 	if not visual.visible:
 		return
 	var fill_style := fill_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
