@@ -26,6 +26,9 @@ var monsters_by_id: Dictionary = {}
 var spawn_rows: Array[Dictionary] = []
 var shop_rows: Array[Dictionary] = []
 
+# 테스트 밸런스 편집은 메모리의 런타임 사본만 바꾸며, 이 스냅샷으로 언제든 로컬 JSON 원본값으로 돌아간다.
+var source_table_snapshot: Dictionary = {}
+
 # 검증 오류를 모아서 한 번에 출력하기 위한 버퍼다.
 var validation_errors: Array[String] = []
 
@@ -67,7 +70,202 @@ func load_all() -> bool:
 	if not validation_errors.is_empty():
 		_report_errors()
 		return false
+	_capture_source_table_snapshot()
 	return true
+
+
+# 테스트 편집 창에 노출할 컬럼 순서와 편집 가능 여부를 한곳에서 정의한다.
+# ID, 타입, 다음 Tier와 리소스 참조는 런타임 연결을 깨뜨릴 수 있어 읽기 전용이다.
+func balance_table_columns(table_name: String) -> Array[Dictionary]:
+	match table_name:
+		"Define":
+			return [
+				{"key": "name", "label": "name", "editable": false},
+				{"key": "value", "label": "value", "editable": true},
+			]
+		"Turret":
+			return _column_definitions(
+				["turretId", "type", "nextTurretId", "isShop", "basePrice", "damage", "attackspeed", "range", "rangeValue", "ccDuration", "ccValue", "vfxResource", "turretResource"],
+				["isShop", "basePrice", "damage", "attackspeed", "range", "rangeValue", "ccDuration", "ccValue"]
+			)
+		"Monster":
+			return _column_definitions(
+				["monsterId", "type", "baseHp", "moveSpeed", "rewardGold", "prefabResource"],
+				["baseHp", "moveSpeed", "rewardGold"]
+			)
+		"SpawnTable":
+			return _column_definitions(
+				["waveGroup", "monsterId", "spawnOrder", "value"],
+				["spawnOrder", "value"]
+			)
+		"ShopGacha":
+			return _column_definitions(["turretIndex", "probability"], ["probability"])
+	return []
+
+
+# 편집 창이 테이블을 공통 그리드로 만들 수 있도록 원본 컬럼 이름을 보존한 행을 반환한다.
+func balance_table_rows(table_name: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	match table_name:
+		"Define":
+			var keys := define_values.keys()
+			keys.sort()
+			for key in keys:
+				result.append({"_row_id": str(key), "name": str(key), "value": define_values[key]})
+		"Turret":
+			for turret_id in turrets_by_id:
+				var row: Dictionary = (turrets_by_id[turret_id] as Dictionary).duplicate(true)
+				row["_row_id"] = str(turret_id)
+				result.append(row)
+		"Monster":
+			for monster_id in monsters_by_id:
+				var row: Dictionary = (monsters_by_id[monster_id] as Dictionary).duplicate(true)
+				row["_row_id"] = str(monster_id)
+				result.append(row)
+		"SpawnTable":
+			for row_index in spawn_rows.size():
+				var row: Dictionary = spawn_rows[row_index].duplicate(true)
+				row["_row_id"] = row_index
+				result.append(row)
+		"ShopGacha":
+			for row_index in shop_rows.size():
+				var row: Dictionary = shop_rows[row_index].duplicate(true)
+				row["_row_id"] = row_index
+				result.append(row)
+	return result
+
+
+# 편집 창의 문자열 값을 현재 데이터 타입으로 변환해 적용하고 전체 참조 검증에 실패하면 원상 복구한다.
+# 반환 배열이 비어 있으면 성공이며, 메시지가 있으면 어떤 값도 적용하지 않는다.
+func apply_balance_edits(table_name: String, edits: Array[Dictionary]) -> Array[String]:
+	var before := _make_runtime_snapshot()
+	var edit_errors: Array[String] = []
+	for edit in edits:
+		var row_id: Variant = edit.get("row_id")
+		var column := str(edit.get("column", ""))
+		var value_text := str(edit.get("value", ""))
+		var target := _runtime_edit_target(table_name, row_id, column)
+		if target.is_empty():
+			edit_errors.append("편집 대상을 찾을 수 없습니다: %s / %s" % [str(row_id), column])
+			continue
+		var container: Dictionary = target["container"]
+		var target_column := str(target.get("column", column))
+		var old_value: Variant = container.get(target_column)
+		var parsed := _parse_balance_value(value_text, old_value)
+		if not bool(parsed.get("ok", false)):
+			edit_errors.append("%s.%s: %s" % [str(row_id), column, str(parsed.get("error", "값 형식 오류"))])
+			continue
+		container[target_column] = parsed["value"]
+	if not edit_errors.is_empty():
+		_restore_runtime_snapshot(before)
+		return edit_errors
+	validation_errors.clear()
+	_validate_define()
+	_validate_cross_references()
+	if not validation_errors.is_empty():
+		var result: Array[String] = validation_errors.duplicate()
+		_restore_runtime_snapshot(before)
+		validation_errors.clear()
+		return result
+	return []
+
+
+# 현재 테이블 하나 또는 전체 테이블을 최초 JSON 로드 직후 값으로 되돌린다.
+func reset_balance_table(table_name: String) -> void:
+	if not source_table_snapshot.has(table_name):
+		return
+	var current := _make_runtime_snapshot()
+	current[table_name] = _duplicate_table_value(source_table_snapshot[table_name])
+	_restore_runtime_snapshot(current)
+
+
+func reset_all_balance_tables() -> void:
+	_restore_runtime_snapshot(source_table_snapshot)
+
+
+func _column_definitions(keys: Array[String], editable_keys: Array[String]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for key in keys:
+		result.append({"key": key, "label": key, "editable": key in editable_keys})
+	return result
+
+
+func _runtime_edit_target(table_name: String, row_id: Variant, column: String) -> Dictionary:
+	match table_name:
+		"Define":
+			if column == "value" and define_values.has(str(row_id)):
+				return {"container": define_values, "column": str(row_id)}
+		"Turret":
+			if turrets_by_id.has(str(row_id)):
+				return {"container": turrets_by_id[str(row_id)], "column": column}
+		"Monster":
+			if monsters_by_id.has(str(row_id)):
+				return {"container": monsters_by_id[str(row_id)], "column": column}
+		"SpawnTable":
+			var spawn_index := int(row_id)
+			if spawn_index >= 0 and spawn_index < spawn_rows.size():
+				return {"container": spawn_rows[spawn_index], "column": column}
+		"ShopGacha":
+			var shop_index := int(row_id)
+			if shop_index >= 0 and shop_index < shop_rows.size():
+				return {"container": shop_rows[shop_index], "column": column}
+	return {}
+
+
+func _parse_balance_value(value_text: String, old_value: Variant) -> Dictionary:
+	match typeof(old_value):
+		TYPE_BOOL:
+			var lowered := value_text.strip_edges().to_lower()
+			if lowered in ["true", "1", "yes", "on"]:
+				return {"ok": true, "value": true}
+			if lowered in ["false", "0", "no", "off"]:
+				return {"ok": true, "value": false}
+			return {"ok": false, "error": "true/false 값을 입력하세요"}
+		TYPE_INT:
+			if not value_text.strip_edges().is_valid_int():
+				return {"ok": false, "error": "정수를 입력하세요"}
+			return {"ok": true, "value": int(value_text)}
+		TYPE_FLOAT:
+			if not value_text.strip_edges().is_valid_float():
+				return {"ok": false, "error": "숫자를 입력하세요"}
+			return {"ok": true, "value": float(value_text)}
+		TYPE_STRING:
+			return {"ok": true, "value": value_text.strip_edges()}
+	return {"ok": false, "error": "지원하지 않는 데이터 타입입니다"}
+
+
+func _capture_source_table_snapshot() -> void:
+	source_table_snapshot = _make_runtime_snapshot()
+
+
+func _duplicate_table_value(value: Variant) -> Variant:
+	if typeof(value) == TYPE_DICTIONARY:
+		return (value as Dictionary).duplicate(true)
+	if typeof(value) == TYPE_ARRAY:
+		return (value as Array).duplicate(true)
+	return value
+
+
+func _make_runtime_snapshot() -> Dictionary:
+	return {
+		"Define": define_values.duplicate(true),
+		"Turret": turrets_by_id.duplicate(true),
+		"Monster": monsters_by_id.duplicate(true),
+		"SpawnTable": spawn_rows.duplicate(true),
+		"ShopGacha": shop_rows.duplicate(true),
+	}
+
+
+func _restore_runtime_snapshot(snapshot: Dictionary) -> void:
+	define_values = (snapshot.get("Define", {}) as Dictionary).duplicate(true)
+	turrets_by_id = (snapshot.get("Turret", {}) as Dictionary).duplicate(true)
+	monsters_by_id = (snapshot.get("Monster", {}) as Dictionary).duplicate(true)
+	spawn_rows.clear()
+	for row in snapshot.get("SpawnTable", []):
+		spawn_rows.append((row as Dictionary).duplicate(true))
+	shop_rows.clear()
+	for row in snapshot.get("ShopGacha", []):
+		shop_rows.append((row as Dictionary).duplicate(true))
 
 
 # Define의 숫자 값을 float로 안전하게 조회한다.

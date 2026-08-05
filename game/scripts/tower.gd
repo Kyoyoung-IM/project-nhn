@@ -95,6 +95,17 @@ func setup(config: Dictionary, assigned_floor_index: int, assigned_invested_gold
 	queue_redraw()
 
 
+# 테스트 밸런스 편집에서 ID·Tier·투자금·현재 쿨다운은 보존하고 전투 수치만 즉시 갱신한다.
+func apply_runtime_balance(config: Dictionary) -> void:
+	damage = float(config.get("damage", damage))
+	attack_interval_sec = maxf(0.001, float(config.get("attack_interval_sec", attack_interval_sec)))
+	attack_range_px = maxf(0.0, float(config.get("range_px", attack_range_px)))
+	cc_duration = maxf(0.0, float(config.get("cc_duration", cc_duration)))
+	cc_value = float(config.get("cc_value", cc_value))
+	cooldown_sec = minf(cooldown_sec, attack_interval_sec)
+	queue_redraw()
+
+
 # 승인된 타입·Tier별 본체와 분리 이펙트 텍스처를 자식 Sprite2D에 연결한다.
 func _refresh_visual_nodes() -> void:
 	if body_sprite == null:

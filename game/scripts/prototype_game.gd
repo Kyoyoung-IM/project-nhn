@@ -11,6 +11,7 @@ const ShopCardScript := preload("res://scripts/shop_card.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const RewardCoinPopupScript := preload("res://scripts/reward_coin_popup.gd")
 const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
+const TestBalancePanelScript := preload("res://scripts/test_balance_panel.gd")
 # 둥근 획의 Jua를 공통 UI 글꼴로 사용해 캐주얼 RPG의 굵고 친근한 인상을 만든다.
 const GAME_FONT := preload("res://assets/fonts/Jua-Regular.ttf")
 # Jua에 없는 ▶ 기호는 기존 로컬 Noto Sans KR로 렌더링해 Web에서도 대체문자 없이 표시한다.
@@ -61,16 +62,8 @@ const SELL_ZONE_TOP_Y := 925.0
 const SELL_ZONE_RECT := Rect2(24.0, SELL_ZONE_TOP_Y, 1872.0, SHOP_AREA_BOTTOM_Y - SELL_ZONE_TOP_Y)
 # 플레이어가 전투 중 선택할 수 있는 게임 진행 배속이다.
 const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
-# 테스트 환경은 빠른 반복 확인을 위해 고정 상점·대량 골드·추가 배속을 사용한다.
-const TEST_START_GOLD := 99999
+# 테스트 환경은 시작 보상 없이 일반 조건을 사용하되 빠른 반복 확인용 추가 배속은 유지한다.
 const TEST_GAME_SPEED_MULTIPLIERS := [1, 3, 5, 10]
-const TEST_SHOP_TURRET_IDS := [
-	"turretMelee1",
-	"turretRanged1",
-	"turretDot1",
-	"turretSlow1",
-	"turretStun1",
-]
 # URL 또는 사용자 인자로 특정 종류의 Tier 1~4를 즉시 배치하는 시각 검수 전용 ID 목록이다.
 const TOWER_VISUAL_TEST_IDS := {
 	"MELEE": ["turretMelee1", "turretMelee2", "turretMelee3", "turretMelee4"],
@@ -186,6 +179,7 @@ var options_overlay: Control
 var options_menu_open: bool = false
 var options_test_mode_button: Button
 var test_mode_badge: Label
+var test_balance_panel: PrototypeTestBalancePanel
 var sell_zone_overlay: TextureRect
 var sell_zone_label: Label
 
@@ -922,6 +916,18 @@ func _build_interface() -> void:
 	_create_shop_cards(interface_canvas)
 	_create_sell_zone_feedback(interface_canvas)
 	_create_options_menu(interface_canvas)
+	_create_test_balance_panel(interface_canvas)
+
+
+# 테스트 모드에서만 보이는 우측 빠른 옵션 패널과 별도 테이블 편집 창을 연결한다.
+func _create_test_balance_panel(parent: Node) -> void:
+	test_balance_panel = TestBalancePanelScript.new() as PrototypeTestBalancePanel
+	parent.add_child(test_balance_panel)
+	test_balance_panel.setup(database, GAME_FONT)
+	test_balance_panel.grant_gold_requested.connect(_on_test_grant_gold_requested)
+	test_balance_panel.start_wave_requested.connect(_on_test_start_wave_requested)
+	test_balance_panel.runtime_data_changed.connect(_on_test_runtime_data_changed)
+	_update_test_mode_ui()
 
 
 # 판매 드래그 중에만 상점 하단 절반을 붉은 그라데이션으로 덮고 예상 환급액을 중앙에 표시한다.
@@ -1059,6 +1065,8 @@ func _on_options_test_mode_pressed() -> void:
 	_set_options_menu_visible(false)
 	Engine.time_scale = 1.0
 	test_mode = not test_mode
+	# 테스트 세션의 런타임 편집값이 일반 모드나 다음 테스트 세션으로 유출되지 않게 원본을 복원한다.
+	database.reset_all_balance_tables()
 	game_speed_multiplier = 1
 	_reset_game()
 	_update_test_mode_ui()
@@ -1149,6 +1157,65 @@ func _update_test_mode_ui() -> void:
 		test_mode_badge.visible = test_mode
 	if options_test_mode_button != null:
 		options_test_mode_button.text = "일반 모드로 돌아가기" if test_mode else "테스트 환경 시작"
+	if test_balance_panel != null:
+		test_balance_panel.set_test_mode_visible(test_mode)
+
+
+# 테스트 보상은 진입 시 자동 지급하지 않고 우측 패널 버튼을 누를 때마다 정확히 9999 골드를 더한다.
+func _on_test_grant_gold_requested(amount: int) -> void:
+	if not test_mode:
+		return
+	gold += maxi(0, amount)
+	_show_gold_gain_feedback(maxi(0, amount))
+	_update_interface()
+	_update_shop_cards()
+
+
+# 선택한 웨이브의 스폰 일정으로 전장을 정리하고 즉시 밤을 시작한다. 설치 타워와 현재 골드는 보존한다.
+func _on_test_start_wave_requested(wave_number: int) -> void:
+	if not test_mode:
+		return
+	var total_wave_count := maxi(1, database.define_int("totalWaveCount", 1))
+	current_wave_number = clampi(wave_number, 1, total_wave_count)
+	current_wave_spawn_entries = database.get_wave_spawn_entries("wave%d" % current_wave_number)
+	if current_wave_spawn_entries.is_empty():
+		push_error("Test wave has no SpawnTable entries: wave%d" % current_wave_number)
+		return
+	_clear_transient_combat_effects()
+	_start_wave(true)
+
+
+# 런타임 테이블 변경을 이미 배치되거나 생성된 오브젝트와 현재 UI에 필요한 범위까지 즉시 동기화한다.
+func _on_test_runtime_data_changed(table_name: String) -> void:
+	if not test_mode:
+		return
+	if table_name.is_empty() or table_name == "Turret":
+		for tower in towers:
+			if is_instance_valid(tower):
+				tower.apply_runtime_balance(database.get_turret_data(tower.turret_id))
+		_refresh_current_shop_card_data()
+	if table_name.is_empty() or table_name == "Monster":
+		for monster in monsters:
+			if is_instance_valid(monster):
+				monster.apply_runtime_balance(database.get_monster_data(monster.monster_id))
+	if table_name.is_empty() or table_name == "Define" or table_name == "SpawnTable":
+		var total_wave_count := maxi(1, database.define_int("totalWaveCount", 1))
+		current_wave_number = clampi(current_wave_number, 1, total_wave_count)
+		current_wave_spawn_entries = database.get_wave_spawn_entries("wave%d" % current_wave_number)
+		if phase == Phase.WAVE:
+			next_spawn_index = mini(next_spawn_index, current_wave_spawn_entries.size())
+			spawned_count = mini(spawned_count, current_wave_spawn_entries.size())
+	if table_name.is_empty() or table_name == "ShopGacha":
+		# 확률 변경은 현재 카드를 강제로 바꾸지 않고 다음 리롤부터 사용한다.
+		pass
+	_update_interface()
+	_update_shop_cards()
+
+
+# 현재 상점의 추첨 결과 ID는 유지하고 가격·공격 정보만 수정된 Turret 데이터로 다시 그린다.
+func _refresh_current_shop_card_data() -> void:
+	for card_index in mini(shop_cards.size(), shop_turret_ids.size()):
+		shop_cards[card_index].set_tower_data(database.get_turret_data(shop_turret_ids[card_index]))
 
 
 # Web 캔버스가 넓거나 높아질 때 1920×1080 게임 영역을 남는 축의 중앙으로 이동한다.
@@ -1388,15 +1455,26 @@ func _start_automated_test() -> void:
 	_start_wave()
 
 
-# 테스트 전용 환경의 핵심 진입 조건을 실제 초기화 흐름 위에서 검증한다.
-# 고정 상점은 카드 수가 바뀌더라도 지정된 다섯 종류를 순서대로 반복하도록 검사한다.
+# 테스트 전용 환경이 일반 시작 조건, 수동 보상·웨이브 점프·런타임 편집과 기존 고배속을 함께 제공하는지 검증한다.
 func _run_test_environment_automated_test() -> void:
-	var expected_shop_ids: Array[String] = []
-	for card_index in shop_cards.size():
-		expected_shop_ids.append(str(TEST_SHOP_TURRET_IDS[card_index % TEST_SHOP_TURRET_IDS.size()]))
+	var normal_start_gold_ok := gold == database.define_int("initialGold", 100)
+	var random_shop_ok := shop_turret_ids.size() == shop_cards.size()
+	for turret_id in shop_turret_ids:
+		random_shop_ok = random_shop_ok and not database.get_turret_data(turret_id).is_empty()
+	var panel_visible_ok := test_balance_panel != null and test_balance_panel.visible
+	_on_test_grant_gold_requested(9999)
+	var manual_gold_ok := gold == database.define_int("initialGold", 100) + 9999
+	var original_damage := float(database.get_turret_data("turretMelee1").get("damage", 0.0))
+	var edit_errors := database.apply_balance_edits("Turret", [{"row_id": "turretMelee1", "column": "damage", "value": str(original_damage + 7.0)}])
+	_on_test_runtime_data_changed("Turret")
+	var runtime_edit_ok := edit_errors.is_empty() and is_equal_approx(float(database.get_turret_data("turretMelee1").get("damage", 0.0)), original_damage + 7.0)
+	database.reset_balance_table("Turret")
+	_on_test_runtime_data_changed("Turret")
+	var source_reset_ok := is_equal_approx(float(database.get_turret_data("turretMelee1").get("damage", 0.0)), original_damage)
+	_on_test_start_wave_requested(2)
+	var wave_jump_ok := current_wave_number == 2 and phase == Phase.WAVE and not current_wave_spawn_entries.is_empty()
 	# 실제 버튼 경로를 열어 테스트 배속이 3→5→10→1로 순환하는지 확인한다.
 	automated_test_mode = false
-	_set_phase(Phase.WAVE)
 	var observed_speed_cycle: Array[int] = []
 	for _step in 4:
 		_on_speed_button_pressed()
@@ -1408,17 +1486,22 @@ func _run_test_environment_automated_test() -> void:
 	var stun_hover_height_ok := is_equal_approx(float(TowerScript.STUN_HOVER_HEIGHT), 96.0)
 	var test_button_ok := options_test_mode_button != null and options_test_mode_button.text == "일반 모드로 돌아가기"
 	var passed := test_mode \
-		and gold == TEST_START_GOLD \
-		and shop_turret_ids == expected_shop_ids \
+		and normal_start_gold_ok \
+		and random_shop_ok \
+		and panel_visible_ok \
+		and manual_gold_ok \
+		and runtime_edit_ok \
+		and source_reset_ok \
+		and wave_jump_ok \
 		and test_mode_badge != null \
 		and test_mode_badge.visible \
 		and speed_values_ok \
 		and stun_hover_height_ok \
 		and test_button_ok
 	if passed:
-		print("Automated test environment passed: GOLD_99999_FIXED_SHOP_SPEED_10X")
+		print("Automated test environment passed: NORMAL_START_MANUAL_TOOLS_RUNTIME_TABLE_SPEED_10X")
 	else:
-		push_error("Automated test environment failed.")
+		push_error("Automated test environment failed: normal=%s random_shop=%s panel=%s gold=%s edit=%s reset=%s wave=%s speed=%s button=%s" % [normal_start_gold_ok, random_shop_ok, panel_visible_ok, manual_gold_ok, runtime_edit_ok, source_reset_ok, wave_jump_ok, speed_values_ok, test_button_ok])
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -2093,6 +2176,14 @@ func _clear_monsters() -> void:
 	monsters.clear()
 
 
+# 테스트 웨이브 점프 시 이전 대상에 연결된 투사체·화염방사·피격 잔상을 함께 정리한다.
+func _clear_transient_combat_effects() -> void:
+	for group_name in ["tower_projectiles", "tower_flamethrowers", "tower_hit_effects"]:
+		for effect in get_tree().get_nodes_in_group(group_name):
+			if is_instance_valid(effect):
+				effect.queue_free()
+
+
 # 결과 화면에서 새 게임을 시작할 때 몬스터·터렛·슬롯·RNG를 초기 상태로 되돌린다.
 func _reset_game() -> void:
 	_cancel_shop_card_drag()
@@ -2122,8 +2213,8 @@ func _reset_game() -> void:
 # reset_run=false일 때는 기존 골드와 살아 있는 터렛을 보존한다.
 func _begin_preparation(reset_run: bool) -> void:
 	if reset_run:
-		# 테스트 모드는 밸런스 데이터와 분리된 디버그 전용 시작 골드를 사용한다.
-		gold = TEST_START_GOLD if test_mode else database.define_int("initialGold", 100)
+		# 테스트 모드도 일반 모드와 같은 데이터 시작 골드를 사용하고 추가 골드는 우측 패널에서 수동 지급한다.
+		gold = database.define_int("initialGold", 100)
 	reroll_count = 0
 	preparation_remaining_sec = database.define_float("prepareTimeSec", 20.0)
 	current_wave_spawn_entries = database.get_wave_spawn_entries("wave%d" % current_wave_number)
@@ -2136,13 +2227,8 @@ func _begin_preparation(reset_run: bool) -> void:
 
 # ShopGacha 확률로 카드 ID를 새로 뽑고 카드에 타입·능력치·가격을 표시한다.
 func _refresh_shop_cards() -> void:
-	if test_mode:
-		# 테스트 환경에서는 다섯 종류의 Tier 1 포탑을 항상 같은 순서로 노출한다.
-		shop_turret_ids.clear()
-		for card_index in shop_cards.size():
-			shop_turret_ids.append(str(TEST_SHOP_TURRET_IDS[card_index % TEST_SHOP_TURRET_IDS.size()]))
-	else:
-		shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
+	# 테스트 모드도 일반 ShopGacha를 사용하며 재현성은 테스트 모드의 고정 RNG 시드가 담당한다.
+	shop_turret_ids = database.roll_shop_turret_ids(shop_rng, shop_cards.size())
 	shop_card_available.clear()
 	for card_index in shop_cards.size():
 		shop_card_available.append(true)

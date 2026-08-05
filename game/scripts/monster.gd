@@ -90,6 +90,16 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	queue_redraw()
 
 
+# 테스트 밸런스 편집을 살아 있는 몬스터에도 반영하되 현재 체력 비율과 이동 상태는 유지한다.
+func apply_runtime_balance(config: Dictionary) -> void:
+	var hp_ratio := hp / max_hp if max_hp > 0.0 else 1.0
+	max_hp = maxf(0.001, float(config.get("max_hp", max_hp)))
+	hp = clampf(max_hp * hp_ratio, 0.0, max_hp)
+	move_speed_px_sec = maxf(0.001, float(config.get("move_speed_px_sec", move_speed_px_sec)))
+	reward_gold = int(config.get("reward_gold", reward_gold))
+	queue_redraw()
+
+
 # 더미 도형의 실제 최하단을 중심점 기준으로 반환해 종류별 뜨거나 파묻히는 차이를 없앤다.
 static func _body_bottom_offset_for_type(type_value: String) -> float:
 	var unscaled_offset := 16.0
