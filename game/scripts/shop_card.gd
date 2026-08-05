@@ -24,7 +24,8 @@ const CARD_PANEL := Color("443e5a")
 const CARD_PANEL_LIGHT := Color("5b5273")
 const CARD_CREAM := Color("fff0c5")
 const CARD_GOLD := Color("f6c653")
-const PRICE_BAR_RECT := Rect2(34.0, 212.0, 238.0, 46.0)
+# 동전 슬롯을 제외하고 사용자가 표시한 가격 문구 전용 판넬의 실제 안쪽 영역이다.
+const PRICE_TEXT_RECT := Rect2(86.0, 210.0, 184.0, 38.0)
 
 
 # 네이티브 Button 배경과 텍스트를 비우고 카드 전체를 코드 도형으로 그리도록 준비한다.
@@ -155,9 +156,9 @@ func _draw_centered_text(value: String, baseline_y: float, font_size: int, color
 func _draw_centered_price(value: String, font_size: int, price_color: Color) -> void:
 	var ascent := game_font.get_ascent(font_size)
 	var descent := game_font.get_descent(font_size)
-	var baseline := PRICE_BAR_RECT.position.y + (PRICE_BAR_RECT.size.y + ascent - descent) * 0.5
-	draw_string(game_font, Vector2(PRICE_BAR_RECT.position.x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_CENTER, PRICE_BAR_RECT.size.x, font_size, Color(0.04, 0.03, 0.07, 0.86))
-	draw_string(game_font, Vector2(PRICE_BAR_RECT.position.x, baseline), value, HORIZONTAL_ALIGNMENT_CENTER, PRICE_BAR_RECT.size.x, font_size, price_color)
+	var baseline := PRICE_TEXT_RECT.position.y + (PRICE_TEXT_RECT.size.y + ascent - descent) * 0.5
+	draw_string(game_font, Vector2(PRICE_TEXT_RECT.position.x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_CENTER, PRICE_TEXT_RECT.size.x, font_size, Color(0.04, 0.03, 0.07, 0.86))
+	draw_string(game_font, Vector2(PRICE_TEXT_RECT.position.x, baseline), value, HORIZONTAL_ALIGNMENT_CENTER, PRICE_TEXT_RECT.size.x, font_size, price_color)
 
 
 # 카드 내부에서 반복 사용하는 둥근 StyleBoxFlat을 생성한다.
