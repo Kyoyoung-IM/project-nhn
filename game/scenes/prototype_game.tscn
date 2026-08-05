@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/prototype_game.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/battlefield_layout.tscn" id="2_layout"]
 
 [node name="PrototypeGame" type="Node2D"]
 script = ExtResource("1_main")
+
+[node name="BattlefieldLayout" parent="." instance=ExtResource("2_layout")]

@@ -1,0 +1,153 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/battlefield_layout.gd" id="1_layout"]
+
+[node name="BattlefieldLayout" type="Node2D"]
+editor_description = "전장 좌표 편집 전용 씬입니다. Marker2D를 이동해 적 경로, 패배 지점, 타워 슬롯, 카메라 정지 위치를 조정합니다. 자식 노드의 순서와 개수는 게임 로직에서 사용하므로 바꾸지 마세요."
+script = ExtResource("1_layout")
+
+[node name="MonsterRoute" type="Node2D" parent="."]
+editor_description = "자식 Marker2D의 순서가 실제 몬스터 이동 순서입니다. 위치만 이동하고 순서와 개수(9개)는 유지하세요."
+
+[node name="01_EnemySpawn" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(1780, 1360)
+gizmo_extents = 28.0
+editor_description = "지상에서 몬스터가 최초 생성되는 바닥 접촉 위치입니다."
+
+[node name="02_SurfaceMid" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(1050, 1360)
+gizmo_extents = 24.0
+editor_description = "지상 직선 이동의 중간 기준점입니다."
+
+[node name="03_SurfaceDescent" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(450, 1360)
+gizmo_extents = 28.0
+editor_description = "지상에서 B1 입구로 내려가는 연출이 시작되는 위치입니다."
+
+[node name="04_B1Entry" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(1770, 1857)
+gizmo_extents = 28.0
+editor_description = "B1 오른쪽 진입 위치입니다."
+
+[node name="05_B1Exit" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(140, 1857)
+gizmo_extents = 28.0
+editor_description = "B1 왼쪽 출구 및 B2 하강 연출 시작 위치입니다."
+
+[node name="06_B2Entry" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(1770, 2382)
+gizmo_extents = 28.0
+editor_description = "B2 오른쪽 진입 위치입니다."
+
+[node name="07_B2Exit" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(140, 2382)
+gizmo_extents = 28.0
+editor_description = "B2 왼쪽 출구 및 B3 하강 연출 시작 위치입니다."
+
+[node name="08_B3Entry" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(1770, 2907)
+gizmo_extents = 28.0
+editor_description = "B3 오른쪽 진입 위치입니다."
+
+[node name="09_DefeatPoint" type="Marker2D" parent="MonsterRoute"]
+position = Vector2(140, 2907)
+gizmo_extents = 34.0
+editor_description = "몬스터가 도달하면 즉시 패배하는 최심부 위치입니다. 별도 코어 그래픽은 없습니다."
+
+[node name="TowerSlots" type="Node2D" parent="."]
+editor_description = "각 층 노드를 이동하면 그 층의 슬롯 5개가 함께 이동합니다. 개별 Marker2D로 슬롯 위치를 따로 조정할 수도 있습니다."
+
+[node name="B1" type="Node2D" parent="TowerSlots"]
+position = Vector2(0, 1757)
+editor_description = "B1 타워 설치 위치 5개입니다."
+
+[node name="Slot1" type="Marker2D" parent="TowerSlots/B1"]
+position = Vector2(300, 0)
+gizmo_extents = 24.0
+
+[node name="Slot2" type="Marker2D" parent="TowerSlots/B1"]
+position = Vector2(480, 0)
+gizmo_extents = 24.0
+
+[node name="Slot3" type="Marker2D" parent="TowerSlots/B1"]
+position = Vector2(660, 0)
+gizmo_extents = 24.0
+
+[node name="Slot4" type="Marker2D" parent="TowerSlots/B1"]
+position = Vector2(840, 0)
+gizmo_extents = 24.0
+
+[node name="Slot5" type="Marker2D" parent="TowerSlots/B1"]
+position = Vector2(1020, 0)
+gizmo_extents = 24.0
+
+[node name="B2" type="Node2D" parent="TowerSlots"]
+position = Vector2(0, 2282)
+editor_description = "B2 타워 설치 위치 5개입니다."
+
+[node name="Slot1" type="Marker2D" parent="TowerSlots/B2"]
+position = Vector2(300, 0)
+gizmo_extents = 24.0
+
+[node name="Slot2" type="Marker2D" parent="TowerSlots/B2"]
+position = Vector2(480, 0)
+gizmo_extents = 24.0
+
+[node name="Slot3" type="Marker2D" parent="TowerSlots/B2"]
+position = Vector2(660, 0)
+gizmo_extents = 24.0
+
+[node name="Slot4" type="Marker2D" parent="TowerSlots/B2"]
+position = Vector2(840, 0)
+gizmo_extents = 24.0
+
+[node name="Slot5" type="Marker2D" parent="TowerSlots/B2"]
+position = Vector2(1020, 0)
+gizmo_extents = 24.0
+
+[node name="B3" type="Node2D" parent="TowerSlots"]
+position = Vector2(0, 2807)
+editor_description = "B3 타워 설치 위치 5개입니다."
+
+[node name="Slot1" type="Marker2D" parent="TowerSlots/B3"]
+position = Vector2(300, 0)
+gizmo_extents = 24.0
+
+[node name="Slot2" type="Marker2D" parent="TowerSlots/B3"]
+position = Vector2(480, 0)
+gizmo_extents = 24.0
+
+[node name="Slot3" type="Marker2D" parent="TowerSlots/B3"]
+position = Vector2(660, 0)
+gizmo_extents = 24.0
+
+[node name="Slot4" type="Marker2D" parent="TowerSlots/B3"]
+position = Vector2(840, 0)
+gizmo_extents = 24.0
+
+[node name="Slot5" type="Marker2D" parent="TowerSlots/B3"]
+position = Vector2(1020, 0)
+gizmo_extents = 24.0
+
+[node name="CameraStops" type="Node2D" parent="."]
+editor_description = "각 Marker2D의 Y가 해당 화면에서 보이는 월드의 맨 위 위치입니다. X는 편집용 표시 위치이며 게임에 사용하지 않습니다."
+
+[node name="01_SkySurface" type="Marker2D" parent="CameraStops"]
+position = Vector2(1880, 650)
+gizmo_extents = 26.0
+editor_description = "하늘과 지상을 중심으로 보는 첫 화면의 위쪽 경계입니다."
+
+[node name="02_SurfaceB1" type="Marker2D" parent="CameraStops"]
+position = Vector2(1880, 1185)
+gizmo_extents = 26.0
+editor_description = "지상과 B1을 보는 화면의 위쪽 경계입니다."
+
+[node name="03_B1B2" type="Marker2D" parent="CameraStops"]
+position = Vector2(1880, 1685)
+gizmo_extents = 26.0
+editor_description = "B1과 B2를 보는 화면의 위쪽 경계입니다."
+
+[node name="04_B2B3" type="Marker2D" parent="CameraStops"]
+position = Vector2(1880, 2210)
+gizmo_extents = 26.0
+editor_description = "B2와 B3를 보는 화면의 위쪽 경계입니다."

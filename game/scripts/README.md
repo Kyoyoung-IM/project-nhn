@@ -3,6 +3,7 @@
 이 프로젝트의 런타임 코드는 모두 GDScript(`.gd`)다. 수정하려는 기능에 따라 다음 파일에서 시작한다.
 
 - `prototype_game.gd`: 게임 단계, 웨이브, 경제, 상점, 오브젝트 생성, 드래그 이동·머지, HUD
+- `battlefield_layout.gd`: 편집용 전장 Marker2D를 몬스터 경로, 타워 슬롯, 카메라 좌표로 변환하고 구조를 검증
 - `prototype_database.gd`: JSON 로딩, 원본 컬럼 매핑, ID·확률·머지 트리 검증
 - `tower.gd`: 불파괴 터렛의 표적 선택, 공격, Tier별 스프라이트·분리 이펙트와 머지 승급 효과
 - `monster.gd`: 비공격형 몬스터 이동, 상태 이상, 최심부 도달
@@ -11,6 +12,17 @@
 - `../tests/validate_prototype.gd`: 데이터 테이블 헤드리스 검증
 
 JSON은 문법상 주석을 지원하지 않는다. 데이터 컬럼과 프로토타입 확장 필드 설명은 `res://data/README.md`에서 관리한다.
+
+## Godot에서 전장 위치 편집
+
+`res://scenes/battlefield_layout.tscn`을 2D 편집기로 연다.
+
+- `MonsterRoute`: `01_EnemySpawn`부터 `09_DefeatPoint`까지 적의 이동·층간 하강·패배 판정 위치다.
+- `TowerSlots/B1`~`B3`: 각 층 노드를 옮기면 슬롯 5개가 함께 움직이고, `Slot1`~`Slot5`를 옮기면 개별 설치 위치만 조절된다.
+- `CameraStops`: Marker2D의 Y 위치가 각 카메라 화면의 월드 상단선이다.
+- 편집용 주황색 점선은 적 경로, 연두색 원은 설치 위치, 파란색 점선은 카메라 상단선이다. Web 및 실제 게임에는 표시되지 않는다.
+
+런타임 로직은 자식 순서로 지상→B1→B2→B3 상태를 판별하므로 Marker2D의 **위치만 변경**하고 이름·순서·개수는 유지한다.
 
 ## 변경 시 확인 순서
 
