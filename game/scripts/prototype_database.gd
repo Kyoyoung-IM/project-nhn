@@ -183,6 +183,51 @@ func reset_all_balance_tables() -> void:
 	_restore_runtime_snapshot(source_table_snapshot)
 
 
+# Compares editor text against the immutable JSON snapshot with the source value's data type.
+# Invalid text is treated as changed so it remains visually noticeable until corrected.
+func balance_value_differs_from_source(table_name: String, row_id: Variant, column: String, value_text: String) -> bool:
+	var source := _source_balance_value(table_name, row_id, column)
+	if not bool(source.get("found", false)):
+		return true
+	var source_value: Variant = source.get("value")
+	var parsed := _parse_balance_value(value_text, source_value)
+	if not bool(parsed.get("ok", false)):
+		return true
+	var candidate: Variant = parsed.get("value")
+	if typeof(source_value) == TYPE_FLOAT or typeof(candidate) == TYPE_FLOAT:
+		return not is_equal_approx(float(candidate), float(source_value))
+	return candidate != source_value
+
+
+func balance_source_value_text(table_name: String, row_id: Variant, column: String) -> String:
+	var source := _source_balance_value(table_name, row_id, column)
+	return str(source.get("value", "")) if bool(source.get("found", false)) else ""
+
+
+func _source_balance_value(table_name: String, row_id: Variant, column: String) -> Dictionary:
+	if not source_table_snapshot.has(table_name):
+		return {"found": false}
+	match table_name:
+		"Define":
+			var source_define := source_table_snapshot["Define"] as Dictionary
+			if column == "value" and source_define.has(str(row_id)):
+				return {"found": true, "value": source_define[str(row_id)]}
+		"Turret", "Monster":
+			var source_rows := source_table_snapshot[table_name] as Dictionary
+			if source_rows.has(str(row_id)):
+				var source_row := source_rows[str(row_id)] as Dictionary
+				if source_row.has(column):
+					return {"found": true, "value": source_row[column]}
+		"SpawnTable", "ShopGacha":
+			var source_rows := source_table_snapshot[table_name] as Array
+			var row_index := int(row_id)
+			if row_index >= 0 and row_index < source_rows.size():
+				var source_row := source_rows[row_index] as Dictionary
+				if source_row.has(column):
+					return {"found": true, "value": source_row[column]}
+	return {"found": false}
+
+
 func _column_definitions(keys: Array[String], editable_keys: Array[String]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for key in keys:

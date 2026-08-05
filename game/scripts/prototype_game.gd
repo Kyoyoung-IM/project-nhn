@@ -278,7 +278,7 @@ func _populate_tower_visual_test() -> void:
 
 # 최초 낮 카운트다운 또는 밤의 기준시간·몬스터 스폰을 매 프레임 처리한다.
 func _process(delta: float) -> void:
-	if options_menu_open:
+	if options_menu_open or _is_test_editor_open():
 		return
 	if automated_test_mode:
 		automated_test_elapsed_sec += delta
@@ -335,6 +335,10 @@ func _configure_shop_rng() -> void:
 
 # 정비 시간의 마우스 누름·이동·놓기를 상점 구매 드래그 또는 설치 터렛 이동으로 변환한다.
 func _input(event: InputEvent) -> void:
+	# The balance editor is a strict modal: only its own Controls receive input until Close is pressed.
+	# Do not mark the event handled here because that would also block the modal's buttons and fields.
+	if _is_test_editor_open():
+		return
 	# ESC는 상점 사용 가능 여부와 관계없이 옵션 창을 열고 닫는다.
 	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.pressed and not event.echo:
 		if not automated_test_mode:
@@ -928,7 +932,20 @@ func _create_test_balance_panel(parent: Node) -> void:
 	test_balance_panel.grant_gold_requested.connect(_on_test_grant_gold_requested)
 	test_balance_panel.start_wave_requested.connect(_on_test_start_wave_requested)
 	test_balance_panel.runtime_data_changed.connect(_on_test_runtime_data_changed)
+	test_balance_panel.editor_visibility_changed.connect(_on_test_editor_visibility_changed)
 	_update_test_mode_ui()
+
+
+# Opening the modal cancels any half-finished battlefield drag so it cannot resume after closing.
+func _on_test_editor_visibility_changed(opened: bool) -> void:
+	if not opened:
+		return
+	_cancel_shop_card_drag()
+	_cancel_tower_drag()
+
+
+func _is_test_editor_open() -> bool:
+	return test_balance_panel != null and test_balance_panel.is_editor_open()
 
 
 # 판매 드래그 중에만 상점 하단 절반을 붉은 그라데이션으로 덮고 예상 환급액을 중앙에 표시한다.
@@ -1462,6 +1479,22 @@ func _run_test_environment_automated_test() -> void:
 	var expected_test_shop := database.all_shop_turret_ids()
 	var full_shop_ok := shop_turret_ids == expected_test_shop and shop_turret_ids.size() == shop_cards.size()
 	var panel_visible_ok := test_balance_panel != null and test_balance_panel.visible
+	_set_battlefield_view_index(1, true)
+	test_balance_panel.call("_open_table", "Turret")
+	var modal_open_ok := test_balance_panel.is_editor_open() and get_tree().paused
+	var modal_focus_ok := get_viewport().gui_get_focus_owner() == test_balance_panel.editor_overlay
+	var escape_event := InputEventKey.new()
+	escape_event.keycode = KEY_ESCAPE
+	escape_event.pressed = true
+	_input(escape_event)
+	var modal_escape_blocked_ok := test_balance_panel.is_editor_open() and not options_menu_open
+	var wheel_event := InputEventMouseButton.new()
+	wheel_event.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel_event.pressed = true
+	_input(wheel_event)
+	var modal_navigation_blocked_ok := battlefield_view_index == 1
+	test_balance_panel.call("_close_editor")
+	var modal_close_ok := not test_balance_panel.is_editor_open() and not get_tree().paused
 	var preparation_before_manual_step := preparation_remaining_sec
 	_process(1.0)
 	var manual_ready_ok := phase == Phase.READY and is_equal_approx(preparation_remaining_sec, preparation_before_manual_step)
@@ -1473,9 +1506,11 @@ func _run_test_environment_automated_test() -> void:
 	var edit_errors := database.apply_balance_edits("Turret", [{"row_id": "turretMelee1", "column": "damage", "value": str(original_damage + 7.0)}])
 	_on_test_runtime_data_changed("Turret")
 	var runtime_edit_ok := edit_errors.is_empty() and is_equal_approx(float(database.get_turret_data("turretMelee1").get("damage", 0.0)), original_damage + 7.0)
+	var source_difference_detected_ok := database.balance_value_differs_from_source("Turret", "turretMelee1", "damage", str(original_damage + 7.0))
 	database.reset_balance_table("Turret")
 	_on_test_runtime_data_changed("Turret")
 	var source_reset_ok := is_equal_approx(float(database.get_turret_data("turretMelee1").get("damage", 0.0)), original_damage)
+	var source_difference_cleared_ok := not database.balance_value_differs_from_source("Turret", "turretMelee1", "damage", str(original_damage))
 	_on_test_start_wave_requested(2)
 	var wave_jump_ok := current_wave_number == 2 and phase == Phase.WAVE and not current_wave_spawn_entries.is_empty()
 	wave_remaining_sec = 0.01
@@ -1497,11 +1532,18 @@ func _run_test_environment_automated_test() -> void:
 		and normal_start_gold_ok \
 		and full_shop_ok \
 		and reroll_full_shop_ok \
+		and modal_open_ok \
+		and modal_focus_ok \
+		and modal_escape_blocked_ok \
+		and modal_navigation_blocked_ok \
+		and modal_close_ok \
 		and manual_ready_ok \
 		and panel_visible_ok \
 		and manual_gold_ok \
 		and runtime_edit_ok \
+		and source_difference_detected_ok \
 		and source_reset_ok \
+		and source_difference_cleared_ok \
 		and wave_jump_ok \
 		and manual_next_wave_ok \
 		and test_mode_badge != null \
@@ -1512,7 +1554,7 @@ func _run_test_environment_automated_test() -> void:
 	if passed:
 		print("Automated test environment passed: MANUAL_WAVES_FULL_SHOP_RUNTIME_TABLE_SPEED_10X")
 	else:
-		push_error("Automated test environment failed: normal=%s full_shop=%s reroll_shop=%s manual_ready=%s panel=%s gold=%s edit=%s reset=%s wave=%s manual_next=%s speed=%s button=%s" % [normal_start_gold_ok, full_shop_ok, reroll_full_shop_ok, manual_ready_ok, panel_visible_ok, manual_gold_ok, runtime_edit_ok, source_reset_ok, wave_jump_ok, manual_next_wave_ok, speed_values_ok, test_button_ok])
+		push_error("Automated test environment failed: normal=%s full_shop=%s reroll_shop=%s modal=%s focus=%s escape=%s navigation=%s close=%s manual_ready=%s panel=%s gold=%s edit=%s diff=%s reset=%s diff_clear=%s wave=%s manual_next=%s speed=%s button=%s" % [normal_start_gold_ok, full_shop_ok, reroll_full_shop_ok, modal_open_ok, modal_focus_ok, modal_escape_blocked_ok, modal_navigation_blocked_ok, modal_close_ok, manual_ready_ok, panel_visible_ok, manual_gold_ok, runtime_edit_ok, source_difference_detected_ok, source_reset_ok, source_difference_cleared_ok, wave_jump_ok, manual_next_wave_ok, speed_values_ok, test_button_ok])
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 

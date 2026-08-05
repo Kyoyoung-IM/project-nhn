@@ -7,6 +7,7 @@ extends Control
 signal grant_gold_requested(amount: int)
 signal start_wave_requested(wave_number: int)
 signal runtime_data_changed(table_name: String)
+signal editor_visibility_changed(opened: bool)
 
 const TABLE_NAMES := ["Define", "Turret", "Monster", "SpawnTable", "ShopGacha"]
 const PANEL_INK := Color("171827")
@@ -17,6 +18,8 @@ const CREAM := Color("fff0c5")
 const GOLD := Color("f6c653")
 const TEAL := Color("2ba89b")
 const RED := Color("d94b55")
+const MODIFIED_BACKGROUND := Color("4a3820")
+const MODIFIED_BORDER := Color("f6c653")
 
 var database: PrototypeDatabase
 var game_font: Font
@@ -50,6 +53,11 @@ func set_test_mode_visible(enabled: bool) -> void:
 		_close_editor()
 	if wave_spin_box != null and database != null:
 		wave_spin_box.max_value = maxi(1, database.define_int("totalWaveCount", 1))
+
+
+# The game controller uses this state to ignore global gameplay input while the modal is open.
+func is_editor_open() -> bool:
+	return editor_overlay != null and editor_overlay.visible
 
 
 func _build_side_panel() -> void:
@@ -107,6 +115,7 @@ func _build_editor_overlay() -> void:
 	editor_overlay.position = Vector2.ZERO
 	editor_overlay.size = Vector2(1920.0, 1080.0)
 	editor_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	editor_overlay.focus_mode = Control.FOCUS_ALL
 	editor_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
 	editor_overlay.z_index = 150
 	editor_overlay.visible = false
@@ -153,7 +162,10 @@ func _open_table(table_name: String) -> void:
 	modal_was_paused = get_tree().paused
 	get_tree().paused = true
 	editor_overlay.visible = true
+	editor_visibility_changed.emit(true)
 	_populate_editor_table()
+	# Move keyboard focus away from any underlying SpinBox/Button while the modal is active.
+	editor_overlay.grab_focus()
 
 
 func _populate_editor_table() -> void:
@@ -192,7 +204,10 @@ func _populate_editor_table() -> void:
 				input.add_theme_stylebox_override("normal", _panel_style(Color("27243a"), Color("77708e"), 7, 2))
 				input.add_theme_stylebox_override("focus", _panel_style(Color("302c45"), TEAL, 7, 3))
 				grid.add_child(input)
-				editor_cells.append({"row_id": row_id, "column": column_key, "input": input, "original": value_text})
+				var cell := {"row_id": row_id, "column": column_key, "input": input, "original": value_text}
+				editor_cells.append(cell)
+				input.text_changed.connect(_on_editor_cell_text_changed.bind(cell))
+				_update_editor_cell_style(cell)
 			else:
 				var readonly := _label(grid, Vector2.ZERO, Vector2.ZERO, value_text, 17)
 				readonly.custom_minimum_size = Vector2(172.0, 42.0)
@@ -202,6 +217,30 @@ func _populate_editor_table() -> void:
 				readonly.tooltip_text = value_text
 				readonly.add_theme_color_override("font_color", Color("aaa5b8"))
 				readonly.add_theme_stylebox_override("normal", _panel_style(Color("232130"), Color("4b475b"), 7, 1))
+
+
+func _on_editor_cell_text_changed(_new_text: String, cell: Dictionary) -> void:
+	_update_editor_cell_style(cell)
+
+
+# Gold styling marks both unsaved edits and values already applied to the runtime copy.
+func _update_editor_cell_style(cell: Dictionary) -> void:
+	var input := cell.get("input") as LineEdit
+	if input == null:
+		return
+	var row_id: Variant = cell.get("row_id")
+	var column := str(cell.get("column", ""))
+	var modified := database.balance_value_differs_from_source(current_table_name, row_id, column, input.text)
+	if modified:
+		input.add_theme_color_override("font_color", CREAM)
+		input.add_theme_stylebox_override("normal", _panel_style(MODIFIED_BACKGROUND, MODIFIED_BORDER, 7, 3))
+		input.add_theme_stylebox_override("focus", _panel_style(MODIFIED_BACKGROUND.lightened(0.08), MODIFIED_BORDER.lightened(0.12), 7, 4))
+		input.tooltip_text = "원본값: %s" % database.balance_source_value_text(current_table_name, row_id, column)
+	else:
+		input.add_theme_color_override("font_color", Color.WHITE)
+		input.add_theme_stylebox_override("normal", _panel_style(Color("27243a"), Color("77708e"), 7, 2))
+		input.add_theme_stylebox_override("focus", _panel_style(Color("302c45"), TEAL, 7, 3))
+		input.tooltip_text = ""
 
 
 func _apply_current_table() -> void:
@@ -241,6 +280,7 @@ func _reset_all_tables() -> void:
 func _close_editor() -> void:
 	editor_overlay.visible = false
 	get_tree().paused = modal_was_paused
+	editor_visibility_changed.emit(false)
 
 
 func _label(parent: Node, label_position: Vector2, label_size: Vector2, text_value: String, font_size: int) -> Label:
