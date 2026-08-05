@@ -1,25 +1,24 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://m2jiqpu5qgrk"]
 
-[ext_resource type="Script" path="res://scripts/shop_card.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/ui/generated/shop_card_frame_v1.png" id="2_frame"]
+[ext_resource type="Script" uid="uid://du6fenriobhgq" path="res://scripts/shop_card.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bao4ivugo0cwk" path="res://assets/ui/generated/shop_card_frame_v1.png" id="2_frame"]
 
-[node name="ShopCard" type="Button"]
+[node name="ShopCard" type="Button" unique_id=1367150427]
 custom_minimum_size = Vector2(306, 270)
 offset_right = 306.0
 offset_bottom = 270.0
 mouse_default_cursor_shape = 2
 script = ExtResource("1_script")
 
-[node name="Frame" type="TextureRect" parent="."]
+[node name="Frame" type="TextureRect" parent="." unique_id=1049085495]
 layout_mode = 0
 offset_right = 306.0
 offset_bottom = 270.0
 mouse_filter = 2
 texture = ExtResource("2_frame")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="TowerBody" type="TextureRect" parent="."]
+[node name="TowerBody" type="TextureRect" parent="." unique_id=1809487854]
 layout_mode = 0
 offset_left = 74.0
 offset_top = 16.0
@@ -29,7 +28,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TowerEffect" type="TextureRect" parent="."]
+[node name="TowerEffect" type="TextureRect" parent="." unique_id=75240107]
 layout_mode = 0
 offset_left = 113.0
 offset_top = -1.0
@@ -39,13 +38,12 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="."]
+[node name="NameLabel" type="Label" parent="." unique_id=1600818955]
 layout_mode = 0
 offset_left = 18.0
 offset_top = 162.0
 offset_right = 288.0
 offset_bottom = 200.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.07, 0.86)
 theme_override_constants/outline_size = 4
@@ -54,7 +52,7 @@ text = "터렛"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PriceDim" type="ColorRect" parent="."]
+[node name="PriceDim" type="ColorRect" parent="." unique_id=188715225]
 visible = false
 layout_mode = 0
 offset_left = 48.0
@@ -64,13 +62,12 @@ offset_bottom = 256.0
 mouse_filter = 2
 color = Color(0.22, 0.22, 0.25, 0.86)
 
-[node name="PriceLabel" type="Label" parent="."]
+[node name="PriceLabel" type="Label" parent="." unique_id=2103996370]
 layout_mode = 0
-offset_left = 86.0
-offset_top = 210.0
-offset_right = 270.0
-offset_bottom = 248.0
-mouse_filter = 2
+offset_left = 73.0
+offset_top = 206.0
+offset_right = 257.0
+offset_bottom = 244.0
 theme_override_colors/font_color = Color(0.964706, 0.776471, 0.32549, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.07, 0.86)
 theme_override_constants/outline_size = 4
@@ -79,7 +76,7 @@ text = "0 G"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PurchasedOverlay" type="ColorRect" parent="."]
+[node name="PurchasedOverlay" type="ColorRect" parent="." unique_id=1939924107]
 visible = false
 z_index = 10
 layout_mode = 0
@@ -88,14 +85,13 @@ offset_bottom = 263.0
 mouse_filter = 2
 color = Color(0.05, 0.045, 0.09, 0.82)
 
-[node name="PurchasedLabel" type="Label" parent="PurchasedOverlay"]
+[node name="PurchasedLabel" type="Label" parent="PurchasedOverlay" unique_id=1730924179]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.843137, 0.870588, 0.898039, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.07, 0.86)
 theme_override_constants/outline_size = 4
@@ -104,7 +100,7 @@ text = "구매 완료"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HoverOverlay" type="ColorRect" parent="."]
+[node name="HoverOverlay" type="ColorRect" parent="." unique_id=223281184]
 visible = false
 z_index = 20
 layout_mode = 0
@@ -113,13 +109,12 @@ offset_bottom = 263.0
 mouse_filter = 2
 color = Color(0.025, 0.02, 0.055, 0.8)
 
-[node name="NameLabel" type="Label" parent="HoverOverlay"]
+[node name="NameLabel" type="Label" parent="HoverOverlay" unique_id=867076827]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 24.0
 offset_right = 286.0
 offset_bottom = 68.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.07, 0.86)
 theme_override_constants/outline_size = 4
@@ -128,7 +123,7 @@ text = "터렛"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Divider" type="ColorRect" parent="HoverOverlay"]
+[node name="Divider" type="ColorRect" parent="HoverOverlay" unique_id=1780857197]
 layout_mode = 0
 offset_left = 31.0
 offset_top = 77.0
@@ -137,52 +132,48 @@ offset_bottom = 80.0
 mouse_filter = 2
 color = Color(0.505882, 0.47451, 0.603922, 1)
 
-[node name="EffectLabel" type="Label" parent="HoverOverlay"]
+[node name="EffectLabel" type="Label" parent="HoverOverlay" unique_id=432807945]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 91.0
 offset_right = 290.0
 offset_bottom = 130.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.945098, 0.862745, 1)
 theme_override_font_sizes/font_size = 21
 text = "효과"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DamageLabel" type="Label" parent="HoverOverlay"]
+[node name="DamageLabel" type="Label" parent="HoverOverlay" unique_id=772234701]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 137.0
 offset_right = 290.0
 offset_bottom = 174.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.945098, 0.917647, 0.980392, 1)
 theme_override_font_sizes/font_size = 21
 text = "공격력"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="IntervalLabel" type="Label" parent="HoverOverlay"]
+[node name="IntervalLabel" type="Label" parent="HoverOverlay" unique_id=1384643238]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 177.0
 offset_right = 290.0
 offset_bottom = 214.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.85098, 0.815686, 0.909804, 1)
 theme_override_font_sizes/font_size = 20
 text = "공격 주기"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RangeLabel" type="Label" parent="HoverOverlay"]
+[node name="RangeLabel" type="Label" parent="HoverOverlay" unique_id=31902415]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 215.0
 offset_right = 290.0
 offset_bottom = 252.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.85098, 0.815686, 0.909804, 1)
 theme_override_font_sizes/font_size = 20
 text = "사거리"
