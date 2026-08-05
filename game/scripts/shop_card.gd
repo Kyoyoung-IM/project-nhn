@@ -7,12 +7,15 @@ extends Button
 const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
 
 var tower_data: Dictionary = {}
-var game_font: Font
 var card_available: bool = true
 var card_selected: bool = false
 var card_interactable: bool = true
 var card_affordable: bool = true
 var card_hovered: bool = false
+
+@export_group("가격 상태 색상")
+@export var affordable_price_color := Color("f6c653")
+@export var unaffordable_price_color := Color("a0a0aa")
 
 @onready var frame: TextureRect = $Frame
 @onready var tower_body: TextureRect = $TowerBody
@@ -31,24 +34,16 @@ var card_hovered: bool = false
 
 
 func _ready() -> void:
-	# 네이티브 Button 장식은 비워 생성형 프레임이 유일한 카드 테두리가 되게 한다.
+	# 버튼 외형·폰트·배치는 shop_card.tscn에서 편집하고 스크립트는 상태만 갱신한다.
 	text = ""
-	flat = true
-	focus_mode = Control.FOCUS_NONE
-	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	for style_name in ["normal", "hover", "pressed", "disabled", "focus"]:
-		add_theme_stylebox_override(style_name, StyleBoxEmpty.new())
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	_apply_visual_state()
 
 
-func setup(font: Font) -> void:
-	game_font = font
+func setup() -> void:
 	modulate = Color.WHITE
 	self_modulate = Color.WHITE
-	for label in _all_labels():
-		label.add_theme_font_override("font", game_font)
 	_apply_visual_state()
 
 
@@ -105,7 +100,7 @@ func _apply_visual_state() -> void:
 	# 선택·호버 시에도 별도의 코드 테두리를 그리지 않고 프레임 밝기만 작게 바꾼다.
 	frame.modulate = Color("fff5cf") if card_selected else Color.WHITE
 	price_dim.visible = not card_affordable and card_available and not card_hovered
-	price_label.add_theme_color_override("font_color", Color("f6c653") if card_affordable else Color("a0a0aa"))
+	price_label.add_theme_color_override("font_color", affordable_price_color if card_affordable else unaffordable_price_color)
 	purchased_overlay.visible = not card_available and not card_hovered
 	hover_overlay.visible = card_hovered
 
@@ -123,16 +118,3 @@ func _effect_description() -> String:
 			return "효과 · %.0f%% 이동 둔화" % (float(tower_data.get("cc_value", 0.0)) * 100.0)
 		_:
 			return "효과 · 장거리 단일 공격"
-
-
-func _all_labels() -> Array[Label]:
-	return [
-		name_label,
-		price_label,
-		purchased_label,
-		hover_name_label,
-		hover_effect_label,
-		hover_damage_label,
-		hover_interval_label,
-		hover_range_label,
-	]

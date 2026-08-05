@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[node name="BalanceTableGrid" type="GridContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 5
+columns = 1

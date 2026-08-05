@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
 [ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
@@ -9,6 +9,72 @@
 [ext_resource type="Texture2D" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_card.tscn" id="8_card"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
+[ext_resource type="PackedScene" path="res://scenes/ui/options_menu.tscn" id="10_options"]
+[ext_resource type="PackedScene" path="res://scenes/ui/sell_zone_feedback.tscn" id="11_sell"]
+[ext_resource type="PackedScene" path="res://scenes/ui/test_balance_panel.tscn" id="12_test"]
+[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="13_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansKR.ttf" id="14_symbol"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleInputEmpty"]
+
+[sub_resource type="StyleBoxFlat" id="StyleTestBadge"]
+bg_color = Color(0.85098, 0.294118, 0.333333, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.02, 0.02, 0.04, 0.72)
+shadow_size = 6
+shadow_offset = Vector2(0, 5)
+
+[sub_resource type="StyleBoxFlat" id="StyleRerollNormal"]
+content_margin_left = 10.0
+content_margin_top = 94.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleRerollHover"]
+content_margin_left = 10.0
+content_margin_top = 94.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 0.1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleRerollPressed"]
+content_margin_left = 10.0
+content_margin_top = 98.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+bg_color = Color(0.02, 0.08, 0.1, 0.16)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleRerollDisabled"]
+content_margin_left = 10.0
+content_margin_top = 94.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+bg_color = Color(0.08, 0.08, 0.1, 0.34)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [node name="GameHUD" type="CanvasLayer"]
 
@@ -78,6 +144,10 @@ offset_top = 137.0
 offset_right = 315.0
 offset_bottom = 189.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -89,6 +159,10 @@ offset_top = 131.0
 offset_right = 315.0
 offset_bottom = 161.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 21
 text = "WAVE"
 horizontal_alignment = 1
@@ -101,6 +175,10 @@ offset_top = 158.0
 offset_right = 315.0
 offset_bottom = 198.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 25
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -118,7 +196,12 @@ offset_top = 38.0
 offset_right = 1420.0
 offset_bottom = 98.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 27
+theme_override_styles/normal = SubResource("StyleTestBadge")
 text = "TEST"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -135,14 +218,18 @@ expand_mode = 1
 stretch_mode = 0
 
 [node name="ActionButton" type="Button" parent="Layout/TopControls"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 1450.0
 offset_top = 38.0
 offset_right = 1780.0
 offset_bottom = 98.0
 focus_mode = 0
-text = "1 웨이브 시작"
-flat = true
+theme_override_styles/normal = SubResource("StyleInputEmpty")
+theme_override_styles/hover = SubResource("StyleInputEmpty")
+theme_override_styles/pressed = SubResource("StyleInputEmpty")
+theme_override_styles/disabled = SubResource("StyleInputEmpty")
+theme_override_styles/focus = SubResource("StyleInputEmpty")
 
 [node name="ActionLabel" type="Label" parent="Layout/TopControls"]
 layout_mode = 0
@@ -151,6 +238,10 @@ offset_top = 38.0
 offset_right = 1780.0
 offset_bottom = 98.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.203922, 0.156863, 0.227451, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -167,13 +258,18 @@ expand_mode = 1
 stretch_mode = 0
 
 [node name="SpeedButton" type="Button" parent="Layout/TopControls"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 1600.0
 offset_top = 38.0
 offset_right = 1780.0
 offset_bottom = 98.0
 focus_mode = 0
-flat = true
+theme_override_styles/normal = SubResource("StyleInputEmpty")
+theme_override_styles/hover = SubResource("StyleInputEmpty")
+theme_override_styles/pressed = SubResource("StyleInputEmpty")
+theme_override_styles/disabled = SubResource("StyleInputEmpty")
+theme_override_styles/focus = SubResource("StyleInputEmpty")
 
 [node name="SpeedLabel" type="Label" parent="Layout/TopControls"]
 layout_mode = 0
@@ -182,6 +278,10 @@ offset_top = 38.0
 offset_right = 1780.0
 offset_bottom = 98.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.203922, 0.156863, 0.227451, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("14_symbol")
 theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -205,7 +305,11 @@ offset_top = 34.0
 offset_right = 1878.0
 offset_bottom = 102.0
 focus_mode = 0
-flat = true
+theme_override_styles/normal = SubResource("StyleInputEmpty")
+theme_override_styles/hover = SubResource("StyleInputEmpty")
+theme_override_styles/pressed = SubResource("StyleInputEmpty")
+theme_override_styles/disabled = SubResource("StyleInputEmpty")
+theme_override_styles/focus = SubResource("StyleInputEmpty")
 
 [node name="ShopUI" type="Control" parent="Layout"]
 layout_mode = 0
@@ -231,6 +335,10 @@ offset_top = 18.0
 offset_right = 236.0
 offset_bottom = 90.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.964706, 0.776471, 0.32549, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 25
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -242,6 +350,18 @@ offset_top = 94.0
 offset_right = 262.0
 offset_bottom = 270.0
 focus_mode = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.6, 0.580392, 0.654902, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleRerollNormal")
+theme_override_styles/hover = SubResource("StyleRerollHover")
+theme_override_styles/pressed = SubResource("StyleRerollPressed")
+theme_override_styles/disabled = SubResource("StyleRerollDisabled")
+theme_override_styles/focus = SubResource("StyleInputEmpty")
 text = "새로고침\n10 G"
 alignment = 1
 
@@ -278,6 +398,10 @@ offset_top = 795.0
 offset_right = 236.0
 offset_bottom = 829.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.94902, 0.65098, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 21
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -288,5 +412,15 @@ layout_mode = 0
 offset_right = 1.0
 offset_bottom = 1.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
+theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("13_font")
+
+[node name="SellZoneFeedback" parent="Layout" instance=ExtResource("11_sell")]
+
+[node name="TestBalancePanel" parent="Layout" instance=ExtResource("12_test")]
 
 [node name="GameOverOverlay" parent="Layout" instance=ExtResource("9_game_over")]
+
+[node name="OptionsMenu" parent="Layout" instance=ExtResource("10_options")]

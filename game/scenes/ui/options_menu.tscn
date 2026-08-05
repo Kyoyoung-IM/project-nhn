@@ -1,0 +1,162 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/generated/options_panel_v1.png" id="1_panel"]
+[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleButtonNormal"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleButtonHover"]
+bg_color = Color(1, 1, 1, 0.12)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleButtonPressed"]
+content_margin_top = 4.0
+bg_color = Color(0.02, 0.02, 0.04, 0.18)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxEmpty" id="StyleButtonEmpty"]
+
+[node name="OptionsMenu" type="Control"]
+visible = false
+z_index = 100
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 0
+process_mode = 3
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 0
+color = Color(0.035, 0.03, 0.07, 0.78)
+
+[node name="PanelArt" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 700.0
+offset_top = 140.0
+offset_right = 1220.0
+offset_bottom = 940.0
+mouse_filter = 2
+texture = ExtResource("1_panel")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 760.0
+offset_top = 204.0
+offset_right = 1160.0
+offset_bottom = 268.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 42
+text = "옵션"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContinueButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 300.0
+offset_right = 1130.0
+offset_bottom = 378.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+process_mode = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleButtonNormal")
+theme_override_styles/hover = SubResource("StyleButtonHover")
+theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/disabled = SubResource("StyleButtonEmpty")
+theme_override_styles/focus = SubResource("StyleButtonEmpty")
+text = "계속하기"
+
+[node name="TestModeButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 451.0
+offset_right = 1130.0
+offset_bottom = 529.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+process_mode = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleButtonNormal")
+theme_override_styles/hover = SubResource("StyleButtonHover")
+theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/disabled = SubResource("StyleButtonEmpty")
+theme_override_styles/focus = SubResource("StyleButtonEmpty")
+text = "테스트 환경 시작"
+
+[node name="ResetButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 600.0
+offset_right = 1130.0
+offset_bottom = 678.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+process_mode = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleButtonNormal")
+theme_override_styles/hover = SubResource("StyleButtonHover")
+theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/disabled = SubResource("StyleButtonEmpty")
+theme_override_styles/focus = SubResource("StyleButtonEmpty")
+text = "프로토타입 초기화"
+
+[node name="QuitButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 741.0
+offset_right = 1130.0
+offset_bottom = 819.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+process_mode = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleButtonNormal")
+theme_override_styles/hover = SubResource("StyleButtonHover")
+theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/disabled = SubResource("StyleButtonEmpty")
+theme_override_styles/focus = SubResource("StyleButtonEmpty")
+text = "게임 종료"

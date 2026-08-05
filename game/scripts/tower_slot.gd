@@ -23,33 +23,44 @@ var hovered: bool = false
 var drag_eligible: bool = false
 var drag_targeted: bool = false
 
+@export_group("슬롯 상태 색상")
+@export var base_fill_color := Color(0.48, 0.78, 0.22, 1.0)
+@export var eligible_fill_color := Color(0.36, 0.82, 0.30, 1.0)
+@export var base_border_color := Color(0.70, 1.00, 0.38, 1.0)
+@export var eligible_border_color := Color(0.70, 1.00, 0.42, 1.0)
+@export var hover_border_color := Color(0.83, 1.00, 0.55, 1.0)
+@export var targeted_border_color := Color(0.95, 1.00, 0.55, 1.0)
 
-# 슬롯 인덱스를 기록하고 마우스 판정용 사각 충돌 영역을 만든다.
+@onready var visual: Control = $Visual
+@onready var fill_panel: Panel = $Visual/Fill
+@onready var border_panel: Panel = $Visual/Border
+
+
+func _ready() -> void:
+	_update_visual()
+
+
+# 슬롯 인덱스를 기록하고 tower_slot.tscn의 편집 가능한 시각 노드와 입력을 연결한다.
 func setup(new_floor_index: int, new_slot_index: int) -> void:
 	floor_index = new_floor_index
 	slot_index = new_slot_index
 	self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	input_pickable = true
-	var collision := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(82.0, 52.0)
-	collision.shape = shape
-	add_child(collision)
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
-	queue_redraw()
+	_update_visual()
 
 
 # 터렛 배치가 완료되면 점유자를 연결하고 슬롯 표시를 갱신한다.
 func set_occupant(new_occupant: PrototypeTower) -> void:
 	occupant = new_occupant
-	queue_redraw()
+	_update_visual()
 
 
 # 터렛 파괴 또는 게임 초기화 시 점유 연결을 해제한다.
 func clear_occupant() -> void:
 	occupant = null
-	queue_redraw()
+	_update_visual()
 
 
 # 삭제 예약된 터렛도 빈 슬롯으로 처리해 재배치가 막히지 않게 한다.
@@ -62,7 +73,7 @@ func set_drag_state(eligible: bool, targeted: bool) -> void:
 	drag_eligible = eligible
 	drag_targeted = targeted
 	self_modulate.a = ACTIVE_SLOT_OPACITY if drag_eligible or drag_targeted else 0.0
-	queue_redraw()
+	_update_visual()
 
 
 # 정비 단계에서 왼쪽 클릭을 받으면 게임 컨트롤러에 슬롯을 전달한다.
@@ -77,48 +88,26 @@ func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 # 호버 진입 시 테두리 강조를 켠다.
 func _on_mouse_entered() -> void:
 	hovered = true
-	queue_redraw()
+	_update_visual()
 
 
 # 호버 종료 시 기본 테두리로 복원한다.
 func _on_mouse_exited() -> void:
 	hovered = false
-	queue_redraw()
+	_update_visual()
 
 
-# 빈 슬롯의 + 기호, 점유 상태, 호버 테두리를 코드 도형으로 그린다.
-func _draw() -> void:
-	# 점유 슬롯은 터렛 외형만 보이게 완전히 숨긴다. 점유가 해제되면 queue_redraw로 빈 슬롯 표시가 복원된다.
-	if not is_empty():
+# 빈 슬롯의 +·테두리·그림자는 씬에서 편집하고 상태에 따른 색상만 갱신한다.
+func _update_visual() -> void:
+	if visual == null or fill_panel == null or border_panel == null:
 		return
-	# 내부 도형은 불투명하게 그리고 CanvasItem 전체에 30%를 적용해 겹친 선도 한 번에 같은 투명도로 제어한다.
-	var fill := Color(0.48, 0.78, 0.22, 1.0)
-	if drag_eligible:
-		fill = Color(0.36, 0.82, 0.30, 1.0)
-	var border := Color(0.70, 1.00, 0.38, 1.0)
-	if drag_targeted:
-		border = Color(0.95, 1.00, 0.55, 1.0)
-	elif drag_eligible:
-		border = Color(0.70, 1.00, 0.42, 1.0)
-	elif hovered and interaction_enabled:
-		border = Color(0.83, 1.00, 0.55, 1.0)
-	# 슬롯도 카드와 같은 둥근 판넬과 아래 그림자를 사용해 설치 UI라는 점을 명확히 한다.
-	draw_style_box(_make_slot_style(Color(0.04, 0.10, 0.03, 0.50), Color.TRANSPARENT, 12, 0), Rect2(-43.0, -20.0, 86.0, 50.0))
-	draw_style_box(_make_slot_style(fill, Color(0.12, 0.22, 0.08, 1.0), 12, 5), Rect2(-43.0, -27.0, 86.0, 52.0))
-	draw_style_box(_make_slot_style(Color.TRANSPARENT, border, 9, 3 if not drag_targeted else 5), Rect2(-37.0, -21.0, 74.0, 40.0))
-	if is_empty():
-		var plus_color := Color(0.90, 1.00, 0.66, 1.0)
-		draw_line(Vector2(-10.0, -1.0), Vector2(10.0, -1.0), Color(0.10, 0.20, 0.07, 1.0), 7.0)
-		draw_line(Vector2(0.0, -11.0), Vector2(0.0, 9.0), Color(0.10, 0.20, 0.07, 1.0), 7.0)
-		draw_line(Vector2(-10.0, -2.0), Vector2(10.0, -2.0), plus_color, 4.0)
-		draw_line(Vector2(0.0, -12.0), Vector2(0.0, 8.0), plus_color, 4.0)
-
-
-# 코드 도형 슬롯의 모서리와 외곽선을 일관되게 만드는 작은 스타일 도우미다.
-func _make_slot_style(background_color: Color, border_color: Color, radius: int, border_width: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.border_color = border_color
-	style.set_border_width_all(border_width)
-	style.set_corner_radius_all(radius)
-	return style
+	visual.visible = is_empty()
+	if not visual.visible:
+		return
+	var fill_style := fill_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	fill_style.bg_color = eligible_fill_color if drag_eligible else base_fill_color
+	fill_panel.add_theme_stylebox_override("panel", fill_style)
+	var border_style := border_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	border_style.border_color = targeted_border_color if drag_targeted else eligible_border_color if drag_eligible else hover_border_color if hovered and interaction_enabled else base_border_color
+	border_style.set_border_width_all(5 if drag_targeted else 3)
+	border_panel.add_theme_stylebox_override("panel", border_style)

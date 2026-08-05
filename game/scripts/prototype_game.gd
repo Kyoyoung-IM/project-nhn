@@ -4,28 +4,13 @@ extends Node2D
 # 개별 터렛/몬스터의 전투는 각 오브젝트 스크립트에 맡기고 여기서는 생성·경제·승패만 관리한다.
 
 # 동적으로 생성하는 오브젝트, 데이터 로더, 한글 UI 폰트를 미리 로드한다.
-const MonsterScript := preload("res://scripts/monster.gd")
 const TowerScript := preload("res://scripts/tower.gd")
-const TowerSlotScript := preload("res://scripts/tower_slot.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const RewardCoinPopupScript := preload("res://scripts/reward_coin_popup.gd")
 const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
-const TestBalancePanelScript := preload("res://scripts/test_balance_panel.gd")
 const GAME_HUD_SCENE := preload("res://scenes/ui/game_hud.tscn")
-# 둥근 획의 Jua를 공통 UI 글꼴로 사용해 캐주얼 RPG의 굵고 친근한 인상을 만든다.
-const GAME_FONT := preload("res://assets/fonts/Jua-Regular.ttf")
-# Jua에 없는 ▶ 기호는 기존 로컬 Noto Sans KR로 렌더링해 Web에서도 대체문자 없이 표시한다.
-const SYMBOL_FONT := preload("res://assets/fonts/NotoSansKR.ttf")
-const OPTIONS_PANEL_TEXTURE := preload("res://assets/ui/generated/options_panel_v1.png")
-
-# 레퍼런스 UI에서 추출한 공통 팔레트다. 기능별 강조색만 바꾸고 짙은 외곽선은 공유한다.
-const UI_INK := Color("171827")
-const UI_PANEL := Color("39354d")
-const UI_PANEL_LIGHT := Color("514a68")
-const UI_CREAM := Color("fff0c5")
-const UI_GOLD := Color("f6c653")
-const UI_TEAL := Color("2ba89b")
-const UI_RED := Color("d94b55")
+const MONSTER_SCENE := preload("res://scenes/entities/monster.tscn")
+const TOWER_SLOT_SCENE := preload("res://scenes/entities/tower_slot.tscn")
 
 # 모든 전투 좌표와 UI 배치는 16:9 Full HD 논리 해상도를 기준으로 작성한다.
 # Web 창의 가로세로 비율이 달라져도 이 영역 전체가 보이도록 Godot 스트레치가 먼저 배율을 정한다.
@@ -165,7 +150,7 @@ var game_over_quit_button: Button
 var game_over_tween: Tween
 var test_mode_badge: Label
 var test_balance_panel: PrototypeTestBalancePanel
-var sell_zone_overlay: TextureRect
+var sell_zone_feedback: Control
 var sell_zone_label: Label
 
 # CanvasLayer는 Node2D 변환을 상속하지 않으므로 별도로 보관해 전장과 같은 중앙 오프셋을 적용한다.
@@ -881,70 +866,35 @@ func _build_interface() -> void:
 	game_over_quit_button = game_over_overlay.get_node("QuitButton") as Button
 	game_over_restart_button.pressed.connect(_on_game_over_restart_pressed)
 	game_over_quit_button.pressed.connect(_on_game_over_quit_pressed)
+	_bind_sell_zone_feedback(layout)
+	_bind_options_menu(layout)
+	_bind_test_balance_panel(layout)
 
-	# 폰트와 색은 런타임 테마로 유지하되 위치와 크기는 전부 game_hud.tscn에서 편집한다.
-	for label in [phase_label, wave_title_label, wave_label, gold_label, gold_gain_label, status_label, action_button_label, test_mode_badge]:
-		label.add_theme_font_override("font", GAME_FONT)
-		label.add_theme_color_override("font_outline_color", Color(0.07, 0.06, 0.11, 0.9))
-		label.add_theme_constant_override("outline_size", 4)
-	phase_label.add_theme_color_override("font_color", UI_CREAM)
-	gold_label.add_theme_color_override("font_color", UI_GOLD)
-	gold_gain_label.add_theme_color_override("font_color", Color("fff2a6"))
-	action_button_label.add_theme_color_override("font_color", Color("34283a"))
-	test_mode_badge.add_theme_color_override("font_color", Color.WHITE)
-	test_mode_badge.add_theme_stylebox_override("normal", _make_panel_style(UI_RED, UI_INK, 18, 5, true))
-
-	action_button.text = "1 웨이브 시작"
-	action_button.add_theme_font_override("font", GAME_FONT)
-	action_button.add_theme_font_size_override("font_size", 26)
-	_clear_button_background(action_button)
-	action_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
-	_configure_button_text(action_button, Color("34283a"), Color("34283a"), Color("827b8b"))
+	# 위치·폰트·색·버튼 상태 스타일은 game_hud.tscn에서 편집하고 여기서는 신호와 동적 문구만 연결한다.
 	action_button.pressed.connect(_on_action_button_pressed)
 
-	speed_button.add_theme_font_override("font", SYMBOL_FONT)
-	speed_button.add_theme_font_size_override("font_size", 26)
-	speed_button_label.add_theme_font_override("font", SYMBOL_FONT)
-	speed_button_label.add_theme_color_override("font_color", Color("34283a"))
-	speed_button_label.add_theme_color_override("font_outline_color", UI_INK)
-	speed_button_label.add_theme_constant_override("outline_size", 4)
-	_clear_button_background(speed_button)
-	speed_button.self_modulate = Color(1.0, 1.0, 1.0, 0.0)
 	speed_button.pressed.connect(_on_speed_button_pressed)
-	pause_button.process_mode = Node.PROCESS_MODE_ALWAYS
-	_clear_button_background(pause_button)
 	pause_button.pressed.connect(_on_pause_button_pressed)
 
 	reroll_button.text = "새로고침\n%d G" % _current_reroll_cost()
-	reroll_button.add_theme_font_override("font", GAME_FONT)
-	reroll_button.add_theme_font_size_override("font_size", 22)
-	reroll_button.add_theme_stylebox_override("normal", _make_overlay_button_style(Color.TRANSPARENT, 94.0))
-	reroll_button.add_theme_stylebox_override("hover", _make_overlay_button_style(Color(1.0, 1.0, 1.0, 0.10), 94.0))
-	reroll_button.add_theme_stylebox_override("pressed", _make_overlay_button_style(Color(0.02, 0.08, 0.10, 0.16), 98.0))
-	reroll_button.add_theme_stylebox_override("disabled", _make_overlay_button_style(Color(0.08, 0.08, 0.10, 0.34), 94.0))
-	_configure_button_text(reroll_button, Color.WHITE, Color.WHITE, Color("9994a7"))
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
 
 	var card_count := mini(database.extension_int("shopCardCount", 5), 5)
 	for card_index in card_count:
 		var card := shop_ui.get_node("ShopCard%d" % (card_index + 1)) as PrototypeShopCard
-		card.setup(GAME_FONT)
+		card.setup()
 		shop_cards.append(card)
 		shop_card_available.append(true)
 		shop_turret_ids.append("")
 
 	_update_day_night_hud_nodes()
 	_update_speed_controls()
-	_create_sell_zone_feedback(interface_canvas)
-	_create_options_menu(interface_canvas)
-	_create_test_balance_panel(interface_canvas)
 
 
-# 테스트 모드에서만 보이는 우측 빠른 옵션 패널과 별도 테이블 편집 창을 연결한다.
-func _create_test_balance_panel(parent: Node) -> void:
-	test_balance_panel = TestBalancePanelScript.new() as PrototypeTestBalancePanel
-	parent.add_child(test_balance_panel)
-	test_balance_panel.setup(database, GAME_FONT)
+# 테스트 옵션과 데이터 편집 창은 game_hud.tscn에 포함된 편집 가능 씬에서 참조만 연결한다.
+func _bind_test_balance_panel(layout: Control) -> void:
+	test_balance_panel = layout.get_node("TestBalancePanel") as PrototypeTestBalancePanel
+	test_balance_panel.setup(database)
 	test_balance_panel.grant_gold_requested.connect(_on_test_grant_gold_requested)
 	test_balance_panel.start_wave_requested.connect(_on_test_start_wave_requested)
 	test_balance_panel.runtime_data_changed.connect(_on_test_runtime_data_changed)
@@ -964,117 +914,35 @@ func _is_test_editor_open() -> bool:
 	return test_balance_panel != null and test_balance_panel.is_editor_open()
 
 
-# 판매 드래그 중에만 상점 하단 절반을 붉은 그라데이션으로 덮고 예상 환급액을 중앙에 표시한다.
-func _create_sell_zone_feedback(parent: Node) -> void:
-	var gradient := Gradient.new()
-	gradient.offsets = PackedFloat32Array([0.0, 1.0])
-	gradient.colors = PackedColorArray([
-		Color(0.78, 0.04, 0.08, 0.08),
-		Color(0.78, 0.02, 0.04, 0.82),
-	])
-	var gradient_texture := GradientTexture2D.new()
-	gradient_texture.gradient = gradient
-	gradient_texture.fill_from = Vector2(0.5, 0.0)
-	gradient_texture.fill_to = Vector2(0.5, 1.0)
-
-	sell_zone_overlay = TextureRect.new()
-	sell_zone_overlay.position = SELL_ZONE_RECT.position
-	sell_zone_overlay.size = SELL_ZONE_RECT.size
-	sell_zone_overlay.texture = gradient_texture
-	sell_zone_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sell_zone_overlay.stretch_mode = TextureRect.STRETCH_SCALE
-	sell_zone_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sell_zone_overlay.z_index = 50
-	sell_zone_overlay.visible = false
-	parent.add_child(sell_zone_overlay)
-
-	sell_zone_label = _make_label(parent, Vector2(700.0, 968.0), Vector2(520.0, 66.0), 36)
-	sell_zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sell_zone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	sell_zone_label.add_theme_color_override("font_color", Color("fff2f2"))
-	sell_zone_label.add_theme_color_override("font_shadow_color", Color(0.22, 0.0, 0.02, 0.9))
-	sell_zone_label.add_theme_constant_override("shadow_offset_x", 3)
-	sell_zone_label.add_theme_constant_override("shadow_offset_y", 3)
-	sell_zone_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sell_zone_label.z_index = 51
-	sell_zone_label.visible = false
+# 판매 안내의 위치·그라데이션·글자 스타일은 sell_zone_feedback.tscn에서 직접 편집한다.
+func _bind_sell_zone_feedback(layout: Control) -> void:
+	sell_zone_feedback = layout.get_node("SellZoneFeedback") as Control
+	sell_zone_label = sell_zone_feedback.get_node("SellLabel") as Label
 
 
 # 드래그 위치가 판매 영역에 들어오거나 나갈 때 오버레이와 안내 문구를 함께 전환한다.
 func _set_sell_zone_feedback(active: bool, tower: PrototypeTower) -> void:
-	if sell_zone_overlay == null or sell_zone_label == null:
+	if sell_zone_feedback == null or sell_zone_label == null:
 		return
-	sell_zone_overlay.visible = active
-	sell_zone_label.visible = active
+	sell_zone_feedback.visible = active
 	if active:
 		var refund := _tower_sale_price(tower)
 		sell_zone_label.text = "판매  %d G" % refund
 		status_label.text = "놓으면 판매  +%d G" % refund
 
 
-# ESC 옵션 창을 전체 화면 어둡게 처리한 중앙 모달로 만들고 네 가지 명령을 묶는다.
-func _create_options_menu(parent: Node) -> void:
-	options_overlay = Control.new()
-	options_overlay.position = Vector2.ZERO
-	options_overlay.size = REFERENCE_VIEWPORT_SIZE
-	options_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	options_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
-	options_overlay.z_index = 100
-	options_overlay.visible = false
-	parent.add_child(options_overlay)
-
-	var dimmer := ColorRect.new()
-	dimmer.position = Vector2.ZERO
-	dimmer.size = REFERENCE_VIEWPORT_SIZE
-	dimmer.color = Color(0.035, 0.03, 0.07, 0.78)
-	dimmer.mouse_filter = Control.MOUSE_FILTER_STOP
-	options_overlay.add_child(dimmer)
-
-	var panel := TextureRect.new()
-	panel.position = Vector2(700.0, 140.0)
-	panel.size = Vector2(520.0, 800.0)
-	panel.texture = OPTIONS_PANEL_TEXTURE
-	panel.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	panel.stretch_mode = TextureRect.STRETCH_SCALE
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	options_overlay.add_child(panel)
-
-	var title := _make_label(options_overlay, Vector2(760.0, 204.0), Vector2(400.0, 64.0), 42)
-	title.text = "옵션"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_color_override("font_color", UI_INK)
-	title.add_theme_constant_override("outline_size", 0)
-
-	var continue_button := _make_options_button(options_overlay, Vector2(790.0, 300.0), "계속하기", UI_TEAL, Color("8be3d8"))
+# ESC 옵션 창의 모든 정적 노드는 options_menu.tscn에서 편집하고 여기서는 신호만 연결한다.
+func _bind_options_menu(layout: Control) -> void:
+	options_overlay = layout.get_node("OptionsMenu") as Control
+	var continue_button := options_overlay.get_node("ContinueButton") as Button
+	options_test_mode_button = options_overlay.get_node("TestModeButton") as Button
+	var reset_button := options_overlay.get_node("ResetButton") as Button
+	var quit_button := options_overlay.get_node("QuitButton") as Button
 	continue_button.pressed.connect(_on_options_continue_pressed)
-	options_test_mode_button = _make_options_button(options_overlay, Vector2(790.0, 451.0), "테스트 환경 시작", Color("8d5ac7"), Color("d3a8ff"))
 	options_test_mode_button.pressed.connect(_on_options_test_mode_pressed)
-	var reset_button := _make_options_button(options_overlay, Vector2(790.0, 600.0), "프로토타입 초기화", UI_GOLD, Color("fff1a8"))
 	reset_button.pressed.connect(_on_options_reset_pressed)
-	var quit_button := _make_options_button(options_overlay, Vector2(790.0, 741.0), "게임 종료", UI_RED, Color("ff9ca4"))
 	quit_button.pressed.connect(_on_options_quit_pressed)
 	_update_test_mode_ui()
-
-
-# 옵션 창 버튼은 같은 크기와 글자 스타일을 공유하고 기능색만 달리한다.
-func _make_options_button(parent: Node, button_position: Vector2, button_text: String, background_color: Color, border_color: Color) -> Button:
-	var button := Button.new()
-	button.position = button_position
-	button.size = Vector2(340.0, 78.0)
-	button.text = button_text
-	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.focus_mode = Control.FOCUS_NONE
-	button.process_mode = Node.PROCESS_MODE_ALWAYS
-	button.add_theme_font_override("font", GAME_FONT)
-	button.add_theme_font_size_override("font_size", 30)
-	# 버튼 색면은 생성 패널에 포함되어 있으므로 런타임 버튼은 입력과 호버 피드백만 얹는다.
-	button.add_theme_stylebox_override("normal", _make_overlay_button_style(Color.TRANSPARENT))
-	button.add_theme_stylebox_override("hover", _make_overlay_button_style(Color(1.0, 1.0, 1.0, 0.12)))
-	button.add_theme_stylebox_override("pressed", _make_overlay_button_style(Color(0.02, 0.02, 0.04, 0.18), 4.0))
-	_configure_button_text(button, Color.WHITE, Color.WHITE, Color("9994a7"))
-	parent.add_child(button)
-	return button
 
 
 # 모달 노출과 SceneTree 일시 정지를 한곳에서 함께 전환해 ESC와 계속하기 동작을 일치시킨다.
@@ -1194,13 +1062,11 @@ func _update_speed_controls() -> void:
 		speed_button_label.text = speed_button.text
 		speed_button_label.visible = speed_button.visible
 	speed_button.disabled = phase != Phase.WAVE or automated_test_mode
-	_configure_button_text(speed_button, Color("34283a"), Color("34283a"), Color("9994a7"))
 	if pause_button != null:
 		pause_button.visible = true
 		if pause_button_backplate != null:
 			pause_button_backplate.visible = true
 		pause_button.disabled = automated_test_mode
-		_configure_button_text(pause_button, UI_CREAM, Color.WHITE, Color("9994a7"))
 
 
 # 테스트 배지와 옵션 버튼 문구를 현재 모드에 맞춰 동시에 갱신한다.
@@ -1283,83 +1149,13 @@ func _update_responsive_layout() -> void:
 		interface_canvas.offset = center_offset
 
 
-# 모든 HUD Label에 동일한 한글 폰트와 기본 색상을 적용하는 생성 도우미다.
-func _make_label(parent: Node, label_position: Vector2, label_size: Vector2, font_size: int) -> Label:
-	var label := Label.new()
-	label.position = label_position
-	label.size = label_size
-	label.add_theme_font_override("font", GAME_FONT)
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Color("f5f7ff"))
-	label.add_theme_color_override("font_outline_color", Color(0.07, 0.06, 0.11, 0.9))
-	label.add_theme_constant_override("outline_size", 5)
-	parent.add_child(label)
-	return label
-
-
-# 모든 버튼에 같은 굵은 외곽선, 둥근 모서리와 아래쪽 그림자를 적용한다.
-func _make_button_style(background_color: Color, border_color: Color, pressed_offset: int = 0) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.border_color = border_color
-	style.set_border_width_all(5)
-	style.set_corner_radius_all(13)
-	style.shadow_color = Color(0.04, 0.035, 0.07, 0.8)
-	style.shadow_size = 5
-	style.shadow_offset = Vector2(0.0, 5.0 - pressed_offset)
-	style.content_margin_top = 4.0 + pressed_offset
-	return style
-
-
-# 배속 표식을 넓은 알약 형태 안에 담아 일반 직사각형 버튼과 구분한다.
-func _make_capsule_button_style(background_color: Color, border_color: Color, pressed_offset: int = 0) -> StyleBoxFlat:
-	var style := _make_button_style(background_color, border_color, pressed_offset)
-	style.set_corner_radius_all(30)
-	return style
-
-
-# ESC와 같은 기능의 버튼은 정사각형 크기 절반을 모서리 반경으로 사용해 원형으로 만든다.
-func _make_circle_button_style(background_color: Color, border_color: Color, pressed_offset: int = 0) -> StyleBoxFlat:
-	var style := _make_button_style(background_color, border_color, pressed_offset)
-	style.set_corner_radius_all(34)
-	return style
-
-
-# 클릭 판정과 글자만 Button이 담당하도록 모든 상태 배경을 투명하게 만든다.
-func _clear_button_background(button: Button) -> void:
-	for style_name in ["normal", "hover", "pressed", "disabled", "focus"]:
-		button.add_theme_stylebox_override(style_name, StyleBoxEmpty.new())
-
-
-# 배경 이미지 위에 놓인 입력 버튼은 투명 오버레이와 텍스트 여백만 담당한다.
-func _make_overlay_button_style(background_color: Color, top_margin: float = 0.0) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.set_corner_radius_all(14)
-	style.content_margin_top = top_margin
-	style.content_margin_bottom = 8.0
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	return style
-
-
-# 글자가 밝은 배경에서도 또렷하도록 버튼 전용 외곽선과 상태별 색을 묶어 적용한다.
-func _configure_button_text(button: Button, normal_color: Color, hover_color: Color, disabled_color: Color) -> void:
-	button.add_theme_color_override("font_color", normal_color)
-	button.add_theme_color_override("font_hover_color", hover_color)
-	button.add_theme_color_override("font_pressed_color", hover_color)
-	button.add_theme_color_override("font_disabled_color", disabled_color)
-	button.add_theme_color_override("font_outline_color", UI_INK)
-	button.add_theme_constant_override("outline_size", 4)
-
-
 # B1~B3 각 5개, 총 15개의 고정 터렛 슬롯을 만든다.
 func _create_tower_slots() -> void:
 	var floor_slot_positions := battlefield_layout.get_tower_slot_positions()
 	for floor_index in floor_slot_positions.size():
 		var slot_positions: PackedVector2Array = floor_slot_positions[floor_index]
 		for slot_index in slot_positions.size():
-			var slot := TowerSlotScript.new() as PrototypeTowerSlot
+			var slot := TOWER_SLOT_SCENE.instantiate() as PrototypeTowerSlot
 			slot.position = slot_positions[slot_index]
 			slot.setup(floor_index, slot_index)
 			slot.pressed.connect(_on_tower_slot_pressed)
@@ -1603,7 +1399,7 @@ func _run_melee_attack_automated_test() -> void:
 	_place_tower(tower_slots[0], false, "turretMelee1")
 	var melee_tower := towers[0]
 	var monster_data := database.get_monster_data("normal1")
-	var target_monster := MonsterScript.new() as PrototypeMonster
+	var target_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	target_monster.setup(monster_data, movement_path)
 	battlefield_world.add_child(target_monster)
 	# 포탑과 X좌표는 같고 Y좌표는 실제 전투 경로에 두어 수평 거리 판정을 직접 검증한다.
@@ -1737,7 +1533,7 @@ func _create_attack_test_tower(turret_id: String, spawn_position: Vector2) -> Pr
 
 
 func _create_attack_test_monster(spawn_x: float) -> PrototypeMonster:
-	var monster := MonsterScript.new() as PrototypeMonster
+	var monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	monster.setup(database.get_monster_data("boss1"), movement_path)
 	monster.position = monster.center_position_for_floor_contact(Vector2(spawn_x, battlefield_layout.get_combat_lane_y(0)))
 	monster.path_index = 3
@@ -1773,7 +1569,7 @@ func _run_wave_features_automated_test() -> void:
 	_place_tower(tower_slots[0], false, "turretMelee1")
 	var test_tower := towers[0]
 	var monster_data := database.get_monster_data("normal1")
-	var passing_monster := MonsterScript.new() as PrototypeMonster
+	var passing_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	passing_monster.setup(monster_data, movement_path)
 	battlefield_world.add_child(passing_monster)
 	passing_monster.position = passing_monster.center_position_for_floor_contact(Vector2(test_tower.position.x, battlefield_layout.get_combat_lane_y(0)))
@@ -1794,7 +1590,7 @@ func _run_wave_features_automated_test() -> void:
 	monsters.erase(passing_monster)
 	passing_monster.queue_free()
 	# 실제 처치 콜백이 데이터 보상 지급, +n G 표시와 사망 위치 동전을 함께 생성하는지 확인한다.
-	var reward_monster := MonsterScript.new() as PrototypeMonster
+	var reward_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	reward_monster.setup(monster_data, movement_path)
 	reward_monster.position = reward_monster.center_position_for_floor_contact(Vector2(820.0, battlefield_layout.get_combat_lane_y(0)))
 	reward_monster.reward_gold = 2
@@ -1809,7 +1605,7 @@ func _run_wave_features_automated_test() -> void:
 	var ordinary_kill_kept_wave_running := phase == Phase.WAVE and current_wave_number == 1
 	reward_monster.queue_free()
 	# 기준시간 전환 직전의 적은 다음 웨이브가 시작되어도 전장과 추적 배열에 남아야 한다.
-	var carryover_monster := MonsterScript.new() as PrototypeMonster
+	var carryover_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	carryover_monster.setup(monster_data, movement_path)
 	battlefield_world.add_child(carryover_monster)
 	monsters.append(carryover_monster)
@@ -1838,8 +1634,8 @@ func _run_wave_features_automated_test() -> void:
 	_process(0.02)
 	var final_wave_waits_for_boss := phase == Phase.WAVE and wave_remaining_sec == 0.0
 	# 보스 한 기 처치만으로는 승리하지 않고, 보스 웨이브와 이전 웨이브 잔존 적을 모두 처치해야 한다.
-	var first_boss := MonsterScript.new() as PrototypeMonster
-	var second_boss := MonsterScript.new() as PrototypeMonster
+	var first_boss := MONSTER_SCENE.instantiate() as PrototypeMonster
+	var second_boss := MONSTER_SCENE.instantiate() as PrototypeMonster
 	first_boss.setup(database.get_monster_data("boss1"), movement_path)
 	second_boss.setup(database.get_monster_data("boss1"), movement_path)
 	battlefield_world.add_child(first_boss)
@@ -2073,7 +1869,7 @@ func _run_camera_navigation_automated_test() -> void:
 		var lower_contact_screen_y: float = battlefield_layout.get_combat_lane_y(lower_floor_index) + float(battlefield_camera_y[view_index])
 		shop_clearance_valid = shop_clearance_valid and lower_contact_screen_y <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 70.0
 	# 지상 등장 애니메이션 중간에도 스케일된 몸체의 발끝은 경로 접촉선에 고정돼야 한다.
-	var spawn_test_monster := MonsterScript.new() as PrototypeMonster
+	var spawn_test_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	spawn_test_monster.setup(database.get_monster_data("normal1"), movement_path)
 	battlefield_world.add_child(spawn_test_monster)
 	spawn_test_monster._process(0.12)
@@ -2130,7 +1926,7 @@ func _spawn_monster() -> float:
 	if monster_data.is_empty():
 		push_error("Cannot spawn unknown monster: %s" % monster_id)
 		return float(spawn_entry.get("delay_after_sec", fallback_interval))
-	var monster := MonsterScript.new() as PrototypeMonster
+	var monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	monster.setup(monster_data, movement_path)
 	monster.defeated.connect(_on_monster_defeated)
 	monster.reached_deepest_floor.connect(_on_monster_reached_deepest_floor)
@@ -2456,17 +2252,3 @@ func _set_hud_orbit_icon(icon: TextureRect, center_position: Vector2, rotation_r
 	icon.pivot_offset = icon.size * 0.5
 	icon.rotation = rotation_radians
 	icon.modulate = Color(1.0, 1.0, 1.0, opacity)
-
-
-# Node2D 그리기에서도 재사용할 수 있는 둥근 판넬 스타일을 만든다.
-func _make_panel_style(background_color: Color, border_color: Color, radius: int, border_width: int, with_shadow: bool = false) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.border_color = border_color
-	style.set_border_width_all(border_width)
-	style.set_corner_radius_all(radius)
-	if with_shadow:
-		style.shadow_color = Color(0.03, 0.025, 0.06, 0.82)
-		style.shadow_size = 6
-		style.shadow_offset = Vector2(0.0, 7.0)
-	return style

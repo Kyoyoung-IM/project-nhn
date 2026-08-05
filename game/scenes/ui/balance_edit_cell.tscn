@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="1_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleNormal"]
+content_margin_left = 8.0
+content_margin_right = 8.0
+bg_color = Color(0.152941, 0.141176, 0.227451, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.466667, 0.439216, 0.556863, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleFocus"]
+content_margin_left = 8.0
+content_margin_right = 8.0
+bg_color = Color(0.188235, 0.172549, 0.270588, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.168627, 0.658824, 0.607843, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[node name="EditCell" type="LineEdit"]
+custom_minimum_size = Vector2(172, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("1_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleNormal")
+theme_override_styles/focus = SubResource("StyleFocus")

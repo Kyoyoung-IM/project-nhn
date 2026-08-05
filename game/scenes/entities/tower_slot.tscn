@@ -1,0 +1,94 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/tower_slot.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
+
+[sub_resource type="RectangleShape2D" id="ShapeSlot"]
+size = Vector2(82, 52)
+
+[sub_resource type="StyleBoxFlat" id="StyleShadow"]
+bg_color = Color(0.04, 0.1, 0.03, 0.5)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleFill"]
+bg_color = Color(0.48, 0.78, 0.22, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.12, 0.22, 0.08, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBorder"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.7, 1, 0.38, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+
+[node name="TowerSlot" type="Area2D"]
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("ShapeSlot")
+
+[node name="Visual" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1.0
+offset_bottom = 1.0
+mouse_filter = 2
+
+[node name="Shadow" type="Panel" parent="Visual"]
+layout_mode = 0
+offset_left = -43.0
+offset_top = -20.0
+offset_right = 43.0
+offset_bottom = 30.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleShadow")
+
+[node name="Fill" type="Panel" parent="Visual"]
+layout_mode = 0
+offset_left = -43.0
+offset_top = -27.0
+offset_right = 43.0
+offset_bottom = 25.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleFill")
+
+[node name="Border" type="Panel" parent="Visual"]
+layout_mode = 0
+offset_left = -37.0
+offset_top = -21.0
+offset_right = 37.0
+offset_bottom = 19.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBorder")
+
+[node name="PlusLabel" type="Label" parent="Visual"]
+layout_mode = 0
+offset_left = -37.0
+offset_top = -24.0
+offset_right = 37.0
+offset_bottom = 22.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 1, 0.66, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.2, 0.07, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 38
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1

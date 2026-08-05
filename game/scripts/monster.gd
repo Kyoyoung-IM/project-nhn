@@ -30,6 +30,7 @@ var reward_gold: int = 0
 var body_color := Color("d96772")
 # 처음 피해를 받기 전에는 체력 바를 숨기고, 첫 유효 피해부터 남은 전투 동안 표시한다.
 var health_bar_visible: bool = false
+var health_bar: ProgressBar
 
 # 터렛의 STUN, SLOW, DOT 효과를 초 단위 런타임 상태로 보관한다.
 var stun_remaining_sec: float = 0.0
@@ -60,6 +61,7 @@ var visual_elapsed_sec: float = 0.0
 
 # 로더가 정규화한 몬스터 데이터와 공유 이동 경로를 복사해 초기 상태를 만든다.
 func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
+	health_bar = get_node_or_null("HealthBar") as ProgressBar
 	monster_id = str(config.get("id", ""))
 	display_name = str(config.get("display_name", monster_id))
 	monster_type = str(config.get("type", "NORMAL"))
@@ -69,6 +71,7 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	reward_gold = int(config.get("reward_gold", 0))
 	body_color = Color(str(config.get("color_hex", "d96772")))
 	health_bar_visible = false
+	_update_health_bar()
 	body_bottom_offset_y = _body_bottom_offset_for_type(monster_type)
 	stun_remaining_sec = 0.0
 	slow_remaining_sec = 0.0
@@ -88,6 +91,7 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	z_index = 30
 	add_to_group("prototype_monsters")
 	queue_redraw()
+	_update_health_bar()
 
 
 # 테스트 밸런스 편집을 살아 있는 몬스터에도 반영하되 현재 체력 비율과 이동 상태는 유지한다.
@@ -97,6 +101,7 @@ func apply_runtime_balance(config: Dictionary) -> void:
 	hp = clampf(max_hp * hp_ratio, 0.0, max_hp)
 	move_speed_px_sec = maxf(0.001, float(config.get("move_speed_px_sec", move_speed_px_sec)))
 	reward_gold = int(config.get("reward_gold", reward_gold))
+	_update_health_bar()
 	queue_redraw()
 
 
@@ -201,6 +206,7 @@ func take_damage(amount: float) -> void:
 	if amount > 0.0 and hp > 0.0:
 		health_bar_visible = true
 	hp = maxf(0.0, hp - amount)
+	_update_health_bar()
 	queue_redraw()
 	if hp <= 0.0:
 		move_state = MoveState.DEAD
@@ -283,7 +289,7 @@ func _reach_deepest_floor() -> void:
 	queue_free()
 
 
-# 몬스터 타입별 도형, 눈, 체력 바와 현재 상태 이상 표시를 직접 그린다.
+# 몬스터 타입별 더미 도형과 상태 이상 연출을 그린다. 체력 바는 monster.tscn에서 관리한다.
 func _draw() -> void:
 	# PLACEHOLDER monster objects: table-driven colors and type silhouettes.
 	match monster_type:
@@ -303,10 +309,6 @@ func _draw() -> void:
 	draw_circle(Vector2(-6.0, -4.0), 1.4, Color("1a2030"))
 	draw_circle(Vector2(6.0, -4.0), 1.4, Color("1a2030"))
 	draw_line(Vector2(-7.0, 6.0), Vector2(7.0, 6.0), Color("661e32"), 2.0)
-	if health_bar_visible:
-		var hp_ratio := hp / max_hp
-		draw_rect(Rect2(-18.0, -25.0, 36.0, 5.0), Color("2a1720"), true)
-		draw_rect(Rect2(-18.0, -25.0, 36.0 * hp_ratio, 5.0), Color("73e18b"), true)
 	if stun_remaining_sec > 0.0:
 		# 생성된 별 헤일로가 실제 기절 시간 동안 머리 위에서 가볍게 흔들리도록 표시한다.
 		var stun_wobble := sin(visual_elapsed_sec * 7.0) * 4.0
@@ -319,3 +321,14 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, 20.0, 0.0, TAU, 24, Color("8fffea"), 2.0)
 	if dot_remaining_sec > 0.0:
 		draw_circle(Vector2(0.0, 16.0), 4.0, Color("d99aff"))
+
+
+# 체력 바의 배치·크기·스타일은 monster.tscn에서 편집하고 현재 수치와 표시 여부만 연결한다.
+func _update_health_bar() -> void:
+	if health_bar == null:
+		health_bar = get_node_or_null("HealthBar") as ProgressBar
+	if health_bar == null:
+		return
+	health_bar.max_value = maxf(max_hp, 0.001)
+	health_bar.value = clampf(hp, 0.0, health_bar.max_value)
+	health_bar.visible = health_bar_visible
