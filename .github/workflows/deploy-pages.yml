@@ -29,6 +29,16 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Bust Godot pack cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          pack_name="index-${GITHUB_SHA::12}.pck"
+          mv build/web/index.pck "build/web/${pack_name}"
+          sed -i "s/\"executable\":\"index\"/\"executable\":\"index\",\"mainPack\":\"${pack_name}\"/" build/web/index.html
+          sed -i "s/\"index.pck\":/\"${pack_name}\":/" build/web/index.html
+          grep -F "\"mainPack\":\"${pack_name}\"" build/web/index.html
+
       - name: Upload Godot Web build
         uses: actions/upload-pages-artifact@v4
         with:
