@@ -20,6 +20,10 @@ const DAY_NIGHT_HUD_DAY_FRAME := preload("res://assets/ui/day_night_hud_day_fram
 const DAY_NIGHT_HUD_NIGHT_FRAME := preload("res://assets/ui/day_night_hud_night_frame_v2.png")
 const DAY_NIGHT_SUN_ICON := preload("res://assets/ui/day_night_sun_icon_v1.png")
 const DAY_NIGHT_MOON_ICON := preload("res://assets/ui/day_night_moon_icon_v1.png")
+const SHOP_CONTROLS_PANEL := preload("res://assets/ui/generated/shop_controls_panel_v1.png")
+const OPTIONS_PANEL_TEXTURE := preload("res://assets/ui/generated/options_panel_v1.png")
+const SPEED_CAPSULE_TEXTURE := preload("res://assets/ui/generated/speed_capsule_v1.png")
+const PAUSE_BUTTON_TEXTURE := preload("res://assets/ui/generated/pause_button_v1.png")
 
 # 레퍼런스 UI에서 추출한 공통 팔레트다. 기능별 강조색만 바꾸고 짙은 외곽선은 공유한다.
 const UI_INK := Color("171827")
@@ -861,12 +865,12 @@ func _build_interface() -> void:
 	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wave_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# 보유 골드는 획득 애니메이션 유무와 관계없이 금색 캡슐 정중앙을 유지한다.
-	gold_label = _make_label(interface_canvas, Vector2(50.0, 814.0), Vector2(200.0, 58.0), 27)
+	gold_label = _make_label(interface_canvas, Vector2(108.0, 808.0), Vector2(148.0, 72.0), 25)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_label.add_theme_color_override("font_color", UI_GOLD)
 	# +n G는 판넬에 종속된 줄이 아니라 보유 골드와 같은 수평 중심에서 위로 떠오르는 독립 피드백이다.
-	gold_gain_label = _make_label(interface_canvas, Vector2(50.0, 800.0), Vector2(200.0, 34.0), 21)
+	gold_gain_label = _make_label(interface_canvas, Vector2(108.0, 795.0), Vector2(148.0, 34.0), 21)
 	gold_gain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gold_gain_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	gold_gain_label.add_theme_color_override("font_color", Color("fff2a6"))
@@ -885,9 +889,9 @@ func _build_interface() -> void:
 	action_button.focus_mode = Control.FOCUS_NONE
 	action_button.add_theme_font_override("font", GAME_FONT)
 	action_button.add_theme_font_size_override("font_size", 26)
-	action_button.add_theme_stylebox_override("normal", _make_button_style(UI_GOLD, Color("fff1a8")))
-	action_button.add_theme_stylebox_override("hover", _make_button_style(Color("ffda6f"), Color("fff7ca")))
-	action_button.add_theme_stylebox_override("pressed", _make_button_style(Color("d79b2d"), Color("ffe283"), 2))
+	action_button.add_theme_stylebox_override("normal", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
+	action_button.add_theme_stylebox_override("hover", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
+	action_button.add_theme_stylebox_override("pressed", _make_texture_button_style(SPEED_CAPSULE_TEXTURE, 2))
 	action_button.add_theme_stylebox_override("disabled", _make_button_style(Color("504b5c"), Color("716b80")))
 	_configure_button_text(action_button, Color("34283a"), Color("34283a"), Color("827b8b"))
 	action_button.pressed.connect(_on_action_button_pressed)
@@ -904,17 +908,17 @@ func _build_interface() -> void:
 	test_mode_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	reroll_button = Button.new()
-	reroll_button.position = Vector2(50.0, 884.0)
-	reroll_button.size = Vector2(200.0, 64.0)
-	reroll_button.text = "새로고침  %d G" % _current_reroll_cost()
+	reroll_button.position = Vector2(38.0, 884.0)
+	reroll_button.size = Vector2(224.0, 176.0)
+	reroll_button.text = "새로고침\n%d G" % _current_reroll_cost()
 	reroll_button.focus_mode = Control.FOCUS_NONE
 	reroll_button.add_theme_font_override("font", GAME_FONT)
-	reroll_button.add_theme_font_size_override("font_size", 24)
-	# 리롤 가능 여부가 색만 보아도 구분되도록 활성/호버/비활성 스타일을 명시한다.
-	reroll_button.add_theme_stylebox_override("normal", _make_button_style(UI_TEAL, Color("8be3d8")))
-	reroll_button.add_theme_stylebox_override("hover", _make_button_style(Color("42c4b4"), Color("c4fff5")))
-	reroll_button.add_theme_stylebox_override("pressed", _make_button_style(Color("20867e"), Color("79d9cc"), 2))
-	reroll_button.add_theme_stylebox_override("disabled", _make_button_style(Color("454354"), Color("6f6a7c")))
+	reroll_button.add_theme_font_size_override("font_size", 22)
+	# 생성 패널의 큰 중앙 픽토그램을 가리지 않도록 텍스트 영역을 버튼 하단으로 제한한다.
+	reroll_button.add_theme_stylebox_override("normal", _make_overlay_button_style(Color.TRANSPARENT, 104.0))
+	reroll_button.add_theme_stylebox_override("hover", _make_overlay_button_style(Color(1.0, 1.0, 1.0, 0.10), 104.0))
+	reroll_button.add_theme_stylebox_override("pressed", _make_overlay_button_style(Color(0.02, 0.08, 0.10, 0.16), 108.0))
+	reroll_button.add_theme_stylebox_override("disabled", _make_overlay_button_style(Color(0.08, 0.08, 0.10, 0.34), 104.0))
 	_configure_button_text(reroll_button, Color.WHITE, Color.WHITE, Color("9994a7"))
 	reroll_button.pressed.connect(_on_reroll_button_pressed)
 	interface_canvas.add_child(reroll_button)
@@ -1014,25 +1018,29 @@ func _create_options_menu(parent: Node) -> void:
 	dimmer.mouse_filter = Control.MOUSE_FILTER_STOP
 	options_overlay.add_child(dimmer)
 
-	var panel := Panel.new()
+	var panel := TextureRect.new()
 	panel.position = Vector2(700.0, 140.0)
 	panel.size = Vector2(520.0, 800.0)
-	panel.add_theme_stylebox_override("panel", _make_panel_style(UI_PANEL, UI_INK, 24, 8, true))
+	panel.texture = OPTIONS_PANEL_TEXTURE
+	panel.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	panel.stretch_mode = TextureRect.STRETCH_SCALE
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	options_overlay.add_child(panel)
 
-	var title := _make_label(options_overlay, Vector2(760.0, 185.0), Vector2(400.0, 72.0), 46)
+	var title := _make_label(options_overlay, Vector2(760.0, 204.0), Vector2(400.0, 64.0), 42)
 	title.text = "옵션"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_color_override("font_color", UI_CREAM)
+	title.add_theme_color_override("font_color", UI_INK)
+	title.add_theme_constant_override("outline_size", 0)
 
 	var continue_button := _make_options_button(options_overlay, Vector2(790.0, 300.0), "계속하기", UI_TEAL, Color("8be3d8"))
 	continue_button.pressed.connect(_on_options_continue_pressed)
-	options_test_mode_button = _make_options_button(options_overlay, Vector2(790.0, 410.0), "테스트 환경 시작", Color("8d5ac7"), Color("d3a8ff"))
+	options_test_mode_button = _make_options_button(options_overlay, Vector2(790.0, 451.0), "테스트 환경 시작", Color("8d5ac7"), Color("d3a8ff"))
 	options_test_mode_button.pressed.connect(_on_options_test_mode_pressed)
-	var reset_button := _make_options_button(options_overlay, Vector2(790.0, 520.0), "프로토타입 초기화", UI_GOLD, Color("fff1a8"))
+	var reset_button := _make_options_button(options_overlay, Vector2(790.0, 600.0), "프로토타입 초기화", UI_GOLD, Color("fff1a8"))
 	reset_button.pressed.connect(_on_options_reset_pressed)
-	var quit_button := _make_options_button(options_overlay, Vector2(790.0, 630.0), "게임 종료", UI_RED, Color("ff9ca4"))
+	var quit_button := _make_options_button(options_overlay, Vector2(790.0, 741.0), "게임 종료", UI_RED, Color("ff9ca4"))
 	quit_button.pressed.connect(_on_options_quit_pressed)
 	_update_test_mode_ui()
 
@@ -1047,9 +1055,10 @@ func _make_options_button(parent: Node, button_position: Vector2, button_text: S
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.add_theme_font_override("font", GAME_FONT)
 	button.add_theme_font_size_override("font_size", 30)
-	button.add_theme_stylebox_override("normal", _make_button_style(background_color, border_color))
-	button.add_theme_stylebox_override("hover", _make_button_style(background_color.lightened(0.12), border_color.lightened(0.12)))
-	button.add_theme_stylebox_override("pressed", _make_button_style(background_color.darkened(0.16), border_color, 2))
+	# 버튼 색면은 생성 패널에 포함되어 있으므로 런타임 버튼은 입력과 호버 피드백만 얹는다.
+	button.add_theme_stylebox_override("normal", _make_overlay_button_style(Color.TRANSPARENT))
+	button.add_theme_stylebox_override("hover", _make_overlay_button_style(Color(1.0, 1.0, 1.0, 0.12)))
+	button.add_theme_stylebox_override("pressed", _make_overlay_button_style(Color(0.02, 0.02, 0.04, 0.18), 4.0))
 	_configure_button_text(button, Color.WHITE, Color.WHITE, Color("9994a7"))
 	parent.add_child(button)
 	return button
@@ -1117,7 +1126,7 @@ func _create_speed_controls(parent: Node) -> void:
 	pause_button = Button.new()
 	pause_button.position = Vector2(1810.0, 34.0)
 	pause_button.size = Vector2(68.0, 68.0)
-	pause_button.text = "II"
+	pause_button.text = ""
 	pause_button.focus_mode = Control.FOCUS_NONE
 	pause_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	pause_button.add_theme_font_override("font", GAME_FONT)
@@ -1156,16 +1165,16 @@ func _update_speed_controls() -> void:
 			speed_button.text = "▶"
 	speed_button.visible = phase == Phase.WAVE
 	speed_button.disabled = phase != Phase.WAVE or automated_test_mode
-	speed_button.add_theme_stylebox_override("normal", _make_capsule_button_style(UI_GOLD, Color("fff0a8")))
-	speed_button.add_theme_stylebox_override("hover", _make_capsule_button_style(Color("ffda6f"), Color("fff7ca")))
-	speed_button.add_theme_stylebox_override("pressed", _make_capsule_button_style(Color("d79b2d"), Color("ffe283"), 2))
+	speed_button.add_theme_stylebox_override("normal", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
+	speed_button.add_theme_stylebox_override("hover", _make_texture_button_style(SPEED_CAPSULE_TEXTURE))
+	speed_button.add_theme_stylebox_override("pressed", _make_texture_button_style(SPEED_CAPSULE_TEXTURE, 2))
 	_configure_button_text(speed_button, Color("34283a"), Color("34283a"), Color("9994a7"))
 	if pause_button != null:
 		pause_button.visible = true
 		pause_button.disabled = automated_test_mode
-		pause_button.add_theme_stylebox_override("normal", _make_circle_button_style(UI_PANEL, Color("aaa0c7")))
-		pause_button.add_theme_stylebox_override("hover", _make_circle_button_style(Color("554d70"), Color("d9cff4")))
-		pause_button.add_theme_stylebox_override("pressed", _make_circle_button_style(Color("312b45"), Color("aaa0c7"), 2))
+		pause_button.add_theme_stylebox_override("normal", _make_texture_button_style(PAUSE_BUTTON_TEXTURE))
+		pause_button.add_theme_stylebox_override("hover", _make_texture_button_style(PAUSE_BUTTON_TEXTURE))
+		pause_button.add_theme_stylebox_override("pressed", _make_texture_button_style(PAUSE_BUTTON_TEXTURE, 2))
 		_configure_button_text(pause_button, UI_CREAM, Color.WHITE, Color("9994a7"))
 
 
@@ -1288,6 +1297,26 @@ func _make_capsule_button_style(background_color: Color, border_color: Color, pr
 func _make_circle_button_style(background_color: Color, border_color: Color, pressed_offset: int = 0) -> StyleBoxFlat:
 	var style := _make_button_style(background_color, border_color, pressed_offset)
 	style.set_corner_radius_all(34)
+	return style
+
+
+# 생성형 UI 텍스처를 Button 배경으로 사용하고 눌림 상태에서는 내용만 조금 아래로 이동한다.
+func _make_texture_button_style(texture: Texture2D, pressed_offset: int = 0) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = texture
+	style.content_margin_top = float(pressed_offset)
+	return style
+
+
+# 배경 이미지 위에 놓인 입력 버튼은 투명 오버레이와 텍스트 여백만 담당한다.
+func _make_overlay_button_style(background_color: Color, top_margin: float = 0.0) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background_color
+	style.set_corner_radius_all(14)
+	style.content_margin_top = top_margin
+	style.content_margin_bottom = 8.0
+	style.content_margin_left = 10.0
+	style.content_margin_right = 10.0
 	return style
 
 
@@ -2325,11 +2354,11 @@ func _update_shop_cards() -> void:
 		var can_reroll := _is_shop_available() and gold >= reroll_cost
 		reroll_button.disabled = not can_reroll
 		if can_reroll:
-			reroll_button.text = "새로고침  %d G" % reroll_cost
+			reroll_button.text = "새로고침\n%d G" % reroll_cost
 		elif _is_shop_available():
-			reroll_button.text = "골드 부족 · %d G" % reroll_cost
+			reroll_button.text = "골드 부족\n%d G" % reroll_cost
 		else:
-			reroll_button.text = "새로고침  %d G" % reroll_cost
+			reroll_button.text = "새로고침\n%d G" % reroll_cost
 
 
 # 낮에는 남은 시간만, 밤에는 웨이브만 보이도록 HUD 정보를 현재 상태에 맞춰 갱신한다.
@@ -2374,10 +2403,8 @@ func _draw() -> void:
 	# 전체 폭 상단 판넬 대신 낮/밤과 웨이브만 담는 독립형 반원 HUD를 표시한다.
 	_draw_day_night_hud()
 
-	# 전체 폭 상점 판넬은 제거하고 골드·리롤 제어부만 독립 판넬로 유지한다.
-	draw_style_box(_make_panel_style(Color("4a435f"), Color("81799a"), 15, 4), Rect2(38.0, 790.0, 224.0, 270.0))
-	# 골드 표시는 상점의 재화라는 관계가 보이도록 금색 캡슐 안에 묶는다.
-	draw_style_box(_make_panel_style(Color("5b4935"), Color("e8bd58"), 12, 3), Rect2(48.0, 814.0, 204.0, 58.0))
+	# 카드와 같은 높이의 생성형 상점 제어판에 골드 영역과 큰 리롤 버튼을 함께 담는다.
+	draw_texture_rect(SHOP_CONTROLS_PANEL, Rect2(24.0, 790.0, 250.0, 270.0), false)
 
 
 # 생성한 낮·밤 HUD 프레임을 교차시키고 해·달을 반원 내부 궤도에서 회전시킨다.

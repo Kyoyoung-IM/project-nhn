@@ -5,6 +5,7 @@ extends Button
 # 기본 상태에는 투명 배경 스프라이트·이름·가격만 표시하고, 호버하면 효과와 전투 능력치를 펼쳐 보여준다.
 
 const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
+const SHOP_CARD_FRAME := preload("res://assets/ui/generated/shop_card_frame_v1.png")
 
 # 카드에 표시할 데이터와 공통 한글 폰트다.
 var tower_data: Dictionary = {}
@@ -73,10 +74,9 @@ func _on_mouse_exited() -> void:
 # 참조 이미지처럼 기본 카드와 호버 상세 카드를 같은 영역에서 전환해 그린다.
 func _draw() -> void:
 	var border_color := CARD_GOLD if card_selected else (Color("7fe4db") if card_hovered else Color("81799a"))
-	# 아래쪽 그림자와 밝은 안쪽 테두리로 카드가 판넬 위에 놓인 물건처럼 보이게 한다.
-	draw_style_box(_make_card_style(Color(0.03, 0.025, 0.06, 0.82), Color.TRANSPARENT, 16, 0), Rect2(3.0, 8.0, size.x - 6.0, size.y - 4.0))
-	draw_style_box(_make_card_style(CARD_PANEL, CARD_INK, 16, 6), Rect2(0.0, 0.0, size.x, size.y - 7.0))
-	draw_style_box(_make_card_style(Color.TRANSPARENT, border_color, 12, 3), Rect2(7.0, 7.0, size.x - 14.0, size.y - 21.0))
+	# 승인된 생성형 프레임을 카드 전체에 먼저 그리고 선택·호버 상태만 얇은 색 테두리로 덧댄다.
+	draw_texture_rect(SHOP_CARD_FRAME, Rect2(Vector2.ZERO, size), false)
+	draw_style_box(_make_card_style(Color.TRANSPARENT, border_color, 12, 3), Rect2(8.0, 8.0, size.x - 16.0, size.y - 16.0))
 	if tower_data.is_empty() or game_font == null:
 		_draw_centered_text("상점 준비 중", 145.0, 24, Color("d8e7ef"))
 		return
@@ -96,11 +96,11 @@ func _draw() -> void:
 # 기본 상태는 별도 이미지 판넬 없이 승인된 Tier 1 스프라이트와 이름·가격만 배치한다.
 func _draw_default_state() -> void:
 	_draw_tower_sprite()
-	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 205.0, 26, CARD_CREAM)
-	var price_panel_color := Color("5b4935") if card_affordable else Color("4c4c55")
-	var price_border_color := Color("d6a93f") if card_affordable else Color("7d7d87")
+	_draw_centered_text(str(tower_data.get("display_name", "터렛")), 194.0, 24, CARD_CREAM)
 	var price_color := CARD_GOLD if card_affordable else Color("a0a0aa")
-	draw_style_box(_make_card_style(price_panel_color, price_border_color, 12, 3), Rect2(73.0, 220.0, size.x - 146.0, 38.0))
+	# 골드가 부족하면 카드 전체가 아니라 생성 프레임의 금화·가격 영역만 회색으로 가린다.
+	if not card_affordable:
+		draw_style_box(_make_card_style(Color(0.22, 0.22, 0.25, 0.86), Color("777783"), 9, 2), Rect2(48.0, 214.0, size.x - 66.0, 42.0))
 	_draw_centered_price("%d G" % int(tower_data.get("base_price", 0)), 239.0, 22, price_color)
 
 
@@ -150,18 +150,13 @@ func _draw_centered_text(value: String, baseline_y: float, font_size: int, color
 	draw_string(game_font, Vector2(0.0, baseline_y), value, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, color)
 
 
-# 동전과 가격 문자열의 실제 폭을 합산해 두 요소 전체가 가격 캡슐의 중앙에 오도록 배치한다.
+# 생성 프레임의 둥근 금화는 그대로 사용하고 가격 문자열만 캡슐의 남은 공간 중앙에 배치한다.
 func _draw_centered_price(value: String, center_y: float, font_size: int, price_color: Color) -> void:
-	var text_width := game_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
-	var coin_diameter := 14.0
-	var gap := 9.0
-	var group_width := coin_diameter + gap + text_width
-	var group_left := (size.x - group_width) * 0.5
-	var coin_center := Vector2(group_left + coin_diameter * 0.5, center_y)
-	var text_position := Vector2(group_left + coin_diameter + gap, center_y + font_size * 0.38)
-	draw_circle(coin_center, coin_diameter * 0.5, price_color)
-	draw_string(game_font, text_position + Vector2(2.0, 3.0), value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(0.04, 0.03, 0.07, 0.86))
-	draw_string(game_font, text_position, value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, price_color)
+	var text_rect_x := 92.0
+	var text_rect_width := size.x - text_rect_x - 18.0
+	var baseline := center_y + font_size * 0.38
+	draw_string(game_font, Vector2(text_rect_x + 2.0, baseline + 3.0), value, HORIZONTAL_ALIGNMENT_CENTER, text_rect_width, font_size, Color(0.04, 0.03, 0.07, 0.86))
+	draw_string(game_font, Vector2(text_rect_x, baseline), value, HORIZONTAL_ALIGNMENT_CENTER, text_rect_width, font_size, price_color)
 
 
 # 카드 내부에서 반복 사용하는 둥근 StyleBoxFlat을 생성한다.
