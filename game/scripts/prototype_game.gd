@@ -31,28 +31,9 @@ const UI_RED := Color("d94b55")
 # Web 창의 가로세로 비율이 달라져도 이 영역 전체가 보이도록 Godot 스트레치가 먼저 배율을 정한다.
 const REFERENCE_VIEWPORT_SIZE := Vector2(1920.0, 1080.0)
 
-# 생성 배경의 자연스러운 발판 높이에 이동 경로와 슬롯 중심을 맞춰 한곳에서 관리한다.
-const PATH_LEFT_X := 140.0
-const PATH_RIGHT_X := 1770.0
-# 지상 구간은 시각적 지형 굴곡과 무관하게 같은 Y축을 유지하는 수평 직선으로 이동한다.
-const GROUND_MID_X := 1050.0
-const GROUND_EXIT_X := 450.0
-# 경로 Y는 몬스터 중심이 아니라 도형의 바닥이 닿는 배경 발판 접촉선이다.
-const GROUND_LANE_Y := 1360.0
-# 세로형 v6 배경에서 몬스터의 바닥이 각 발판 두께의 중앙선에 닿도록 맞춘 B1~B3 이동 높이다.
-const COMBAT_LANE_Y := [1857.0, 2382.0, 2907.0]
-const TOWER_SLOT_Y := [1757.0, 2282.0, 2807.0]
 # 터렛·몬스터 같은 전투 오브젝트만 상점 위에서 자르고, 배경은 별도 층에서 화면 전체에 표시한다.
 const BATTLEFIELD_ENTITY_VIEW_HEIGHT := 770.0
-# 각 2층 전투 뷰의 아래쪽 플랫폼과 상점 사이에 약 70px 이상의 안전 여백을 확보한다.
-const BATTLEFIELD_CAMERA_Y := [-650.0, -1185.0, -1685.0, -2210.0]
 const BATTLEFIELD_CAMERA_TRANSITION_SEC := 0.26
-# 오른쪽에서 등장하는 몬스터가 진입할 여백 40%를 비우고, 왼쪽 60%에만 슬롯을 둔다.
-const TOWER_DEPLOYMENT_RATIO := 0.60
-const TOWER_DEPLOYMENT_RIGHT_X := PATH_LEFT_X + (PATH_RIGHT_X - PATH_LEFT_X) * TOWER_DEPLOYMENT_RATIO
-# 인접 슬롯은 데이터의 사거리 1칸 환산값과 같은 180px 간격을 사용한다.
-const TOWER_SLOT_GAP_PX := 180.0
-const TOWER_SLOT_X := [300.0, 480.0, 660.0, 840.0, 1020.0]
 # 상점 하단 절반은 낮에 설치 터렛을 판매하는 드롭 영역으로 사용한다.
 const SHOP_AREA_BOTTOM_Y := 1080.0
 const SELL_ZONE_TOP_Y := 925.0
@@ -75,19 +56,11 @@ const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 # READY는 낮, WAVE는 밤 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
 
-# 지상 숲→광산 입구는 수평 직선이며, 이후 B1~B3는 오른쪽→왼쪽으로 이어지는 고정 웨이포인트다.
-# 인덱스 2/4/6의 출구에서 다음 지하층의 오른쪽 입구로 하강한다.
-var movement_path := PackedVector2Array([
-	Vector2(PATH_RIGHT_X + 10.0, GROUND_LANE_Y),
-	Vector2(GROUND_MID_X, GROUND_LANE_Y),
-	Vector2(GROUND_EXIT_X, GROUND_LANE_Y),
-	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[0]),
-	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[0]),
-	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[1]),
-	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[1]),
-	Vector2(PATH_RIGHT_X, COMBAT_LANE_Y[2]),
-	Vector2(PATH_LEFT_X, COMBAT_LANE_Y[2]),
-])
+# 적 경로, 최종 패배 지점, 타워 슬롯과 카메라 정지 위치는 battlefield_layout.tscn에서 읽는다.
+# 배열 순서는 몬스터의 상태 전환 인덱스와 연결되므로 장면의 Marker2D 순서를 그대로 보존한다.
+@onready var battlefield_layout: PrototypeBattlefieldLayout = $BattlefieldLayout
+var movement_path := PackedVector2Array()
+var battlefield_camera_y := PackedFloat32Array()
 
 # 로드된 데이터베이스와 현재 장면 단계다.
 var database: PrototypeDatabase
@@ -234,6 +207,9 @@ func _ready() -> void:
 		push_error("Prototype database could not be loaded.")
 		get_tree().quit(1)
 		return
+	if not _load_editor_battlefield_layout():
+		get_tree().quit(1)
+		return
 	_configure_shop_rng()
 	_build_battlefield()
 	_build_interface()
@@ -249,6 +225,21 @@ func _ready() -> void:
 	if automated_test_mode:
 		Engine.time_scale = 12.0
 		call_deferred("_start_automated_test")
+
+
+# 편집용 씬의 Marker2D를 런타임 경로와 카메라 좌표로 복사하고 구조 오류는 실행 전에 차단한다.
+func _load_editor_battlefield_layout() -> bool:
+	if battlefield_layout == null:
+		push_error("BattlefieldLayout scene is missing from PrototypeGame.")
+		return false
+	var layout_errors := battlefield_layout.validate_layout()
+	for layout_error in layout_errors:
+		push_error("Battlefield layout error: %s" % layout_error)
+	if not layout_errors.is_empty():
+		return false
+	movement_path = battlefield_layout.get_monster_path_points()
+	battlefield_camera_y = battlefield_layout.get_camera_y_offsets()
+	return true
 
 
 # Web 빌드는 명령줄 인자를 받을 수 없으므로 URL의 test_mode=1을 같은 런타임 플래그로 변환한다.
@@ -833,8 +824,8 @@ func _build_battlefield() -> void:
 func _set_battlefield_view_index(requested_index: int, instant: bool = false) -> void:
 	if not is_instance_valid(battlefield_world) or not is_instance_valid(battlefield_background):
 		return
-	battlefield_view_index = clampi(requested_index, 0, BATTLEFIELD_CAMERA_Y.size() - 1)
-	var target_y := float(BATTLEFIELD_CAMERA_Y[battlefield_view_index])
+	battlefield_view_index = clampi(requested_index, 0, battlefield_camera_y.size() - 1)
+	var target_y := float(battlefield_camera_y[battlefield_view_index])
 	if battlefield_camera_tween != null and battlefield_camera_tween.is_valid():
 		battlefield_camera_tween.kill()
 	if instant:
@@ -1319,10 +1310,12 @@ func _configure_button_text(button: Button, normal_color: Color, hover_color: Co
 
 # B1~B3 각 5개, 총 15개의 고정 터렛 슬롯을 만든다.
 func _create_tower_slots() -> void:
-	for floor_index in 3:
-		for slot_index in 5:
+	var floor_slot_positions := battlefield_layout.get_tower_slot_positions()
+	for floor_index in floor_slot_positions.size():
+		var slot_positions: PackedVector2Array = floor_slot_positions[floor_index]
+		for slot_index in slot_positions.size():
 			var slot := TowerSlotScript.new() as PrototypeTowerSlot
-			slot.position = Vector2(TOWER_SLOT_X[slot_index], TOWER_SLOT_Y[floor_index])
+			slot.position = slot_positions[slot_index]
 			slot.setup(floor_index, slot_index)
 			slot.pressed.connect(_on_tower_slot_pressed)
 			battlefield_world.add_child(slot)
@@ -1569,7 +1562,7 @@ func _run_melee_attack_automated_test() -> void:
 	target_monster.setup(monster_data, movement_path)
 	battlefield_world.add_child(target_monster)
 	# 포탑과 X좌표는 같고 Y좌표는 실제 전투 경로에 두어 수평 거리 판정을 직접 검증한다.
-	target_monster.position = target_monster.center_position_for_floor_contact(Vector2(melee_tower.position.x, COMBAT_LANE_Y[0]))
+	target_monster.position = target_monster.center_position_for_floor_contact(Vector2(melee_tower.position.x, battlefield_layout.get_combat_lane_y(0)))
 	target_monster.path_index = 3
 	target_monster.move_state = PrototypeMonster.MoveState.WALKING
 	target_monster.scale = Vector2.ONE
@@ -1590,7 +1583,7 @@ func _run_melee_attack_automated_test() -> void:
 
 # 다섯 터렛 타입의 히트스캔·투사체 분기와 기존 피해/상태이상 적용 시점을 한 번에 검증한다.
 func _run_attack_styles_automated_test() -> void:
-	var test_origin := Vector2(500.0, COMBAT_LANE_Y[0] - 100.0)
+	var test_origin := Vector2(500.0, battlefield_layout.get_combat_lane_y(0) - 100.0)
 
 	# MELEE는 투사체 없이 즉시 피해를 주고 할퀴기 이펙트를 생성해야 한다.
 	var melee_tower := _create_attack_test_tower("turretMelee1", test_origin)
@@ -1701,7 +1694,7 @@ func _create_attack_test_tower(turret_id: String, spawn_position: Vector2) -> Pr
 func _create_attack_test_monster(spawn_x: float) -> PrototypeMonster:
 	var monster := MonsterScript.new() as PrototypeMonster
 	monster.setup(database.get_monster_data("boss1"), movement_path)
-	monster.position = monster.center_position_for_floor_contact(Vector2(spawn_x, COMBAT_LANE_Y[0]))
+	monster.position = monster.center_position_for_floor_contact(Vector2(spawn_x, battlefield_layout.get_combat_lane_y(0)))
 	monster.path_index = 3
 	monster.move_state = PrototypeMonster.MoveState.WALKING
 	monster.scale = Vector2.ONE
@@ -1738,7 +1731,7 @@ func _run_wave_features_automated_test() -> void:
 	var passing_monster := MonsterScript.new() as PrototypeMonster
 	passing_monster.setup(monster_data, movement_path)
 	battlefield_world.add_child(passing_monster)
-	passing_monster.position = passing_monster.center_position_for_floor_contact(Vector2(test_tower.position.x, COMBAT_LANE_Y[0]))
+	passing_monster.position = passing_monster.center_position_for_floor_contact(Vector2(test_tower.position.x, battlefield_layout.get_combat_lane_y(0)))
 	passing_monster.path_index = 3
 	passing_monster.move_state = PrototypeMonster.MoveState.WALKING
 	passing_monster.scale = Vector2.ONE
@@ -1758,7 +1751,7 @@ func _run_wave_features_automated_test() -> void:
 	# 실제 처치 콜백이 데이터 보상 지급, +n G 표시와 사망 위치 동전을 함께 생성하는지 확인한다.
 	var reward_monster := MonsterScript.new() as PrototypeMonster
 	reward_monster.setup(monster_data, movement_path)
-	reward_monster.position = reward_monster.center_position_for_floor_contact(Vector2(820.0, COMBAT_LANE_Y[0]))
+	reward_monster.position = reward_monster.center_position_for_floor_contact(Vector2(820.0, battlefield_layout.get_combat_lane_y(0)))
 	reward_monster.reward_gold = 2
 	battlefield_world.add_child(reward_monster)
 	monsters.append(reward_monster)
@@ -1997,16 +1990,16 @@ func _run_sell_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
-# 슬롯 5개가 왼쪽 60% 배치 영역 안에 있고 실제 사거리 환산과 동일한 간격인지 회귀 검증한다.
+# 편집용 씬에 층별 슬롯이 빠짐없이 있고 같은 층의 두 슬롯이 완전히 겹치지 않는지 검증한다.
 func _tower_slot_layout_is_valid() -> bool:
-	if TOWER_SLOT_X.size() != 5:
+	if not battlefield_layout.validate_layout().is_empty():
 		return false
-	for slot_index in TOWER_SLOT_X.size():
-		var slot_x := float(TOWER_SLOT_X[slot_index])
-		if slot_x < PATH_LEFT_X or slot_x > TOWER_DEPLOYMENT_RIGHT_X:
-			return false
-		if slot_index > 0 and not is_equal_approx(slot_x - float(TOWER_SLOT_X[slot_index - 1]), TOWER_SLOT_GAP_PX):
-			return false
+	var floors := battlefield_layout.get_tower_slot_positions()
+	for floor_positions in floors:
+		for first_index in floor_positions.size():
+			for second_index in range(first_index + 1, floor_positions.size()):
+				if floor_positions[first_index].is_equal_approx(floor_positions[second_index]):
+					return false
 	return true
 
 
@@ -2014,35 +2007,41 @@ func _tower_slot_layout_is_valid() -> bool:
 func _run_camera_navigation_automated_test() -> void:
 	_set_battlefield_view_index(1, true)
 	var middle_view_valid := battlefield_view_index == 1 \
-		and is_equal_approx(battlefield_world.position.y, float(BATTLEFIELD_CAMERA_Y[1])) \
-		and is_equal_approx(battlefield_background.position.y, float(BATTLEFIELD_CAMERA_Y[1]))
+		and is_equal_approx(battlefield_world.position.y, float(battlefield_camera_y[1])) \
+		and is_equal_approx(battlefield_background.position.y, float(battlefield_camera_y[1]))
 	_set_battlefield_view_index(99, true)
-	var bottom_index := BATTLEFIELD_CAMERA_Y.size() - 1
+	var bottom_index := battlefield_camera_y.size() - 1
 	var bottom_clamped := battlefield_view_index == bottom_index \
-		and is_equal_approx(battlefield_world.position.y, float(BATTLEFIELD_CAMERA_Y[bottom_index])) \
-		and is_equal_approx(battlefield_background.position.y, float(BATTLEFIELD_CAMERA_Y[bottom_index]))
+		and is_equal_approx(battlefield_world.position.y, float(battlefield_camera_y[bottom_index])) \
+		and is_equal_approx(battlefield_background.position.y, float(battlefield_camera_y[bottom_index]))
 	_set_battlefield_view_index(-99, true)
 	var top_clamped := battlefield_view_index == 0 \
-		and is_equal_approx(battlefield_world.position.y, float(BATTLEFIELD_CAMERA_Y[0])) \
-		and is_equal_approx(battlefield_background.position.y, float(BATTLEFIELD_CAMERA_Y[0]))
+		and is_equal_approx(battlefield_world.position.y, float(battlefield_camera_y[0])) \
+		and is_equal_approx(battlefield_background.position.y, float(battlefield_camera_y[0]))
 	# 카메라 기능은 월드의 위치만 바꾸며 적·터렛을 작게 만드는 scale 변경을 사용하지 않는다.
 	var object_scale_preserved := battlefield_world.scale == Vector2.ONE and battlefield_background.scale == Vector2.ONE
 	var reference_frame_clipped := battlefield_background_clip.clip_contents and battlefield_background_clip.size == REFERENCE_VIEWPORT_SIZE
 	# 각 2층 전투 화면의 아래쪽 접촉선이 상점 카드 위로 충분한 안전 여백을 가져야 한다.
 	var shop_clearance_valid := true
-	for view_index in range(1, BATTLEFIELD_CAMERA_Y.size()):
+	for view_index in range(1, battlefield_camera_y.size()):
 		var lower_floor_index := view_index - 1
-		var lower_contact_screen_y: float = float(COMBAT_LANE_Y[lower_floor_index]) + float(BATTLEFIELD_CAMERA_Y[view_index])
+		var lower_contact_screen_y: float = battlefield_layout.get_combat_lane_y(lower_floor_index) + float(battlefield_camera_y[view_index])
 		shop_clearance_valid = shop_clearance_valid and lower_contact_screen_y <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 70.0
 	# 지상 등장 애니메이션 중간에도 스케일된 몸체의 발끝은 경로 접촉선에 고정돼야 한다.
 	var spawn_test_monster := MonsterScript.new() as PrototypeMonster
 	spawn_test_monster.setup(database.get_monster_data("normal1"), movement_path)
 	battlefield_world.add_child(spawn_test_monster)
 	spawn_test_monster._process(0.12)
-	var scaled_spawn_bottom := spawn_test_monster.position.y + spawn_test_monster.body_bottom_offset_y * spawn_test_monster.scale.y
-	var grounded_spawn_valid := is_equal_approx(scaled_spawn_bottom, GROUND_LANE_Y)
+	# body_bottom_offset_y는 완전 표시 배율까지 반영된 값이므로 현재 등장 비율만 다시 곱한다.
+	var spawn_reveal_ratio := spawn_test_monster.scale.y / PrototypeMonster.MONSTER_VISUAL_SCALE
+	var scaled_spawn_bottom := spawn_test_monster.position.y + spawn_test_monster.body_bottom_offset_y * spawn_reveal_ratio
+	var grounded_spawn_valid := is_equal_approx(scaled_spawn_bottom, battlefield_layout.get_ground_lane_y())
 	spawn_test_monster.free()
-	var passed := middle_view_valid and bottom_clamped and top_clamped and object_scale_preserved and reference_frame_clipped and shop_clearance_valid and grounded_spawn_valid
+	var editable_layout_valid := battlefield_layout.validate_layout().is_empty() \
+		and movement_path[0].is_equal_approx(battlefield_layout.get_monster_path_points()[0]) \
+		and movement_path[-1].is_equal_approx(battlefield_layout.get_monster_path_points()[-1]) \
+		and _tower_slot_layout_is_valid()
+	var passed := middle_view_valid and bottom_clamped and top_clamped and object_scale_preserved and reference_frame_clipped and shop_clearance_valid and grounded_spawn_valid and editable_layout_valid
 	if passed:
 		print("Automated camera navigation test passed: FOUR_STOPS_NO_ZOOM")
 	else:
