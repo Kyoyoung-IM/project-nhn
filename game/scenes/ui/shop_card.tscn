@@ -1,10 +1,18 @@
-[gd_scene load_steps=5 format=3 uid="uid://m2jiqpu5qgrk"]
+[gd_scene load_steps=7 format=3 uid="uid://m2jiqpu5qgrk"]
 
 [ext_resource type="Script" uid="uid://du6fenriobhgq" path="res://scripts/shop_card.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bao4ivugo0cwk" path="res://assets/ui/generated/shop_card_frame_v1.png" id="2_frame"]
 [ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="3_font"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleButtonEmpty"]
+
+[sub_resource type="Shader" id="ShaderPriceGoldGrayscale"]
+code = "shader_type canvas_item;\n\nvarying vec4 canvas_modulate;\nuniform float price_gold_grayscale : hint_range(0.0, 1.0) = 0.0;\n\nvoid vertex() {\n\tcanvas_modulate = COLOR;\n}\n\nvoid fragment() {\n\tvec4 texture_color = texture(TEXTURE, UV);\n\tvec4 frame_color = texture_color * canvas_modulate;\n\tfloat price_region = step(0.755, UV.y);\n\tfloat warm_red = step(texture_color.b + 0.025, texture_color.r);\n\tfloat warm_green = step(texture_color.b + 0.01, texture_color.g);\n\tfloat chroma = max(texture_color.r, max(texture_color.g, texture_color.b)) - min(texture_color.r, min(texture_color.g, texture_color.b));\n\tfloat colored_gold = step(0.06, chroma);\n\tfloat gold_mask = price_region * warm_red * warm_green * colored_gold * price_gold_grayscale;\n\tfloat luminance = dot(frame_color.rgb, vec3(0.299, 0.587, 0.114));\n\tCOLOR = vec4(mix(frame_color.rgb, vec3(luminance), gold_mask), frame_color.a);\n}\n"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterialPriceGoldGrayscale"]
+resource_local_to_scene = true
+shader = SubResource("ShaderPriceGoldGrayscale")
+shader_parameter/price_gold_grayscale = 0.0
 
 [node name="ShopCard" type="Button" unique_id=1367150427]
 custom_minimum_size = Vector2(306, 270)
@@ -20,6 +28,7 @@ theme_override_styles/focus = SubResource("StyleButtonEmpty")
 script = ExtResource("1_script")
 
 [node name="Frame" type="TextureRect" parent="." unique_id=1049085495]
+material = SubResource("ShaderMaterialPriceGoldGrayscale")
 layout_mode = 0
 offset_right = 306.0
 offset_bottom = 270.0
@@ -61,16 +70,6 @@ theme_override_font_sizes/font_size = 24
 text = "터렛"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="PriceDim" type="ColorRect" parent="." unique_id=188715225]
-visible = false
-layout_mode = 0
-offset_left = 34.0
-offset_top = 205.0
-offset_right = 276.0
-offset_bottom = 258.0
-mouse_filter = 2
-color = Color(0.22, 0.22, 0.25, 0.86)
 
 [node name="PriceLabel" type="Label" parent="." unique_id=2103996370]
 layout_mode = 0

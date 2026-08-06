@@ -5,6 +5,7 @@ extends Button
 # 위치·크기·내부 텍스트 배치는 scenes/ui/shop_card.tscn에서 직접 편집한다.
 
 const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
+const PRICE_GOLD_GRAYSCALE_PARAMETER := &"price_gold_grayscale"
 
 var tower_data: Dictionary = {}
 var card_available: bool = true
@@ -21,7 +22,6 @@ var card_hovered: bool = false
 @onready var tower_body: TextureRect = $TowerBody
 @onready var tower_effect: TextureRect = $TowerEffect
 @onready var name_label: Label = $NameLabel
-@onready var price_dim: ColorRect = $PriceDim
 @onready var price_label: Label = $PriceLabel
 @onready var purchased_overlay: ColorRect = $PurchasedOverlay
 @onready var purchased_label: Label = $PurchasedOverlay/PurchasedLabel
@@ -99,7 +99,10 @@ func _apply_visual_state() -> void:
 		return
 	# 선택·호버 시에도 별도의 코드 테두리를 그리지 않고 프레임 밝기만 작게 바꾼다.
 	frame.modulate = Color("fff5cf") if card_selected else Color.WHITE
-	price_dim.visible = not card_affordable and card_available and not card_hovered
+	var price_material := frame.material as ShaderMaterial
+	if price_material != null:
+		var should_grayscale := not card_affordable and card_available and not card_hovered
+		price_material.set_shader_parameter(PRICE_GOLD_GRAYSCALE_PARAMETER, 1.0 if should_grayscale else 0.0)
 	price_label.add_theme_color_override("font_color", affordable_price_color if card_affordable else unaffordable_price_color)
 	purchased_overlay.visible = not card_available and not card_hovered
 	hover_overlay.visible = card_hovered
