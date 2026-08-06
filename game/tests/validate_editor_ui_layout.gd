@@ -79,6 +79,29 @@ func _run() -> void:
 		return
 	monster.free()
 
+	var game_clear_overlay := hud.get_node_or_null("Layout/GameClearOverlay") as PrototypeGameClearOverlay
+	if game_clear_overlay == null:
+		_fail("editable game-clear overlay is missing")
+		return
+	var game_clear_title := game_clear_overlay.get_node_or_null("TitleImage") as TextureRect
+	if game_clear_title == null or game_clear_title.texture == null:
+		_fail("game-clear title artwork is incomplete")
+		return
+	if game_clear_overlay.visible:
+		_fail("game-clear overlay must be hidden before victory")
+		return
+
+	# 승리 단계에서는 편집 가능한 타이틀 오버레이만 표시하고 기존 결과 문구를 중복 표시하지 않는다.
+	game._set_phase(2)
+	await process_frame
+	var status_label := hud.get_node("Layout/StatusLabel") as Label
+	if not game_clear_overlay.visible:
+		_fail("game-clear overlay did not open on victory")
+		return
+	if not status_label.text.is_empty():
+		_fail("legacy victory text is still visible behind the game-clear artwork")
+		return
+
 	var game_over_overlay := hud.get_node_or_null("Layout/GameOverOverlay") as Control
 	if game_over_overlay == null:
 		_fail("editable game-over overlay is missing")
@@ -96,10 +119,9 @@ func _run() -> void:
 	# 패배 단계에서 생성형 타이틀 오버레이만 표시되고 이전 상태 문구는 중복되지 않는지 확인한다.
 	game._set_phase(3)
 	await process_frame
-	if not game_over_overlay.visible:
+	if not game_over_overlay.visible or game_clear_overlay.visible:
 		_fail("game-over overlay did not open on defeat")
 		return
-	var status_label := hud.get_node("Layout/StatusLabel") as Label
 	var wave_title_label := hud.get_node("Layout/DayNightHUD/WaveTitleLabel") as Label
 	var wave_label := hud.get_node("Layout/DayNightHUD/WaveLabel") as Label
 	if not status_label.text.is_empty() or wave_title_label.visible or wave_label.visible:

@@ -7,6 +7,7 @@
 - 전체 HUD 및 상점 배치: `res://scenes/ui/game_hud.tscn`
 - 상점 카드 한 장의 내부 배치: `res://scenes/ui/shop_card.tscn`
 - 일시정지·옵션 창: `res://scenes/ui/options_menu.tscn`
+- 게임 클리어 화면: `res://scenes/ui/game_clear_overlay.tscn`
 - 게임 오버 화면: `res://scenes/ui/game_over_overlay.tscn`
 - 타워 판매 드래그 안내: `res://scenes/ui/sell_zone_feedback.tscn`
 - 테스트 옵션 및 데이터 편집 모달: `res://scenes/ui/test_balance_panel.tscn`
@@ -26,6 +27,15 @@
 5. 전체 화면 어두움은 `Dimmer`의 `Color`와 알파값으로 조절한다.
 
 버튼 이름과 노드 계층은 GDScript의 기능 연결 기준이므로 이름을 변경하거나 삭제하지 않는다. 위치, 크기, 텍스트 기본값, 테마 속성 및 이미지 교체는 자유롭게 편집할 수 있다.
+
+## 게임 클리어 화면 편집 순서
+
+1. Godot에서 `res://scenes/ui/game_clear_overlay.tscn`을 연다.
+2. `Dimmer`에서 전체 화면 딤드의 색상과 불투명도를 조절한다.
+3. `TitleImage`에서 승인된 `GAME CLEAR` 이미지의 위치와 크기, Stretch Mode를 조절한다.
+4. 루트 `GameClearOverlay`의 Inspector에서 `Fade Duration Sec`을 조절한다.
+
+`GameClearOverlay`, `Dimmer`, `TitleImage` 노드 이름은 런타임 연결과 UI 검증 기준이므로 변경하거나 삭제하지 않는다. 승리 화면에는 별도 결과 버튼을 두지 않으며, 초기화와 게임 종료는 기존 규칙대로 `ESC` 옵션 창에서 실행한다.
 
 ## 동적 데이터 UI
 

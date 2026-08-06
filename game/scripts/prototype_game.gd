@@ -144,6 +144,7 @@ var gold_gain_base_position := Vector2.ZERO
 var options_overlay: Control
 var options_menu_open: bool = false
 var options_test_mode_button: Button
+var game_clear_overlay: PrototypeGameClearOverlay
 var game_over_overlay: Control
 var game_over_restart_button: Button
 var game_over_quit_button: Button
@@ -865,6 +866,7 @@ func _build_interface() -> void:
 	gold_gain_label = layout.get_node("GoldGainLabel") as Label
 	status_label = layout.get_node("StatusLabel") as Label
 	gold_gain_base_position = gold_gain_label.position
+	game_clear_overlay = layout.get_node("GameClearOverlay") as PrototypeGameClearOverlay
 	game_over_overlay = layout.get_node("GameOverOverlay") as Control
 	game_over_restart_button = game_over_overlay.get_node("RestartButton") as Button
 	game_over_quit_button = game_over_overlay.get_node("QuitButton") as Button
@@ -1030,6 +1032,13 @@ func _set_game_over_visible(show_overlay: bool, instant: bool = false) -> void:
 	game_over_tween.set_ignore_time_scale(true)
 	game_over_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	game_over_tween.tween_property(game_over_overlay, "modulate:a", 1.0, 0.32)
+
+
+# 승리 오버레이의 배치·색상·페이드 시간은 전용 씬과 Inspector 속성에서 관리한다.
+func _set_game_clear_visible(show_overlay: bool, instant: bool = false) -> void:
+	if game_clear_overlay == null:
+		return
+	game_clear_overlay.set_result_visible(show_overlay, instant)
 
 
 # 일반 밤은 1→2→3배, 테스트 환경의 밤은 1→3→5→10배 순서로 순환한다.
@@ -2032,6 +2041,7 @@ func _set_phase(next_phase: Phase) -> void:
 			Engine.time_scale = 1.0
 	_update_speed_controls()
 	_update_shop_cards()
+	_set_game_clear_visible(phase == Phase.VICTORY, automated_test_mode)
 	_set_game_over_visible(phase == Phase.DEFEAT, automated_test_mode)
 	if phase == Phase.DEFEAT:
 		for monster in monsters:
@@ -2217,7 +2227,7 @@ func _update_interface() -> void:
 			phase_label.visible = false
 			wave_title_label.visible = false
 			wave_label.visible = false
-			status_label.text = "방어 성공"
+			status_label.text = ""
 			action_button.visible = false
 			if action_button_backplate != null:
 				action_button_backplate.visible = false

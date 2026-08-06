@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
 [ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_card.tscn" id="8_card"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_clear_overlay.tscn" id="9_game_clear"]
 [ext_resource type="PackedScene" path="res://scenes/ui/options_menu.tscn" id="10_options"]
 [ext_resource type="PackedScene" path="res://scenes/ui/sell_zone_feedback.tscn" id="11_sell"]
 [ext_resource type="PackedScene" path="res://scenes/ui/test_balance_panel.tscn" id="12_test"]
@@ -420,6 +421,8 @@ theme_override_fonts/font = ExtResource("13_font")
 [node name="SellZoneFeedback" parent="Layout" instance=ExtResource("11_sell")]
 
 [node name="TestBalancePanel" parent="Layout" instance=ExtResource("12_test")]
+
+[node name="GameClearOverlay" parent="Layout" instance=ExtResource("9_game_clear")]
 
 [node name="GameOverOverlay" parent="Layout" instance=ExtResource("9_game_over")]
 
