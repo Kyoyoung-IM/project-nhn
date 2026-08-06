@@ -19,6 +19,12 @@ const REFERENCE_VIEWPORT_SIZE := Vector2(1920.0, 1080.0)
 # 터렛·몬스터 같은 전투 오브젝트만 상점 위에서 자르고, 배경은 별도 층에서 화면 전체에 표시한다.
 const BATTLEFIELD_ENTITY_VIEW_HEIGHT := 770.0
 const BATTLEFIELD_CAMERA_TRANSITION_SEC := 0.26
+# 두 층의 위·아래 여백을 확보하되 모든 전장 이미지의 원본 비율을 유지하도록 균일 축소한다.
+const BATTLEFIELD_CAMERA_SCALE := 0.9
+const BATTLEFIELD_CAMERA_UNIFORM_SCALE := Vector2(BATTLEFIELD_CAMERA_SCALE, BATTLEFIELD_CAMERA_SCALE)
+const BATTLEFIELD_CAMERA_HORIZONTAL_INSET := REFERENCE_VIEWPORT_SIZE.x * (1.0 - BATTLEFIELD_CAMERA_SCALE) * 0.5
+# 두 층 화면에서는 아래층과 상점 사이의 불필요한 여백을 위층 표시 영역으로 돌린다.
+const BATTLEFIELD_TWO_FLOOR_VERTICAL_OFFSET := 130.0
 # 상점 하단 절반은 낮에 설치 터렛을 판매하는 드롭 영역으로 사용한다.
 const SHOP_AREA_BOTTOM_Y := 1080.0
 const SELL_ZONE_TOP_Y := 925.0
@@ -793,6 +799,9 @@ func _build_battlefield() -> void:
 	# 기준 화면 안에서는 상점 카드 사이까지 배경이 끊김 없이 이어진다.
 	battlefield_background = BattlefieldWorldScript.new() as PrototypeBattlefieldWorld
 	battlefield_background.night_visual_amount = night_visual_amount
+	battlefield_background.horizontal_extension_px = BATTLEFIELD_CAMERA_HORIZONTAL_INSET / BATTLEFIELD_CAMERA_SCALE
+	battlefield_background.scale = BATTLEFIELD_CAMERA_UNIFORM_SCALE
+	battlefield_background.position.x = BATTLEFIELD_CAMERA_HORIZONTAL_INSET
 	battlefield_background_clip.add_child(battlefield_background)
 
 	# 슬롯·터렛·몬스터는 상점 카드 뒤로 내려가지 않도록 기존 전장 높이에서만 표시한다.
@@ -807,17 +816,27 @@ func _build_battlefield() -> void:
 
 	battlefield_world = Node2D.new()
 	battlefield_world.name = "BattlefieldEntities"
+	battlefield_world.scale = BATTLEFIELD_CAMERA_UNIFORM_SCALE
+	battlefield_world.position.x = BATTLEFIELD_CAMERA_HORIZONTAL_INSET
 	battlefield_clip.add_child(battlefield_world)
 
 	_set_battlefield_view_index(0, true)
 
 
-# 0=하늘+지상, 1=지상+B1, 2=B1+B2, 3=B2+B3으로 제한하고 확대·축소 없이 Y 위치만 보간한다.
+# 카메라 정지점의 원본 월드 좌표를 균일 축소된 화면 좌표로 바꾸고 두 층 화면만 아래로 당긴다.
+func _battlefield_view_target_y(view_index: int) -> float:
+	var target_y := float(battlefield_camera_y[view_index]) * BATTLEFIELD_CAMERA_SCALE
+	if view_index > 0:
+		target_y += BATTLEFIELD_TWO_FLOOR_VERTICAL_OFFSET
+	return target_y
+
+
+# 0=하늘+지상, 1=지상+B1, 2=B1+B2, 3=B2+B3으로 제한하고 균일 축소된 전장의 Y 위치를 보간한다.
 func _set_battlefield_view_index(requested_index: int, instant: bool = false) -> void:
 	if not is_instance_valid(battlefield_world) or not is_instance_valid(battlefield_background):
 		return
 	battlefield_view_index = clampi(requested_index, 0, battlefield_camera_y.size() - 1)
-	var target_y := float(battlefield_camera_y[battlefield_view_index])
+	var target_y := _battlefield_view_target_y(battlefield_view_index)
 	if battlefield_camera_tween != null and battlefield_camera_tween.is_valid():
 		battlefield_camera_tween.kill()
 	if instant:
@@ -1857,30 +1876,45 @@ func _tower_slot_layout_is_valid() -> bool:
 	return true
 
 
-# 네 카메라 정지점과 경계 제한, 오브젝트 무축소 조건을 헤드리스 환경에서 검증한다.
+# 네 카메라 정지점과 경계 제한, 전장 이미지의 균일 축소 조건을 헤드리스 환경에서 검증한다.
 func _run_camera_navigation_automated_test() -> void:
 	_set_battlefield_view_index(1, true)
+	var expected_middle_y := _battlefield_view_target_y(1)
 	var middle_view_valid := battlefield_view_index == 1 \
-		and is_equal_approx(battlefield_world.position.y, float(battlefield_camera_y[1])) \
-		and is_equal_approx(battlefield_background.position.y, float(battlefield_camera_y[1]))
+		and is_equal_approx(battlefield_world.position.y, expected_middle_y) \
+		and is_equal_approx(battlefield_background.position.y, expected_middle_y)
 	_set_battlefield_view_index(99, true)
 	var bottom_index := battlefield_camera_y.size() - 1
+	var expected_bottom_y := _battlefield_view_target_y(bottom_index)
 	var bottom_clamped := battlefield_view_index == bottom_index \
-		and is_equal_approx(battlefield_world.position.y, float(battlefield_camera_y[bottom_index])) \
-		and is_equal_approx(battlefield_background.position.y, float(battlefield_camera_y[bottom_index]))
+		and is_equal_approx(battlefield_world.position.y, expected_bottom_y) \
+		and is_equal_approx(battlefield_background.position.y, expected_bottom_y)
 	_set_battlefield_view_index(-99, true)
+	var expected_top_y := _battlefield_view_target_y(0)
 	var top_clamped := battlefield_view_index == 0 \
-		and is_equal_approx(battlefield_world.position.y, float(battlefield_camera_y[0])) \
-		and is_equal_approx(battlefield_background.position.y, float(battlefield_camera_y[0]))
-	# 카메라 기능은 월드의 위치만 바꾸며 적·터렛을 작게 만드는 scale 변경을 사용하지 않는다.
-	var object_scale_preserved := battlefield_world.scale == Vector2.ONE and battlefield_background.scale == Vector2.ONE
+		and is_equal_approx(battlefield_world.position.y, expected_top_y) \
+		and is_equal_approx(battlefield_background.position.y, expected_top_y)
+	# 배경·몬스터·터렛의 부모에 같은 X/Y 배율을 적용해 어떤 이미지도 찌그러뜨리지 않는다.
+	var uniform_scale_valid := battlefield_world.scale == BATTLEFIELD_CAMERA_UNIFORM_SCALE \
+		and battlefield_background.scale == BATTLEFIELD_CAMERA_UNIFORM_SCALE \
+		and is_equal_approx(battlefield_world.scale.x, battlefield_world.scale.y) \
+		and is_equal_approx(battlefield_background.scale.x, battlefield_background.scale.y) \
+		and is_equal_approx(battlefield_world.position.x, BATTLEFIELD_CAMERA_HORIZONTAL_INSET) \
+		and is_equal_approx(battlefield_background.position.x, BATTLEFIELD_CAMERA_HORIZONTAL_INSET) \
+		and is_equal_approx(battlefield_background.horizontal_extension_px * BATTLEFIELD_CAMERA_SCALE, BATTLEFIELD_CAMERA_HORIZONTAL_INSET)
 	var reference_frame_clipped := battlefield_background_clip.clip_contents and battlefield_background_clip.size == REFERENCE_VIEWPORT_SIZE
-	# 각 2층 전투 화면의 아래쪽 접촉선이 상점 카드 위로 충분한 안전 여백을 가져야 한다.
-	var shop_clearance_valid := true
+	# 두 층 화면은 위층 오브젝트 공간을 넓히고 아래층 접촉선은 상점 바로 위에 유지한다.
+	var two_floor_clearance_valid := true
 	for view_index in range(1, battlefield_camera_y.size()):
+		var upper_floor_index := view_index - 2
 		var lower_floor_index := view_index - 1
-		var lower_contact_screen_y: float = battlefield_layout.get_combat_lane_y(lower_floor_index) + float(battlefield_camera_y[view_index])
-		shop_clearance_valid = shop_clearance_valid and lower_contact_screen_y <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 70.0
+		var upper_lane_y := battlefield_layout.get_ground_lane_y() if upper_floor_index < 0 else battlefield_layout.get_combat_lane_y(upper_floor_index)
+		var target_y := _battlefield_view_target_y(view_index)
+		var upper_contact_screen_y: float = upper_lane_y * BATTLEFIELD_CAMERA_SCALE + target_y
+		var lower_contact_screen_y: float = battlefield_layout.get_combat_lane_y(lower_floor_index) * BATTLEFIELD_CAMERA_SCALE + target_y
+		two_floor_clearance_valid = two_floor_clearance_valid \
+			and upper_contact_screen_y >= 260.0 \
+			and lower_contact_screen_y <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 10.0
 	# 지상 등장 애니메이션 중간에도 스케일된 몸체의 발끝은 경로 접촉선에 고정돼야 한다.
 	var spawn_test_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	spawn_test_monster.setup(database.get_monster_data("normal1"), movement_path)
@@ -1895,9 +1929,9 @@ func _run_camera_navigation_automated_test() -> void:
 		and movement_path[0].is_equal_approx(battlefield_layout.get_monster_path_points()[0]) \
 		and movement_path[-1].is_equal_approx(battlefield_layout.get_monster_path_points()[-1]) \
 		and _tower_slot_layout_is_valid()
-	var passed := middle_view_valid and bottom_clamped and top_clamped and object_scale_preserved and reference_frame_clipped and shop_clearance_valid and grounded_spawn_valid and editable_layout_valid
+	var passed := middle_view_valid and bottom_clamped and top_clamped and uniform_scale_valid and reference_frame_clipped and two_floor_clearance_valid and grounded_spawn_valid and editable_layout_valid
 	if passed:
-		print("Automated camera navigation test passed: FOUR_STOPS_NO_ZOOM")
+		print("Automated camera navigation test passed: FOUR_STOPS_UNIFORM_90_PERCENT_SCALE")
 	else:
 		push_error("Automated camera navigation test failed.")
 	Engine.time_scale = 1.0
