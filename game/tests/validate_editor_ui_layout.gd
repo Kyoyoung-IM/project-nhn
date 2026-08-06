@@ -46,13 +46,20 @@ func _run() -> void:
 	if options_menu == null or options_menu.get_node_or_null("PanelArt") == null or options_menu.get_node_or_null("ContinueButton") == null or options_menu.get_node_or_null("TestModeButton") == null or options_menu.get_node_or_null("ResetButton") == null or options_menu.get_node_or_null("QuitButton") == null:
 		_fail("editable options menu scene is incomplete")
 		return
-	game._on_pause_button_pressed()
-	if not options_menu.visible or not paused:
-		_fail("editable options menu did not pause and open")
+	var escape_event := InputEventKey.new()
+	escape_event.keycode = KEY_ESCAPE
+	escape_event.pressed = true
+	game._input(escape_event)
+	var battlefield_world := game.get("battlefield_world") as Node2D
+	if not options_menu.visible or not paused or game.can_process() or battlefield_world == null or battlefield_world.can_process():
+		_fail("ESC options menu did not pause the game and battlefield")
 		return
-	game._on_options_continue_pressed()
+	if not options_menu.can_process():
+		_fail("options menu cannot receive ESC while the game is paused")
+		return
+	options_menu.call("_unhandled_key_input", escape_event)
 	if options_menu.visible or paused:
-		_fail("editable options menu did not resume and close")
+		_fail("second ESC did not resume and close the options menu")
 		return
 
 	var sell_feedback := hud.get_node_or_null("Layout/SellZoneFeedback") as Control
