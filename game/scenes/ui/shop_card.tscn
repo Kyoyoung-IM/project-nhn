@@ -65,10 +65,10 @@ vertical_alignment = 1
 [node name="PriceDim" type="ColorRect" parent="." unique_id=188715225]
 visible = false
 layout_mode = 0
-offset_left = 48.0
-offset_top = 214.0
-offset_right = 288.0
-offset_bottom = 256.0
+offset_left = 34.0
+offset_top = 205.0
+offset_right = 276.0
+offset_bottom = 258.0
 mouse_filter = 2
 color = Color(0.22, 0.22, 0.25, 0.86)
 
