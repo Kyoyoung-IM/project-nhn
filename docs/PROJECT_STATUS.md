@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-06 23:28 KST
+- 마지막 갱신: 2026-08-07 00:42 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `740b042` (`Pages 배포 제한시간 지침 정정 (#24)`)
+- 확인된 기준 커밋: `e336672` (`Merge pull request #27 from Kyoyoung-IM/agent/test-data-editor-parser-20260807`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -23,11 +23,11 @@
 
 | 작업 영역 | 상태 | 최근 결과 | 다음 확인 |
 |---|---|---|---|
-| UI | 완료 | PR #20 merge commit 병합, 사용자 편집 옵션 UI 보존·HUD 루트 위치 복원·Web Release 갱신 및 최신 Pages PCK 반영 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
+| UI | 완료 | PR #27 merge commit 병합, 테스트 데이터 행 추가·삭제와 CSV·TSV·JSON 파싱 모달 반영, Web Release 및 공개 Pages 화면 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
 | 버그 수정 | 완료 | 이슈 #16, PR #22 merge commit 병합, 가격 테스트·로컬 Web 상태 전환 및 최신 Pages PCK 반영 확인 | 새 버그 접수 시 CLI 인증 1회 확인 후 이슈 생성 |
 | 데이터테이블 | 최신 | 2026-08-06 17:30 KST, 원본 5개 시트와 로컬 JSON 차이 0건 | 다음 최신화 요청 시 읽기 전용 비교 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
-| Pages 배포 | 완료·지연 관찰 | 실행 `31108448751`은 timeout 실패로 종료됐지만 Pages가 `index-b7fd21ea1dea.pck`를 뒤늦게 게시. 로컬·원격 SHA-256 일치 및 공개 브라우저 실행·콘솔 정상 확인 | timeout 후 공개 PCK를 재확인하고 실제 미배포일 때만 GitHub Support 문의 |
+| Pages 배포 | 완료 | 실행 `31116944609` 성공, `index-e336672148d7.pck` 게시. 로컬·원격 SHA-256 일치 및 공개 테스트 모드 편집 화면·콘솔 정상 확인 | 다음 배포도 병합 SHA 고유 PCK와 원격 해시 확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
 
