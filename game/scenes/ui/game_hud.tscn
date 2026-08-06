@@ -1,22 +1,20 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene format=3 uid="uid://jcmxg05necpc"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
-[ext_resource type="Texture2D" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
-[ext_resource type="Texture2D" path="res://assets/ui/day_night_sun_icon_v1.png" id="3_sun"]
-[ext_resource type="Texture2D" path="res://assets/ui/day_night_moon_icon_v1.png" id="4_moon"]
-[ext_resource type="Texture2D" path="res://assets/ui/generated/shop_controls_panel_v1.png" id="5_shop_controls"]
-[ext_resource type="Texture2D" path="res://assets/ui/generated/speed_capsule_v2.png" id="6_speed"]
-[ext_resource type="Texture2D" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
-[ext_resource type="PackedScene" path="res://scenes/ui/shop_card.tscn" id="8_card"]
-[ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
+[ext_resource type="Texture2D" uid="uid://cbwrmjxj22jth" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
+[ext_resource type="Texture2D" uid="uid://d0cmfsbyv21br" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
+[ext_resource type="Texture2D" uid="uid://3qtv4ofuf6mc" path="res://assets/ui/day_night_sun_icon_v1.png" id="3_sun"]
+[ext_resource type="Texture2D" uid="uid://b32wm1l03eblp" path="res://assets/ui/day_night_moon_icon_v1.png" id="4_moon"]
+[ext_resource type="Texture2D" uid="uid://0qwc32huqlj" path="res://assets/ui/generated/shop_controls_panel_v1.png" id="5_shop_controls"]
+[ext_resource type="Texture2D" uid="uid://dwy4464por041" path="res://assets/ui/generated/speed_capsule_v2.png" id="6_speed"]
+[ext_resource type="Texture2D" uid="uid://ck100su0asnhp" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
+[ext_resource type="PackedScene" uid="uid://m2jiqpu5qgrk" path="res://scenes/ui/shop_card.tscn" id="8_card"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_clear_overlay.tscn" id="9_game_clear"]
-[ext_resource type="PackedScene" path="res://scenes/ui/options_menu.tscn" id="10_options"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
+[ext_resource type="PackedScene" uid="uid://bibm7rj2pfhdd" path="res://scenes/ui/options_menu.tscn" id="10_options"]
 [ext_resource type="PackedScene" path="res://scenes/ui/sell_zone_feedback.tscn" id="11_sell"]
 [ext_resource type="PackedScene" path="res://scenes/ui/test_balance_panel.tscn" id="12_test"]
-[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="13_font"]
-[ext_resource type="FontFile" path="res://assets/fonts/NotoSansKR.ttf" id="14_symbol"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleInputEmpty"]
+[ext_resource type="FontFile" uid="uid://d4bssxj634h2e" path="res://assets/fonts/Jua-Regular.ttf" id="13_font"]
+[ext_resource type="FontFile" uid="uid://d04qwd7rn2ao0" path="res://assets/fonts/NotoSansKR.ttf" id="14_symbol"]
 
 [sub_resource type="StyleBoxFlat" id="StyleTestBadge"]
 bg_color = Color(0.85098, 0.294118, 0.333333, 1)
@@ -33,23 +31,14 @@ shadow_color = Color(0.02, 0.02, 0.04, 0.72)
 shadow_size = 6
 shadow_offset = Vector2(0, 5)
 
+[sub_resource type="StyleBoxEmpty" id="StyleInputEmpty"]
+
 [sub_resource type="StyleBoxFlat" id="StyleRerollNormal"]
 content_margin_left = 10.0
 content_margin_top = 94.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
 bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="StyleRerollHover"]
-content_margin_left = 10.0
-content_margin_top = 94.0
-content_margin_right = 10.0
-content_margin_bottom = 8.0
-bg_color = Color(1, 1, 1, 0.1)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
@@ -66,6 +55,17 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
+[sub_resource type="StyleBoxFlat" id="StyleRerollHover"]
+content_margin_left = 10.0
+content_margin_top = 94.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 0.1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxFlat" id="StyleRerollDisabled"]
 content_margin_left = 10.0
 content_margin_top = 94.0
@@ -77,33 +77,32 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
-[node name="GameHUD" type="CanvasLayer"]
+[node name="GameHUD" type="CanvasLayer" unique_id=1035073675]
 
-[node name="Layout" type="Control" parent="."]
+[node name="Layout" type="Control" parent="." unique_id=410675579]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
 mouse_filter = 2
 
-[node name="DayNightHUD" type="Control" parent="Layout"]
-layout_mode = 0
+[node name="DayNightHUD" type="Control" parent="Layout" unique_id=1714048299]
+anchors_preset = 0
 offset_left = -80.0
 offset_top = -5.0
 offset_right = 420.0
 offset_bottom = 245.0
 mouse_filter = 2
 
-[node name="DayFrame" type="TextureRect" parent="Layout/DayNightHUD"]
+[node name="DayFrame" type="TextureRect" parent="Layout/DayNightHUD" unique_id=1571776901]
 layout_mode = 0
 offset_right = 500.0
 offset_bottom = 250.0
 mouse_filter = 2
 texture = ExtResource("1_day")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="NightFrame" type="TextureRect" parent="Layout/DayNightHUD"]
+[node name="NightFrame" type="TextureRect" parent="Layout/DayNightHUD" unique_id=1248509993]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_right = 500.0
@@ -111,9 +110,8 @@ offset_bottom = 250.0
 mouse_filter = 2
 texture = ExtResource("2_night")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="SunIcon" type="TextureRect" parent="Layout/DayNightHUD"]
+[node name="SunIcon" type="TextureRect" parent="Layout/DayNightHUD" unique_id=653561021]
 layout_mode = 0
 offset_left = 221.0
 offset_top = 48.0
@@ -125,7 +123,7 @@ texture = ExtResource("3_sun")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="MoonIcon" type="TextureRect" parent="Layout/DayNightHUD"]
+[node name="MoonIcon" type="TextureRect" parent="Layout/DayNightHUD" unique_id=209760934]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 309.0
@@ -138,13 +136,12 @@ texture = ExtResource("4_moon")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PhaseLabel" type="Label" parent="Layout/DayNightHUD"]
+[node name="PhaseLabel" type="Label" parent="Layout/DayNightHUD" unique_id=1094984239]
 layout_mode = 0
 offset_left = 185.0
 offset_top = 137.0
 offset_right = 315.0
 offset_bottom = 189.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -153,13 +150,12 @@ theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="WaveTitleLabel" type="Label" parent="Layout/DayNightHUD"]
+[node name="WaveTitleLabel" type="Label" parent="Layout/DayNightHUD" unique_id=1403213627]
 layout_mode = 0
 offset_left = 185.0
 offset_top = 131.0
 offset_right = 315.0
 offset_bottom = 161.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -169,13 +165,12 @@ text = "WAVE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="WaveLabel" type="Label" parent="Layout/DayNightHUD"]
+[node name="WaveLabel" type="Label" parent="Layout/DayNightHUD" unique_id=282055171]
 layout_mode = 0
 offset_left = 185.0
 offset_top = 158.0
 offset_right = 315.0
 offset_bottom = 198.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -184,19 +179,18 @@ theme_override_font_sizes/font_size = 25
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="TopControls" type="Control" parent="Layout"]
-layout_mode = 0
+[node name="TopControls" type="Control" parent="Layout" unique_id=1501804984]
+anchors_preset = 0
 offset_right = 1920.0
 offset_bottom = 120.0
 mouse_filter = 2
 
-[node name="TestModeBadge" type="Label" parent="Layout/TopControls"]
+[node name="TestModeBadge" type="Label" parent="Layout/TopControls" unique_id=197197827]
 layout_mode = 0
 offset_left = 1260.0
 offset_top = 38.0
 offset_right = 1420.0
 offset_bottom = 98.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -207,7 +201,7 @@ text = "TEST"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ActionBackplate" type="TextureRect" parent="Layout/TopControls"]
+[node name="ActionBackplate" type="TextureRect" parent="Layout/TopControls" unique_id=984093334]
 layout_mode = 0
 offset_left = 1450.0
 offset_top = 38.0
@@ -216,9 +210,8 @@ offset_bottom = 98.0
 mouse_filter = 2
 texture = ExtResource("6_speed")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="ActionButton" type="Button" parent="Layout/TopControls"]
+[node name="ActionButton" type="Button" parent="Layout/TopControls" unique_id=330084082]
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 1450.0
@@ -227,18 +220,17 @@ offset_right = 1780.0
 offset_bottom = 98.0
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleInputEmpty")
-theme_override_styles/hover = SubResource("StyleInputEmpty")
 theme_override_styles/pressed = SubResource("StyleInputEmpty")
+theme_override_styles/hover = SubResource("StyleInputEmpty")
 theme_override_styles/disabled = SubResource("StyleInputEmpty")
 theme_override_styles/focus = SubResource("StyleInputEmpty")
 
-[node name="ActionLabel" type="Label" parent="Layout/TopControls"]
+[node name="ActionLabel" type="Label" parent="Layout/TopControls" unique_id=2039006298]
 layout_mode = 0
 offset_left = 1450.0
 offset_top = 38.0
 offset_right = 1780.0
 offset_bottom = 98.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.203922, 0.156863, 0.227451, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -247,7 +239,7 @@ theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SpeedBackplate" type="TextureRect" parent="Layout/TopControls"]
+[node name="SpeedBackplate" type="TextureRect" parent="Layout/TopControls" unique_id=145501103]
 layout_mode = 0
 offset_left = 1600.0
 offset_top = 38.0
@@ -256,9 +248,8 @@ offset_bottom = 98.0
 mouse_filter = 2
 texture = ExtResource("6_speed")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="SpeedButton" type="Button" parent="Layout/TopControls"]
+[node name="SpeedButton" type="Button" parent="Layout/TopControls" unique_id=334617550]
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 1600.0
@@ -267,18 +258,17 @@ offset_right = 1780.0
 offset_bottom = 98.0
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleInputEmpty")
-theme_override_styles/hover = SubResource("StyleInputEmpty")
 theme_override_styles/pressed = SubResource("StyleInputEmpty")
+theme_override_styles/hover = SubResource("StyleInputEmpty")
 theme_override_styles/disabled = SubResource("StyleInputEmpty")
 theme_override_styles/focus = SubResource("StyleInputEmpty")
 
-[node name="SpeedLabel" type="Label" parent="Layout/TopControls"]
+[node name="SpeedLabel" type="Label" parent="Layout/TopControls" unique_id=1816033523]
 layout_mode = 0
 offset_left = 1600.0
 offset_top = 38.0
 offset_right = 1780.0
 offset_bottom = 98.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.203922, 0.156863, 0.227451, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
@@ -287,7 +277,7 @@ theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PauseBackplate" type="TextureRect" parent="Layout/TopControls"]
+[node name="PauseBackplate" type="TextureRect" parent="Layout/TopControls" unique_id=1718868261]
 layout_mode = 0
 offset_left = 1810.0
 offset_top = 34.0
@@ -296,9 +286,8 @@ offset_bottom = 102.0
 mouse_filter = 2
 texture = ExtResource("7_pause")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="PauseButton" type="Button" parent="Layout/TopControls"]
+[node name="PauseButton" type="Button" parent="Layout/TopControls" unique_id=774662062]
 process_mode = 3
 layout_mode = 0
 offset_left = 1810.0
@@ -307,19 +296,19 @@ offset_right = 1878.0
 offset_bottom = 102.0
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleInputEmpty")
-theme_override_styles/hover = SubResource("StyleInputEmpty")
 theme_override_styles/pressed = SubResource("StyleInputEmpty")
+theme_override_styles/hover = SubResource("StyleInputEmpty")
 theme_override_styles/disabled = SubResource("StyleInputEmpty")
 theme_override_styles/focus = SubResource("StyleInputEmpty")
 
-[node name="ShopUI" type="Control" parent="Layout"]
-layout_mode = 0
+[node name="ShopUI" type="Control" parent="Layout" unique_id=1493000253]
+anchors_preset = 0
 offset_top = 790.0
 offset_right = 1920.0
 offset_bottom = 1060.0
 mouse_filter = 2
 
-[node name="ControlsBackplate" type="TextureRect" parent="Layout/ShopUI"]
+[node name="ControlsBackplate" type="TextureRect" parent="Layout/ShopUI" unique_id=717882468]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 274.0
@@ -327,15 +316,13 @@ offset_bottom = 270.0
 mouse_filter = 2
 texture = ExtResource("5_shop_controls")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="GoldLabel" type="Label" parent="Layout/ShopUI"]
+[node name="GoldLabel" type="Label" parent="Layout/ShopUI" unique_id=2125538987]
 layout_mode = 0
 offset_left = 82.0
 offset_top = 18.0
 offset_right = 236.0
 offset_bottom = 90.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.964706, 0.776471, 0.32549, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -344,7 +331,7 @@ theme_override_font_sizes/font_size = 25
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RerollButton" type="Button" parent="Layout/ShopUI"]
+[node name="RerollButton" type="Button" parent="Layout/ShopUI" unique_id=950780711]
 layout_mode = 0
 offset_left = 38.0
 offset_top = 94.0
@@ -359,46 +346,45 @@ theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("StyleRerollNormal")
-theme_override_styles/hover = SubResource("StyleRerollHover")
 theme_override_styles/pressed = SubResource("StyleRerollPressed")
+theme_override_styles/hover = SubResource("StyleRerollHover")
 theme_override_styles/disabled = SubResource("StyleRerollDisabled")
 theme_override_styles/focus = SubResource("StyleInputEmpty")
-text = "새로고침\n10 G"
-alignment = 1
+text = "새로고침
+10 G"
 
-[node name="ShopCard1" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+[node name="ShopCard1" parent="Layout/ShopUI" unique_id=413573491 instance=ExtResource("8_card")]
 layout_mode = 0
 offset_left = 280.0
 offset_right = 586.0
 
-[node name="ShopCard2" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+[node name="ShopCard2" parent="Layout/ShopUI" unique_id=1281458433 instance=ExtResource("8_card")]
 layout_mode = 0
 offset_left = 602.0
 offset_right = 908.0
 
-[node name="ShopCard3" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+[node name="ShopCard3" parent="Layout/ShopUI" unique_id=1868775668 instance=ExtResource("8_card")]
 layout_mode = 0
 offset_left = 924.0
 offset_right = 1230.0
 
-[node name="ShopCard4" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+[node name="ShopCard4" parent="Layout/ShopUI" unique_id=1143771541 instance=ExtResource("8_card")]
 layout_mode = 0
 offset_left = 1246.0
 offset_right = 1552.0
 
-[node name="ShopCard5" parent="Layout/ShopUI" instance=ExtResource("8_card")]
+[node name="ShopCard5" parent="Layout/ShopUI" unique_id=1949631059 instance=ExtResource("8_card")]
 layout_mode = 0
 offset_left = 1568.0
 offset_right = 1874.0
 
-[node name="GoldGainLabel" type="Label" parent="Layout"]
+[node name="GoldGainLabel" type="Label" parent="Layout" unique_id=93908541]
 visible = false
 layout_mode = 0
 offset_left = 82.0
 offset_top = 795.0
 offset_right = 236.0
 offset_bottom = 829.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.94902, 0.65098, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -407,23 +393,27 @@ theme_override_font_sizes/font_size = 21
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="Layout"]
+[node name="StatusLabel" type="Label" parent="Layout" unique_id=324865284]
 visible = false
 layout_mode = 0
 offset_right = 1.0
 offset_bottom = 1.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("13_font")
 
-[node name="SellZoneFeedback" parent="Layout" instance=ExtResource("11_sell")]
+[node name="SellZoneFeedback" parent="Layout" unique_id=1773241617 instance=ExtResource("11_sell")]
+layout_mode = 0
 
-[node name="TestBalancePanel" parent="Layout" instance=ExtResource("12_test")]
+[node name="TestBalancePanel" parent="Layout" unique_id=2087872267 instance=ExtResource("12_test")]
+layout_mode = 0
 
-[node name="GameClearOverlay" parent="Layout" instance=ExtResource("9_game_clear")]
+[node name="GameClearOverlay" parent="Layout" unique_id=461404422 instance=ExtResource("9_game_clear")]
+layout_mode = 0
 
-[node name="GameOverOverlay" parent="Layout" instance=ExtResource("9_game_over")]
+[node name="GameOverOverlay" parent="Layout" unique_id=1401261647 instance=ExtResource("9_game_over")]
+layout_mode = 0
 
-[node name="OptionsMenu" parent="Layout" instance=ExtResource("10_options")]
+[node name="OptionsMenu" parent="Layout" unique_id=1690520257 instance=ExtResource("10_options")]
+layout_mode = 0
