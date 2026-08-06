@@ -173,8 +173,6 @@ var shop_drag_target_slot: PrototypeTowerSlot = null
 
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
-	# ESC 옵션 창이 SceneTree를 일시 정지해도 이 컨트롤러는 입력을 받아 다시 닫을 수 있어야 한다.
-	process_mode = Node.PROCESS_MODE_ALWAYS
 	var user_args := OS.get_cmdline_user_args()
 	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-attack-styles" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-sell" in user_args or "--auto-test-camera-navigation" in user_args or "--auto-test-test-environment" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args
@@ -948,6 +946,7 @@ func _bind_options_menu(layout: Control) -> void:
 	options_test_mode_button.pressed.connect(_on_options_test_mode_pressed)
 	reset_button.pressed.connect(_on_options_reset_pressed)
 	quit_button.pressed.connect(_on_options_quit_pressed)
+	options_overlay.connect("escape_pressed", _on_options_continue_pressed)
 	_update_test_mode_ui()
 
 

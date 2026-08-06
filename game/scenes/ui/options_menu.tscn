@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/generated/options_panel_v1.png" id="1_panel"]
 [ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
+[ext_resource type="Script" path="res://scripts/options_menu.gd" id="3_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleButtonNormal"]
 bg_color = Color(0, 0, 0, 0)
@@ -36,6 +37,7 @@ offset_right = 1920.0
 offset_bottom = 1080.0
 mouse_filter = 0
 process_mode = 3
+script = ExtResource("3_script")
 
 [node name="Dimmer" type="ColorRect" parent="."]
 layout_mode = 0
