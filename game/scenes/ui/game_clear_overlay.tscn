@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/game_clear_overlay.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/ui/generated/game_clear_title_v1.png" id="2_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/generated/game_clear_title_v2.png" id="2_title"]
 
 [node name="GameClearOverlay" type="Control"]
 visible = false
