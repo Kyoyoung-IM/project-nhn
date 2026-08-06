@@ -1,18 +1,11 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://bibm7rj2pfhdd"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/generated/options_panel_v1.png" id="1_panel"]
-[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
-[ext_resource type="Script" path="res://scripts/options_menu.gd" id="3_script"]
+[ext_resource type="Texture2D" uid="uid://mmmwluwjh3qx" path="res://assets/ui/generated/options_panel_v1.png" id="1_panel"]
+[ext_resource type="FontFile" uid="uid://d4bssxj634h2e" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
+[ext_resource type="Script" uid="uid://b67axnfhqhoqa" path="res://scripts/options_menu.gd" id="3_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleButtonNormal"]
 bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="StyleButtonHover"]
-bg_color = Color(1, 1, 1, 0.12)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
@@ -26,27 +19,32 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
+[sub_resource type="StyleBoxFlat" id="StyleButtonHover"]
+bg_color = Color(1, 1, 1, 0.12)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [sub_resource type="StyleBoxEmpty" id="StyleButtonEmpty"]
 
-[node name="OptionsMenu" type="Control"]
+[node name="OptionsMenu" type="Control" unique_id=778158173]
+process_mode = 3
 visible = false
 z_index = 100
 layout_mode = 3
 anchors_preset = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
-mouse_filter = 0
-process_mode = 3
 script = ExtResource("3_script")
 
-[node name="Dimmer" type="ColorRect" parent="."]
+[node name="Dimmer" type="ColorRect" parent="." unique_id=750231242]
 layout_mode = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
-mouse_filter = 0
 color = Color(0.035, 0.03, 0.07, 0.78)
 
-[node name="PanelArt" type="TextureRect" parent="."]
+[node name="PanelArt" type="TextureRect" parent="." unique_id=1199956159]
 layout_mode = 0
 offset_left = 700.0
 offset_top = 140.0
@@ -55,23 +53,22 @@ offset_bottom = 940.0
 mouse_filter = 2
 texture = ExtResource("1_panel")
 expand_mode = 1
-stretch_mode = 0
 
-[node name="TitleLabel" type="Label" parent="."]
+[node name="TitleLabel" type="Label" parent="." unique_id=1087333340]
 layout_mode = 0
-offset_left = 760.0
-offset_top = 204.0
-offset_right = 1160.0
-offset_bottom = 268.0
-mouse_filter = 2
+offset_left = 757.0
+offset_top = 221.0
+offset_right = 1157.0
+offset_bottom = 285.0
 theme_override_colors/font_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 42
-text = "옵션"
+text = "일시정지"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ContinueButton" type="Button" parent="."]
+[node name="ContinueButton" type="Button" parent="." unique_id=383538830]
+process_mode = 3
 layout_mode = 0
 offset_left = 790.0
 offset_top = 300.0
@@ -79,86 +76,85 @@ offset_right = 1130.0
 offset_bottom = 378.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-process_mode = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 30
 theme_override_styles/normal = SubResource("StyleButtonNormal")
-theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "계속하기"
 
-[node name="TestModeButton" type="Button" parent="."]
+[node name="TestModeButton" type="Button" parent="." unique_id=1954922972]
+process_mode = 3
 layout_mode = 0
-offset_left = 790.0
-offset_top = 451.0
-offset_right = 1130.0
-offset_bottom = 529.0
+offset_left = 788.0
+offset_top = 447.0
+offset_right = 1128.0
+offset_bottom = 525.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-process_mode = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 30
 theme_override_styles/normal = SubResource("StyleButtonNormal")
-theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "테스트 환경 시작"
 
-[node name="ResetButton" type="Button" parent="."]
+[node name="ResetButton" type="Button" parent="." unique_id=1677842784]
+process_mode = 3
 layout_mode = 0
-offset_left = 790.0
-offset_top = 600.0
-offset_right = 1130.0
-offset_bottom = 678.0
+offset_left = 792.0
+offset_top = 588.0
+offset_right = 1132.0
+offset_bottom = 666.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-process_mode = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 30
 theme_override_styles/normal = SubResource("StyleButtonNormal")
-theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "프로토타입 초기화"
 
-[node name="QuitButton" type="Button" parent="."]
+[node name="QuitButton" type="Button" parent="." unique_id=1243524719]
+process_mode = 3
 layout_mode = 0
-offset_left = 790.0
-offset_top = 741.0
-offset_right = 1130.0
-offset_bottom = 819.0
+offset_left = 789.0
+offset_top = 731.0
+offset_right = 1129.0
+offset_bottom = 809.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
-process_mode = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 30
 theme_override_styles/normal = SubResource("StyleButtonNormal")
-theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "게임 종료"
