@@ -3,6 +3,8 @@ extends SceneTree
 # 구매 후 리롤로 골드 부족 상태가 갱신될 때 딤드 없이 가격의 금색 픽셀만 회색화하는지 검증한다.
 
 const SHOP_CARD_SCENE := preload("res://scenes/ui/shop_card.tscn")
+const GAME_SCENE := preload("res://scenes/prototype_game.tscn")
+const MONSTER_SCENE := preload("res://scenes/entities/monster.tscn")
 const PRICE_GOLD_GRAYSCALE_PARAMETER := &"price_gold_grayscale"
 
 
@@ -43,7 +45,40 @@ func _run() -> void:
 		_fail("price gold grayscale remained enabled on an affordable rerolled card")
 		return
 
-	print("Shop price grayscale validation passed: GOLD_PIXELS_ONLY_WITHOUT_DIM_OVERLAY")
+	card.queue_free()
+
+	# 일반 플레이의 몬스터 처치 보상으로 골드가 가격 이상이 되는 즉시 카드가 원래 금색으로 복원되어야 한다.
+	var game := GAME_SCENE.instantiate()
+	root.add_child(game)
+	await process_frame
+	var reward_card := game.shop_cards[0] as PrototypeShopCard
+	var reward_frame := reward_card.get_node("Frame") as TextureRect
+	var reward_price_material := reward_frame.material as ShaderMaterial
+	var reward_tower_data: Dictionary = game.database.get_turret_data(game.shop_turret_ids[0])
+	var reward_tower_cost := int(reward_tower_data.get("base_price", 0))
+	if reward_tower_cost <= 0 or reward_price_material == null:
+		_fail("reward transition test could not prepare a priced shop card")
+		return
+
+	game.gold = reward_tower_cost - 1
+	game._update_shop_cards()
+	if not is_equal_approx(float(reward_price_material.get_shader_parameter(PRICE_GOLD_GRAYSCALE_PARAMETER)), 1.0):
+		_fail("price gold grayscale was not enabled before the monster reward")
+		return
+
+	var reward_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
+	reward_monster.reward_gold = 1
+	game.battlefield_world.add_child(reward_monster)
+	game.monsters.append(reward_monster)
+	game._on_monster_defeated(reward_monster)
+	if game.gold != reward_tower_cost:
+		_fail("monster reward did not reach the shop card price")
+		return
+	if not is_zero_approx(float(reward_price_material.get_shader_parameter(PRICE_GOLD_GRAYSCALE_PARAMETER))):
+		_fail("price gold grayscale remained enabled after the monster reward made the card affordable")
+		return
+
+	print("Shop price grayscale validation passed: GOLD_PIXELS_AND_REWARD_RESTORE")
 	quit(0)
 
 

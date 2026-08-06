@@ -1993,6 +1993,7 @@ func _on_monster_defeated(monster: PrototypeMonster) -> void:
 	_show_gold_gain_feedback(reward_amount)
 	gold += reward_amount
 	_update_interface()
+	_update_shop_cards()
 	_check_final_wave_victory()
 
 
