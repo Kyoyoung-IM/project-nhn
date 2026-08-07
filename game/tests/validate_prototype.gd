@@ -111,6 +111,20 @@ func _init() -> void:
 	if not _texture_has_opaque_coverage(MonsterScript.STUN_STATUS_TEXTURE, 0.08):
 		_fail("stun status texture lost its visible interior during alpha processing")
 		return
+	# 빠르게 발사되는 원거리 포탑의 트레일은 장시간 갱신해도 고정 길이를 넘지 않아야 한다.
+	# 이 검사는 Web 메인 스레드를 영구 정지시킬 수 있는 반복 제거 회귀를 함께 방지한다.
+	var projectile_trail_probe := TowerProjectileScript.new() as PrototypeTowerProjectile
+	for point_index in 5000:
+		projectile_trail_probe.global_position = Vector2(float(point_index) * 11.0, 0.0)
+		projectile_trail_probe.call("_record_trail_point", true)
+	if projectile_trail_probe.trail_global_points.size() != TowerProjectileScript.MAX_TRAIL_POINT_COUNT:
+		_fail("projectile trail history must remain bounded during sustained fire")
+		return
+	var expected_oldest_x := float(5000 - TowerProjectileScript.MAX_TRAIL_POINT_COUNT) * 11.0
+	if not is_equal_approx(projectile_trail_probe.trail_global_points[0].x, expected_oldest_x):
+		_fail("projectile trail history did not discard the oldest point")
+		return
+	projectile_trail_probe.free()
 	if int(database.get_monster_data("boss1").get("reward_gold", 0)) != 555555:
 		_fail("boss1 rewardGold must match the read-only source value")
 		return

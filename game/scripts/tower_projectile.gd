@@ -28,7 +28,7 @@ var impact_remaining_sec: float = 0.0
 var impacted: bool = false
 var travel_direction := Vector2.RIGHT
 var fired_floor_index: int = -1
-var trail_global_points: Array[Vector2] = []
+var trail_global_points := PackedVector2Array()
 
 
 # 발사 시점의 전투층을 저장해 표적이 층 이동을 시작하면 즉시 추적과 피해를 취소한다.
@@ -41,7 +41,7 @@ func setup(target_node: Node2D, attack_type: String, attack_damage: float, durat
 	tier = clampi(attack_tier, 1, 4)
 	speed_px_sec = float(PROJECTILE_SPEED_PX_SEC.get(source_type, 900.0))
 	fired_floor_index = _target_combat_floor()
-	trail_global_points = [global_position]
+	trail_global_points = PackedVector2Array([global_position])
 	z_index = 40
 	add_to_group("tower_projectiles")
 	queue_redraw()
@@ -89,10 +89,18 @@ func _target_combat_floor() -> int:
 
 
 func _record_trail_point(force_append: bool) -> void:
-	if trail_global_points.is_empty() or force_append or trail_global_points.back().distance_to(global_position) >= TRAIL_POINT_INTERVAL_PX:
-		trail_global_points.append(global_position)
-	while trail_global_points.size() > MAX_TRAIL_POINT_COUNT:
-		trail_global_points.pop_front()
+	var should_append := trail_global_points.is_empty() or force_append
+	if not should_append:
+		var last_point_index := trail_global_points.size() - 1
+		should_append = trail_global_points[last_point_index].distance_to(global_position) >= TRAIL_POINT_INTERVAL_PX
+	if not should_append:
+		return
+
+	# 한 프레임에는 한 점만 추가되므로 반복 제거가 필요 없다. Web 빌드는 메인 스레드에서
+	# 실행되며, 배열 축소가 실패하는 예외 상황에서도 무한 반복으로 게임 전체가 멎지 않게 한다.
+	if trail_global_points.size() >= MAX_TRAIL_POINT_COUNT:
+		trail_global_points.remove_at(0)
+	trail_global_points.append(global_position)
 
 
 func _apply_impact() -> void:
@@ -126,13 +134,17 @@ func _draw() -> void:
 func _draw_runtime_trail() -> void:
 	if trail_global_points.size() < 2:
 		return
-	var trail_color := _primary_color()
-	for point_index in range(1, trail_global_points.size()):
+	var local_points := PackedVector2Array()
+	var point_colors := PackedColorArray()
+	var base_color := _primary_color()
+	for point_index in trail_global_points.size():
 		var normalized_age := float(point_index) / float(trail_global_points.size() - 1)
-		trail_color.a = lerpf(0.05, 0.62, normalized_age)
-		var from_local := to_local(trail_global_points[point_index - 1])
-		var to_local_point := to_local(trail_global_points[point_index])
-		draw_line(from_local, to_local_point, trail_color, lerpf(3.0, 15.0, normalized_age), true)
+		var point_color := base_color
+		point_color.a = lerpf(0.05, 0.62, normalized_age)
+		local_points.append(to_local(trail_global_points[point_index]))
+		point_colors.append(point_color)
+	# 여러 draw_line 호출 대신 한 번의 polyline 명령으로 Web 렌더러의 프레임당 작업량을 제한한다.
+	draw_polyline_colors(local_points, point_colors, 9.0, true)
 
 
 # 트레일이 분리된 정사각형 투사체 이미지를 기존 화면 효과보다 약 50% 크게 표시한다.
