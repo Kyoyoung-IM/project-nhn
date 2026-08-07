@@ -111,6 +111,13 @@ func _init() -> void:
 	if not _texture_has_opaque_coverage(MonsterScript.STUN_STATUS_TEXTURE, 0.08):
 		_fail("stun status texture lost its visible interior during alpha processing")
 		return
+	# 공격 시트는 런타임에 설치된 타입·Tier만 지연 로드해야 한다. 20장을 정적 preload하면
+	# Web 메모리가 전투 시작 전부터 크게 늘어나 낮은 메모리 환경에서 전체 캔버스가 멎을 수 있다.
+	for turret_type in TowerVisualAssetsScript.ATTACK_TEXTURE_PATHS:
+		for attack_texture_path in TowerVisualAssetsScript.ATTACK_TEXTURE_PATHS[turret_type]:
+			if ResourceLoader.has_cached(str(attack_texture_path)):
+				_fail("tower attack sheet must not preload before it is requested: %s" % str(attack_texture_path))
+				return
 	# 빠르게 발사되는 원거리 포탑의 트레일은 장시간 갱신해도 고정 길이를 넘지 않아야 한다.
 	# 이 검사는 Web 메인 스레드를 영구 정지시킬 수 있는 반복 제거 회귀를 함께 방지한다.
 	var projectile_trail_probe := TowerProjectileScript.new() as PrototypeTowerProjectile

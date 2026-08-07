@@ -236,6 +236,7 @@ func receive_turret_hit(amount: float, source_type: String, cc_duration: float, 
 
 # 매 프레임 상태 이상 시간을 감소시키고 DOT의 1초 주기 피해를 처리한다.
 func _process_status_effects(delta: float) -> void:
+	var status_visual_was_active := stun_remaining_sec > 0.0 or slow_remaining_sec > 0.0 or dot_remaining_sec > 0.0
 	if stun_remaining_sec > 0.0:
 		stun_remaining_sec = maxf(0.0, stun_remaining_sec - delta)
 	if slow_remaining_sec > 0.0:
@@ -250,7 +251,10 @@ func _process_status_effects(delta: float) -> void:
 			dot_tick_cooldown_sec += 1.0
 		if dot_remaining_sec <= 0.0:
 			dot_tick_damage = 0.0
-	queue_redraw()
+	# 이동은 CanvasItem 변환만 바꾸므로 도형 명령을 다시 만들 필요가 없다. 상태 표시가
+	# 실제로 보이는 동안에만 갱신해 다수 몬스터가 쌓여도 Web 메인 스레드 부하가 증가하지 않게 한다.
+	if status_visual_was_active or stun_remaining_sec > 0.0 or slow_remaining_sec > 0.0 or dot_remaining_sec > 0.0:
+		queue_redraw()
 
 
 # 지상 진입과 층간 하강을 제외하고 터렛이 공격할 수 있는 전투층인지 반환한다.
