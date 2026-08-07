@@ -5,6 +5,7 @@ extends Node2D
 
 # 동적으로 생성하는 오브젝트, 데이터 로더, 한글 UI 폰트를 미리 로드한다.
 const TowerScript := preload("res://scripts/tower.gd")
+const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
 const DatabaseScript := preload("res://scripts/prototype_database.gd")
 const RewardCoinPopupScript := preload("res://scripts/reward_coin_popup.gd")
 const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
@@ -36,6 +37,7 @@ const TOWER_VISUAL_TEST_IDS := {
 	"DOT": ["turretDot1", "turretDot2", "turretDot3", "turretDot4"],
 	"SLOW": ["turretSlow1", "turretSlow2", "turretSlow3", "turretSlow4"],
 	"STUN": ["turretStun1", "turretStun2", "turretStun3", "turretStun4"],
+	"MIXED": ["turretMelee1", "turretDot1", "turretStun1", "turretSlow1", "turretRanged1"],
 }
 # 4개 임시 웨이브 전체를 시간 가속 상태에서 끝낼 수 있도록 헤드리스 테스트 제한을 넉넉히 둔다.
 const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
@@ -252,11 +254,11 @@ func _requested_tower_visual_test_type(user_args: PackedStringArray) -> String:
 	return requested_type if TOWER_VISUAL_TEST_IDS.has(requested_type) else ""
 
 
-# 일반 플레이를 건드리지 않고 B1 첫 네 슬롯에 선택 종류의 Tier 1~4를 나란히 배치한다.
+# 일반 플레이를 건드리지 않고 B1에 선택 종류의 Tier 1~4 또는 혼합 Tier 1 다섯 종을 배치한다.
 func _populate_tower_visual_test() -> void:
 	var turret_ids: Array = TOWER_VISUAL_TEST_IDS[tower_visual_test_type]
-	for tier_index in mini(4, turret_ids.size()):
-		_place_tower(tower_slots[tier_index], false, str(turret_ids[tier_index]))
+	for slot_index in mini(5, turret_ids.size()):
+		_place_tower(tower_slots[slot_index], false, str(turret_ids[slot_index]))
 	_set_battlefield_view_index(1, true)
 
 
@@ -421,7 +423,8 @@ func _begin_shop_card_drag(card_index: int, local_pointer: Vector2) -> bool:
 	dragged_shop_card_index = card_index
 	selected_shop_card = card_index
 	shop_drag_preview = TowerScript.new() as PrototypeTower
-	shop_drag_preview.setup(tower_data, -1)
+	# 드래그 더미는 공격하지 않으므로 대형 공격 시트를 읽지 않는다.
+	shop_drag_preview.setup(tower_data, -1, false)
 	shop_drag_preview.enabled = false
 	shop_drag_preview.set_process(false)
 	shop_drag_preview.position = local_pointer
@@ -1619,11 +1622,21 @@ func _run_shop_drag_automated_test() -> void:
 	var starting_gold := gold
 	var tower_data := database.get_turret_data(shop_turret_ids[card_index])
 	var tower_cost := int(tower_data.get("base_price", -1))
+	var attack_path := TowerVisualAssetsScript.attack_texture_path(str(tower_data.get("type", "RANGED")), int(tower_data.get("tier", 1)))
+	var request_existed_before_preview := TowerVisualAssetsScript.attack_texture_requests.has(attack_path)
+	var preview_started := _begin_shop_card_drag(card_index, target.position)
+	var preview_avoids_attack_sheet := preview_started \
+		and shop_drag_preview != null \
+		and not shop_drag_preview.attack_visual_requested \
+		and not shop_drag_preview.attack_visual_ready \
+		and shop_drag_preview.attack_sprite.texture == null \
+		and TowerVisualAssetsScript.attack_texture_requests.has(attack_path) == request_existed_before_preview
+	_cancel_shop_card_drag()
 	var invalid_drop_rejected := not _purchase_shop_card_to_slot(card_index, null) and gold == starting_gold
 	var valid_drop_purchased := _purchase_shop_card_to_slot(card_index, target)
-	var passed := invalid_drop_rejected and valid_drop_purchased and gold == starting_gold - tower_cost and not target.is_empty() and not shop_card_available[card_index]
+	var passed := preview_avoids_attack_sheet and invalid_drop_rejected and valid_drop_purchased and gold == starting_gold - tower_cost and not target.is_empty() and not shop_card_available[card_index]
 	if passed:
-		print("Automated shop drag test passed: PAY_ON_VALID_DROP")
+		print("Automated shop drag test passed: LIGHTWEIGHT_PREVIEW_PAY_ON_VALID_DROP")
 	else:
 		push_error("Automated shop drag test failed.")
 	Engine.time_scale = 1.0

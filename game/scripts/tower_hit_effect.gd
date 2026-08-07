@@ -22,17 +22,19 @@ func setup(attack_type: String, attack_tier: int) -> void:
 	remaining_sec = total_duration_sec
 	z_index = 45
 	add_to_group("tower_hit_effects")
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 func _process(delta: float) -> void:
 	remaining_sec = maxf(0.0, remaining_sec - delta)
-	queue_redraw()
+	_queue_effect_redraw()
 	if remaining_sec <= 0.0:
 		queue_free()
 
 
 func _draw() -> void:
+	if OS.has_feature("web"):
+		return
 	var progress := 1.0 - remaining_sec / total_duration_sec
 	if effect_type == "STUN":
 		_draw_stun_effect(progress)
@@ -50,7 +52,12 @@ func _draw_melee_slashes(progress: float) -> void:
 		Rect2(-draw_size * 0.5, draw_size),
 		false,
 		Color(1.0, 1.0, 1.0, alpha)
-	)
+		)
+
+
+func _queue_effect_redraw() -> void:
+	if not OS.has_feature("web"):
+		queue_redraw()
 
 
 # 작은 먹구름부터 지면 충돌점까지 이어지는 생성 낙뢰로 기절 타격을 표시한다.

@@ -44,13 +44,13 @@ func setup(target_node: Node2D, attack_type: String, attack_damage: float, durat
 	trail_global_points = PackedVector2Array([global_position])
 	z_index = 40
 	add_to_group("tower_projectiles")
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 func _process(delta: float) -> void:
 	if impacted:
 		impact_remaining_sec = maxf(0.0, impact_remaining_sec - delta)
-		queue_redraw()
+		_queue_effect_redraw()
 		if impact_remaining_sec <= 0.0:
 			queue_free()
 		return
@@ -72,7 +72,7 @@ func _process(delta: float) -> void:
 	global_position += travel_direction * speed_px_sec * delta
 	rotation = travel_direction.angle()
 	_record_trail_point(false)
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 # 층 전환이 시작된 표적에는 기존 층에서 발사된 투사체가 따라가지 않는다.
@@ -111,10 +111,12 @@ func _apply_impact() -> void:
 	rotation = 0.0
 	if _target_remains_on_fired_floor() and target.has_method("receive_turret_hit"):
 		target.call("receive_turret_hit", damage, source_type, cc_duration, cc_value)
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 func _draw() -> void:
+	if OS.has_feature("web"):
+		return
 	if impacted:
 		var progress := 1.0 - impact_remaining_sec / IMPACT_EFFECT_SEC
 		var burst_color := _primary_color()
@@ -128,6 +130,11 @@ func _draw() -> void:
 	_draw_runtime_trail()
 	var projectile_size := _projectile_draw_size() * (1.0 + float(tier - 1) * 0.06)
 	draw_texture_rect(_projectile_texture(), Rect2(-projectile_size * 0.5, projectile_size), false)
+
+
+func _queue_effect_redraw() -> void:
+	if not OS.has_feature("web"):
+		queue_redraw()
 
 
 # 오래된 점은 가늘고 투명하게, 현재 투사체에 가까울수록 굵고 선명하게 이어 실제 이동 궤적을 만든다.

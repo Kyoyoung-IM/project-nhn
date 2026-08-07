@@ -79,6 +79,8 @@ const ATTACK_TEXTURE_PATHS := {
 # Web 빌드에서 1024px 공격 시트 20장을 시작 시 한꺼번에 디코딩하면 전투 전부터
 # 메모리를 크게 점유한다. 실제로 배치된 타입·Tier의 시트만 처음 필요할 때 로드하고 재사용한다.
 static var attack_texture_cache: Dictionary = {}
+static var attack_texture_requests: Dictionary = {}
+static var last_attack_texture_load_frame: int = -1
 
 # 정지 이미지는 투명 여백 없이 잘려 있으므로 전체 캔버스를 사용한다.
 const BODY_VISIBLE_BOUNDS := {
@@ -111,11 +113,45 @@ static func body_visible_bounds(turret_type: String, tier: int) -> Rect2:
 
 
 static func attack_texture(turret_type: String, tier: int) -> Texture2D:
-	var paths: Array = ATTACK_TEXTURE_PATHS.get(turret_type, ATTACK_TEXTURE_PATHS["RANGED"])
-	var texture_path := str(paths[clampi(tier - 1, 0, paths.size() - 1)])
+	var texture_path := attack_texture_path(turret_type, tier)
 	if not attack_texture_cache.has(texture_path):
 		attack_texture_cache[texture_path] = load(texture_path) as Texture2D
+		attack_texture_requests.erase(texture_path)
 	return attack_texture_cache[texture_path] as Texture2D
+
+
+static func attack_texture_path(turret_type: String, tier: int) -> String:
+	var paths: Array = ATTACK_TEXTURE_PATHS.get(turret_type, ATTACK_TEXTURE_PATHS["RANGED"])
+	return str(paths[clampi(tier - 1, 0, paths.size() - 1)])
+
+
+# 공격 시트가 필요함을 큐에 기록한다. 단일 스레드 Web에서는 ResourceLoader의 threaded
+# API가 여러 타입 동시 요청 중 WASM null-function 크래시를 낼 수 있어 사용하지 않는다.
+static func request_attack_texture(turret_type: String, tier: int) -> void:
+	var texture_path := attack_texture_path(turret_type, tier)
+	if attack_texture_cache.has(texture_path) or attack_texture_requests.has(texture_path):
+		return
+	attack_texture_requests[texture_path] = true
+
+
+# 한 프레임에 최대 한 장만 동기 로드해 큰 공격 시트 여러 장이 같은 입력 프레임을 막지
+# 않게 한다. 나머지 타워는 다음 프레임까지 정지 본체를 유지한다.
+static func try_get_attack_texture(turret_type: String, tier: int) -> Texture2D:
+	var texture_path := attack_texture_path(turret_type, tier)
+	if attack_texture_cache.has(texture_path):
+		return attack_texture_cache[texture_path] as Texture2D
+	if not attack_texture_requests.has(texture_path):
+		request_attack_texture(turret_type, tier)
+		return null
+	var current_frame := Engine.get_process_frames()
+	if current_frame == last_attack_texture_load_frame:
+		return null
+	last_attack_texture_load_frame = current_frame
+	var texture := load(texture_path) as Texture2D
+	attack_texture_requests.erase(texture_path)
+	if texture != null:
+		attack_texture_cache[texture_path] = texture
+	return texture
 
 
 static func attack_first_frame_visible_bounds(turret_type: String, tier: int) -> Rect2:

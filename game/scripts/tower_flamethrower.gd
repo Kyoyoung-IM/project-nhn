@@ -32,7 +32,7 @@ func setup(source_node: Node2D, target_node: Node2D, attack_damage: float, durat
 	z_index = 40
 	add_to_group("tower_flamethrowers")
 	_update_transform_from_combatants()
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 func _process(delta: float) -> void:
@@ -49,7 +49,7 @@ func _process(delta: float) -> void:
 	if elapsed_sec >= ATTACK_DURATION_SEC:
 		queue_free()
 		return
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 func _update_transform_from_combatants() -> void:
@@ -76,6 +76,8 @@ func _target_combat_floor() -> int:
 
 
 func _draw() -> void:
+	if OS.has_feature("web"):
+		return
 	var reach_progress := clampf(elapsed_sec / CONTACT_TIME_SEC, 0.0, 1.0)
 	# Keep the completed flame readable briefly before fading. At high game speed
 	# the previous immediate fade could disappear between rendered frames.
@@ -89,3 +91,8 @@ func _draw() -> void:
 		false,
 		Color(1.0, 1.0, 1.0, flame_alpha)
 	)
+
+
+func _queue_effect_redraw() -> void:
+	if not OS.has_feature("web"):
+		queue_redraw()
