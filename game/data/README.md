@@ -17,7 +17,7 @@
 - 몬스터: `displayName`, `colorHex`
 - Define: `shopCardCount`, `rngSeed` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용)
 
-2026-08-05 읽기 전용 원본의 다섯 시트(`define`, `turret`, `monster`, `spawntable`, `shopGacha`)를 다시 대조했다. 원본 행 순서를 유지해 변경된 터렛 피해·가격·CC 수치와 몬스터 체력·이동 속도를 반영했고, `wave4`의 `boss1` 수를 4기에서 1기로 갱신했다. `totalWaveCount=4`, `rerollPlusCost=5`, `spawnOrderInterval=0.5`, 고유한 `wave3.spawnOrder`와 상점 확률은 유지된다.
+2026-08-07 읽기 전용 원본의 다섯 시트(`define`, `turret`, `monster`, `spawntable`, `shopGacha`)를 다시 대조했다. 원본 행 순서를 유지해 변경된 터렛 피해·공격 주기·가격, 몬스터 체력·이동 속도·보상 골드와 10행으로 재구성된 SpawnTable을 반영했다. `Define`, `ShopGacha`, `totalWaveCount=4`와 `wave4`의 `boss1` 1기 구성은 유지된다.
 
 `failAllowedMonster`는 원본 컬럼 호환을 위해 보존하지만 현재 게임 오버 판정에는 사용하지 않는다.
 
