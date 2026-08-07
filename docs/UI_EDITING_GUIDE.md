@@ -21,12 +21,20 @@
 ## 일시정지 창 편집 순서
 
 1. Godot에서 `res://scenes/ui/options_menu.tscn`을 연다.
-2. `PanelArt`에서 중앙 판넬 이미지의 위치와 크기를 조절한다.
-3. `TitleLabel`에서 제목의 위치·폰트·색을 조절한다.
-4. `ContinueButton`, `TestModeButton`, `ResetButton`, `QuitButton`에서 각 입력 영역과 문구 스타일을 조절한다.
-5. 전체 화면 어두움은 `Dimmer`의 `Color`와 알파값으로 조절한다.
+2. `PanelArt`에서 `frame_2.png` 중앙 판넬의 위치·크기와 9-패치 여백을 조절한다.
+3. `TitleRibbon`과 `TitleLabel`에서 리본 이미지와 제목의 위치·폰트·색을 조절한다.
+4. `ContinueBackplate`, `TestModeBackplate`, `ResetBackplate`, `QuitBackplate`에서 이미지 버튼 배경을, 같은 이름의 `Button` 노드에서 입력 영역과 문구 스타일을 조절한다.
+5. 전체 화면 어두움은 `Dimmer`의 `dimmed.png` 텍스처와 모듈레이션으로 조절한다.
 
 버튼 이름과 노드 계층은 GDScript의 기능 연결 기준이므로 이름을 변경하거나 삭제하지 않는다. 위치, 크기, 텍스트 기본값, 테마 속성 및 이미지 교체는 자유롭게 편집할 수 있다.
+
+## 일반 HUD·상점 이미지
+
+- `game_hud.tscn`의 `DayFrame`·`NightFrame`은 `top_1.png`·`top_2.png`, `ActionBackplate`·`SpeedBackplate`·`PauseBackplate`는 `btn_1.png`·`btn_2.png`·`btn_4.png`를 사용한다.
+- 진행·일시정지·새로고침 픽토그램은 각각 `icon3.png`·`icon2.png`·`icon1.png`이며, 골드와 카드 가격은 `coin.png`를 공통 사용한다.
+- `shop_card.tscn`의 `Frame`은 `frame_1.png`, `PriceRow`는 금화와 가격의 합산 폭을 중앙 정렬하고, 구매 완료·호버 상태는 `dimmed.png`를 사용한다.
+- 늘어나는 프레임과 캡슐은 모서리 형태를 보존하도록 `NinePatchRect`의 패치 여백을 함께 조절한다.
+- 테스트 옵션·데이터테이블 컨트롤과 `game_clear_overlay.tscn`·`game_over_overlay.tscn`은 이번 이미지 교체 대상이 아니다.
 
 ## 게임 클리어 화면 편집 순서
 

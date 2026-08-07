@@ -1,10 +1,11 @@
 class_name PrototypeRewardCoinPopup
 extends Node2D
 
-# 몬스터가 쓰러진 위치에서 짧게 튀어 오르고 사라지는 코드 기반 보상 동전이다.
+# 몬스터가 쓰러진 위치에서 새 UI 금화 이미지가 짧게 튀어 오르고 사라진다.
 
 const LIFE_TIME_SEC := 0.72
 const RISE_DISTANCE_PX := 52.0
+const COIN_TEXTURE := preload("res://assets/ui/images/coin.png")
 
 var elapsed_sec: float = 0.0
 var origin_position := Vector2.ZERO
@@ -33,10 +34,6 @@ func _process(delta: float) -> void:
 		queue_free()
 
 
-# 작은 금화가 화면 크기와 관계없이 읽히도록 외곽선, 금색 면과 반사광만 단순하게 그린다.
+# 상점과 같은 금화 이미지를 사용해 재화 피드백의 모양을 통일한다.
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 13.0, Color("5c3a16"))
-	draw_circle(Vector2.ZERO, 10.0, Color("f6c653"))
-	draw_circle(Vector2.ZERO, 6.5, Color("d99b2f"))
-	draw_line(Vector2(-2.0, -6.0), Vector2(-5.0, 1.0), Color("fff2a6"), 2.5)
-	draw_arc(Vector2.ZERO, 8.0, -PI * 0.35, PI * 0.25, 10, Color("ffe98a"), 2.0)
+	draw_texture_rect(COIN_TEXTURE, Rect2(-18.0, -18.0, 36.0, 36.0), false)
