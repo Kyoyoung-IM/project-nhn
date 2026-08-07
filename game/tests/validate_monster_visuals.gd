@@ -12,6 +12,7 @@ func _init() -> void:
 		var bounds: Rect2 = MonsterScript._visible_bounds_for_type(monster_type)
 		var hit_texture: Texture2D = MonsterScript._hit_texture_for_type(monster_type)
 		var hit_bounds: Rect2 = MonsterScript._hit_visible_bounds_for_type(monster_type)
+		var death_texture: Texture2D = MonsterScript._death_texture_for_type(monster_type)
 		if texture == null or bounds.size.x <= 0.0 or bounds.size.y <= 0.0 \
 				or bounds.end.x > texture.get_width() or bounds.end.y > texture.get_height():
 			_fail("invalid monster texture bounds: %s" % monster_type)
@@ -19,6 +20,11 @@ func _init() -> void:
 		if hit_texture == null or hit_bounds.size.x <= 0.0 or hit_bounds.size.y <= 0.0 \
 				or hit_bounds.end.x > hit_texture.get_width() or hit_bounds.end.y > hit_texture.get_height():
 			_fail("invalid monster hit texture bounds: %s" % monster_type)
+			return
+		if death_texture == null \
+				or death_texture.get_width() != int(MonsterScript.DEATH_FRAME_SIZE.x) \
+				or death_texture.get_height() != int(MonsterScript.DEATH_FRAME_SIZE.y) * MonsterScript.DEATH_FRAME_COUNT:
+			_fail("invalid monster death sprite sheet: %s" % monster_type)
 			return
 		var uniform_scale: float = MonsterScript._texture_scale_for_type(monster_type)
 		var visible_size := bounds.size * uniform_scale
@@ -64,6 +70,20 @@ func _init() -> void:
 			monster.free()
 			_fail("monster hit visual must start hidden and use one uniformly scaled Sprite2D: %s" % monster_type)
 			return
+		if monster.death_sprite == null or monster.death_sprite.texture != death_texture \
+				or monster.death_sprite.visible \
+				or not monster.death_sprite.region_enabled \
+				or not is_equal_approx(monster.death_sprite.scale.x, monster.death_sprite.scale.y):
+			monster.free()
+			_fail("monster death visual must start hidden and use one uniformly scaled sprite sheet: %s" % monster_type)
+			return
+		var death_local_bottom := monster.death_sprite.position.y \
+			+ (MonsterScript._death_floor_y_for_type(monster_type) - MonsterScript.DEATH_FRAME_SIZE.y * 0.5) \
+			* monster.death_sprite.scale.y
+		if not is_equal_approx(death_local_bottom * MonsterScript.MONSTER_VISUAL_SCALE, monster.body_bottom_offset_y):
+			monster.free()
+			_fail("monster death visual was not grounded: %s" % monster_type)
+			return
 		var hit_local_bottom := monster.hit_sprite.position.y \
 				+ (hit_bounds.end.y - hit_texture.get_height() * 0.5) * monster.hit_sprite.scale.y
 		if not is_equal_approx(hit_local_bottom * MonsterScript.MONSTER_VISUAL_SCALE, monster.body_bottom_offset_y):
@@ -93,7 +113,32 @@ func _init() -> void:
 			monster.free()
 			_fail("damage-over-time must not show the monster hit visual: %s" % monster_type)
 			return
-		monster.free()
+
+		var defeated_signal_count := [0]
+		monster.defeated.connect(func(_defeated_monster: PrototypeMonster) -> void: defeated_signal_count[0] += 1)
+		monster.take_damage(monster.hp)
+		if monster.move_state != PrototypeMonster.MoveState.DEAD \
+				or defeated_signal_count[0] != 1 \
+				or monster.body_sprite.visible \
+				or monster.hit_sprite.visible \
+				or not monster.death_sprite.visible \
+				or monster.is_queued_for_deletion():
+			monster.free()
+			_fail("fatal damage did not start the delayed death animation: %s" % monster_type)
+			return
+		monster._process_death_animation(MonsterScript.DEATH_FRAME_DURATION_SEC * 3.1)
+		if not is_equal_approx(
+			monster.death_sprite.region_rect.position.y,
+			MonsterScript.DEATH_FRAME_SIZE.y * 3.0
+		):
+			monster.free()
+			_fail("monster death animation did not advance frames: %s" % monster_type)
+			return
+		monster._process_death_animation(MonsterScript.DEATH_ANIMATION_DURATION_SEC)
+		if not monster.is_queued_for_deletion():
+			monster.free()
+			_fail("monster was not removed after the death animation: %s" % monster_type)
+			return
 
 	print("Monster visual validation passed.")
 	quit(0)

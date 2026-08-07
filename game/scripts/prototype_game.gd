@@ -1802,6 +1802,14 @@ func _run_camera_navigation_automated_test() -> void:
 		and is_equal_approx(battlefield_background.position.x, BATTLEFIELD_CAMERA_HORIZONTAL_INSET) \
 		and is_equal_approx(battlefield_background.horizontal_extension_px * BATTLEFIELD_CAMERA_SCALE, BATTLEFIELD_CAMERA_HORIZONTAL_INSET)
 	var reference_frame_clipped := battlefield_background_clip.clip_contents and battlefield_background_clip.size == REFERENCE_VIEWPORT_SIZE
+	var route_points := battlefield_layout.get_monster_path_points()
+	var visible_world_left := -BATTLEFIELD_CAMERA_HORIZONTAL_INSET / BATTLEFIELD_CAMERA_SCALE
+	var visible_world_right := (REFERENCE_VIEWPORT_SIZE.x - BATTLEFIELD_CAMERA_HORIZONTAL_INSET) / BATTLEFIELD_CAMERA_SCALE
+	var route_stays_offscreen_at_transitions := route_points[0].x < visible_world_left or route_points[0].x > visible_world_right
+	for route_index in [2, 3, 4, 5, 6, 7, 8]:
+		route_stays_offscreen_at_transitions = route_stays_offscreen_at_transitions and (
+			route_points[route_index].x < visible_world_left or route_points[route_index].x > visible_world_right
+		)
 	# 두 층 화면은 위층 오브젝트 공간을 넓히고 아래층 접촉선은 상점 바로 위에 유지한다.
 	var two_floor_clearance_valid := true
 	for view_index in range(1, battlefield_camera_y.size()):
@@ -1824,15 +1832,33 @@ func _run_camera_navigation_automated_test() -> void:
 	var scaled_spawn_bottom := spawn_test_monster.position.y + spawn_test_monster.body_bottom_offset_y * spawn_reveal_ratio
 	var grounded_spawn_valid := is_equal_approx(scaled_spawn_bottom, battlefield_layout.get_ground_lane_y())
 	spawn_test_monster.free()
+	var tower_grounding_valid := true
+	var first_floor_slots: PackedVector2Array = battlefield_layout.get_tower_slot_positions()[0]
+	var first_floor_lane := battlefield_layout.get_combat_lane_y(0)
+	for turret_type in ["MELEE", "RANGED", "DOT", "SLOW", "STUN"]:
+		var expected_tower_bottom_y := first_floor_lane - PrototypeTower.STUN_HOVER_HEIGHT if turret_type == "STUN" else first_floor_lane
+		var actual_bottom_y := first_floor_slots[0].y + PrototypeTower.body_target_bottom_y(turret_type)
+		tower_grounding_valid = tower_grounding_valid and is_equal_approx(actual_bottom_y, expected_tower_bottom_y)
 	var editable_layout_valid := battlefield_layout.validate_layout().is_empty() \
 		and movement_path[0].is_equal_approx(battlefield_layout.get_monster_path_points()[0]) \
 		and movement_path[-1].is_equal_approx(battlefield_layout.get_monster_path_points()[-1]) \
 		and _tower_slot_layout_is_valid()
-	var passed := middle_view_valid and bottom_clamped and top_clamped and uniform_scale_valid and reference_frame_clipped and two_floor_clearance_valid and grounded_spawn_valid and editable_layout_valid
+	var passed := middle_view_valid and bottom_clamped and top_clamped and uniform_scale_valid and reference_frame_clipped and route_stays_offscreen_at_transitions and two_floor_clearance_valid and grounded_spawn_valid and tower_grounding_valid and editable_layout_valid
 	if passed:
 		print("Automated camera navigation test passed: FOUR_STOPS_UNIFORM_90_PERCENT_SCALE")
 	else:
-		push_error("Automated camera navigation test failed.")
+		push_error("Automated camera navigation test failed: %s" % {
+			"middle_view": middle_view_valid,
+			"bottom_clamped": bottom_clamped,
+			"top_clamped": top_clamped,
+			"uniform_scale": uniform_scale_valid,
+			"reference_clip": reference_frame_clipped,
+			"offscreen_route": route_stays_offscreen_at_transitions,
+			"two_floor_clearance": two_floor_clearance_valid,
+			"spawn_grounded": grounded_spawn_valid,
+			"tower_grounding": tower_grounding_valid,
+			"editable_layout": editable_layout_valid,
+		})
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 

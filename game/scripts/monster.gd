@@ -20,6 +20,10 @@ const REGULAR_VISIBLE_AREA_SIDE := 132.0
 const BOSS_VISIBLE_HEIGHT := 440.0
 const HIT_VISUAL_DURATION_SEC := 0.25
 const HIT_VISUAL_STACK_SEC := 0.1
+const DEATH_FRAME_SIZE := Vector2(512.0, 512.0)
+const DEATH_FRAME_COUNT := 5
+const DEATH_FRAME_DURATION_SEC := 0.12
+const DEATH_ANIMATION_DURATION_SEC := DEATH_FRAME_COUNT * DEATH_FRAME_DURATION_SEC
 
 const MONSTER_TEXTURES := {
 	"NORMAL": preload("res://assets/enemy/normal1.png"),
@@ -33,6 +37,22 @@ const MONSTER_HIT_TEXTURES := {
 	"SPEED": preload("res://assets/enemy/hit animation/spped1_hit.png"),
 	"TANK": preload("res://assets/enemy/hit animation/tank1_hit.png"),
 	"BOSS": preload("res://assets/enemy/hit animation/boss1_hit.png"),
+}
+
+const MONSTER_DEATH_TEXTURES := {
+	"NORMAL": preload("res://assets/enemy/death animation/normal1_death.png"),
+	"SPEED": preload("res://assets/enemy/death animation/speed1_death.png"),
+	"TANK": preload("res://assets/enemy/death animation/tank_death.png"),
+	"BOSS": preload("res://assets/enemy/death animation/boss1_death.png"),
+}
+
+# 사망 시트의 다섯 프레임에서 가장 낮은 불투명 픽셀 위치다. 모든 프레임에 같은
+# 접지선을 적용해 쓰러지는 자세가 바뀌어도 발판 위에서 위아래로 흔들리지 않게 한다.
+const MONSTER_DEATH_FLOOR_Y := {
+	"NORMAL": 362.0,
+	"SPEED": 444.0,
+	"TANK": 416.0,
+	"BOSS": 492.0,
 }
 
 # 512px 원본 안에서 알파가 있는 실제 그림 경계다. 캔버스 여백을 제외한 이 영역을
@@ -64,7 +84,9 @@ var reward_gold: int = 0
 var body_visible_world_size := Vector2.ZERO
 var body_sprite: Sprite2D
 var hit_sprite: Sprite2D
+var death_sprite: Sprite2D
 var hit_visual_remaining_sec: float = 0.0
+var death_animation_elapsed_sec: float = 0.0
 # 처음 피해를 받기 전에는 체력 바를 숨기고, 첫 유효 피해부터 남은 전투 동안 표시한다.
 var health_bar_visible: bool = false
 var health_bar: ProgressBar
@@ -110,6 +132,7 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	body_bottom_offset_y = _body_bottom_offset_for_type(monster_type)
 	_configure_body_sprite()
 	_configure_hit_sprite()
+	_configure_death_sprite()
 	health_bar_visible = false
 	_configure_health_bar_layout()
 	_update_health_bar()
@@ -120,7 +143,9 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	dot_tick_damage = 0.0
 	dot_tick_cooldown_sec = 0.0
 	hit_visual_remaining_sec = 0.0
+	death_animation_elapsed_sec = 0.0
 	_set_hit_visual_active(false)
+	_set_death_visual_active(false)
 	path_points.clear()
 	for floor_contact_point in movement_path:
 		path_points.append(center_position_for_floor_contact(floor_contact_point))
@@ -162,6 +187,14 @@ static func _hit_texture_for_type(type_value: String) -> Texture2D:
 
 static func _hit_visible_bounds_for_type(type_value: String) -> Rect2:
 	return MONSTER_HIT_VISIBLE_BOUNDS.get(type_value, MONSTER_HIT_VISIBLE_BOUNDS["NORMAL"]) as Rect2
+
+
+static func _death_texture_for_type(type_value: String) -> Texture2D:
+	return MONSTER_DEATH_TEXTURES.get(type_value, MONSTER_DEATH_TEXTURES["NORMAL"]) as Texture2D
+
+
+static func _death_floor_y_for_type(type_value: String) -> float:
+	return float(MONSTER_DEATH_FLOOR_Y.get(type_value, MONSTER_DEATH_FLOOR_Y["NORMAL"]))
 
 
 # 일반형은 Tier 1 타워와 같은 육안 면적, 보스는 한 층보다 약간 작은 높이에 맞춘다.
@@ -220,6 +253,28 @@ func _configure_hit_sprite() -> void:
 	hit_sprite.visible = false
 
 
+# 사망 이미지는 512×512 프레임 다섯 장이 세로로 이어진 시트다. 본체와 같은 픽셀
+# 배율 및 공통 접지선을 사용하고 region_rect만 바꿔 추가 텍스처 생성 없이 재생한다.
+func _configure_death_sprite() -> void:
+	if death_sprite == null:
+		death_sprite = Sprite2D.new()
+		death_sprite.name = "DeathSprite"
+		death_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		death_sprite.z_index = -1
+		death_sprite.region_enabled = true
+		add_child(death_sprite)
+	var local_texture_scale := _texture_scale_for_type(monster_type) / MONSTER_VISUAL_SCALE
+	var local_body_bottom := body_bottom_offset_y / MONSTER_VISUAL_SCALE
+	death_sprite.texture = _death_texture_for_type(monster_type)
+	death_sprite.region_rect = Rect2(Vector2.ZERO, DEATH_FRAME_SIZE)
+	death_sprite.position = Vector2(
+		0.0,
+		local_body_bottom - (_death_floor_y_for_type(monster_type) - DEATH_FRAME_SIZE.y * 0.5) * local_texture_scale
+	)
+	death_sprite.scale = Vector2.ONE * local_texture_scale
+	death_sprite.visible = false
+
+
 # 스프라이트의 실제 최하단을 중심점 기준으로 반환해 종류별 뜨거나 파묻히는 차이를 없앤다.
 static func _body_bottom_offset_for_type(type_value: String) -> float:
 	return _visible_world_size_for_type(type_value).y * 0.5
@@ -232,10 +287,13 @@ func center_position_for_floor_contact(floor_contact_position: Vector2) -> Vecto
 # 상태 이상, 등장 연출과 웨이포인트 이동을 우선순위대로 처리한다.
 func _process(delta: float) -> void:
 	visual_elapsed_sec += delta
+	if move_state == MoveState.DEAD:
+		_process_death_animation(delta)
+		return
 	_process_status_effects(delta)
-	_process_hit_visual(delta)
 	if move_state == MoveState.DEAD:
 		return
+	_process_hit_visual(delta)
 	if move_state == MoveState.SPAWNING:
 		spawn_animation_sec -= delta
 		var reveal := clampf(1.0 - spawn_animation_sec / 0.24, 0.0, 1.0)
@@ -307,7 +365,8 @@ func _process_floor_transfer(delta: float) -> void:
 		move_state = MoveState.WALKING
 
 
-# 즉시 피해를 적용하고 체력이 0이 되면 보상 처리를 위한 처치 신호를 보낸다.
+# 즉시 피해를 적용하고 체력이 0이 되면 보상 처리를 위한 처치 신호를 보낸 뒤
+# 사망 애니메이션을 시작한다. 실제 노드 제거는 마지막 프레임 재생 후 처리한다.
 func take_damage(amount: float, show_hit_visual: bool = true) -> void:
 	if move_state == MoveState.DEAD or move_state == MoveState.EXIT:
 		return
@@ -320,8 +379,8 @@ func take_damage(amount: float, show_hit_visual: bool = true) -> void:
 	_queue_status_redraw()
 	if hp <= 0.0:
 		move_state = MoveState.DEAD
+		_begin_death_animation()
 		defeated.emit(self)
-		queue_free()
 
 
 # 터렛 타입에 따라 기본 피해와 DOT/STUN/SLOW를 적용한다.
@@ -390,6 +449,51 @@ func _set_hit_visual_active(active: bool) -> void:
 		body_sprite.visible = not active
 	if hit_sprite != null:
 		hit_sprite.visible = active
+
+
+func _begin_death_animation() -> void:
+	death_animation_elapsed_sec = 0.0
+	hit_visual_remaining_sec = 0.0
+	stun_remaining_sec = 0.0
+	slow_remaining_sec = 0.0
+	dot_remaining_sec = 0.0
+	dot_tick_damage = 0.0
+	health_bar_visible = false
+	_update_health_bar()
+	_set_hit_visual_active(false)
+	_set_death_visual_active(true)
+	_set_death_animation_frame(0)
+	_queue_status_redraw()
+
+
+func _process_death_animation(delta: float) -> void:
+	death_animation_elapsed_sec += delta
+	if death_animation_elapsed_sec >= DEATH_ANIMATION_DURATION_SEC:
+		queue_free()
+		return
+	var frame_index := mini(
+		int(death_animation_elapsed_sec / DEATH_FRAME_DURATION_SEC),
+		DEATH_FRAME_COUNT - 1
+	)
+	_set_death_animation_frame(frame_index)
+
+
+func _set_death_animation_frame(frame_index: int) -> void:
+	if death_sprite == null:
+		return
+	death_sprite.region_rect = Rect2(
+		Vector2(0.0, float(frame_index) * DEATH_FRAME_SIZE.y),
+		DEATH_FRAME_SIZE
+	)
+
+
+func _set_death_visual_active(active: bool) -> void:
+	if body_sprite != null:
+		body_sprite.visible = not active
+	if hit_sprite != null:
+		hit_sprite.visible = false
+	if death_sprite != null:
+		death_sprite.visible = active
 
 
 # Web에서는 피해로 죽는 프레임에 redraw 예약과 queue_free가 겹치면 해제된

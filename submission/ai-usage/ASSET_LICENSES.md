@@ -10,9 +10,19 @@
 - 변경 사항: 원본 픽셀은 수정하지 않고 런타임에서 종횡비를 유지한 균일 확대·축소만 적용함
 - 출처·라이선스: 사용자 제공, 세부 출처와 배포 이용 조건 미제공. 외부 공개·제출 전에 팀이 사용 권한을 확인해야 함
 
+## Enemy Robot Death Animation Sprite Sheets
+
+- 종류: 일반·속도·탱크·보스 몬스터용 5프레임 사망 애니메이션 시트 4종
+- 제공자: 프로젝트 사용자
+- 제공일: 2026-08-07
+- 저장 위치: `game/assets/enemy/death animation/normal1_death.png`, `game/assets/enemy/death animation/speed1_death.png`, `game/assets/enemy/death animation/tank_death.png`, `game/assets/enemy/death animation/boss1_death.png`
+- 사용 범위: 게임 런타임의 몬스터 사망 연출
+- 변경 사항: 원본 픽셀은 수정하지 않고 런타임에서 512×512 프레임 단위로 분할해 종횡비를 유지한 균일 배율로 재생함
+- 출처·라이선스: 사용자 제공, 세부 출처와 배포 이용 조건 미제공. 외부 공개·제출 전에 팀이 사용 권한을 확인해야 함
+
 ## 2026-08-07 런타임 에셋 정리
 
-- 현재 게임에는 배경 v8, 전투 VFX v2, UI의 최종 버전과 새 타워 캐릭터·공격 스프라이트만 남긴다.
+- 현재 게임에는 사용자 제공 `bg.png`·`bg_night.png`, 전투 VFX v2, UI의 최종 버전과 새 타워 캐릭터·공격 스프라이트를 사용한다.
 - 아래 제작 기록 중 배경 v1~v7, 전투 VFX v1, 기존 타워 본체·분리 이펙트 v1, `gold_ore_drill_v1.png`, `game_clear_title_v1.png`, `speed_capsule_v1.png`, `pause_button_v1.png`의 저장 위치는 제작 당시 경로다. 해당 런타임 파일과 `.import`는 미참조 구버전 정리로 삭제했으며 Git 이력에서 복구할 수 있다.
 - 제출용 원본 생성 파일과 제작·라이선스 기록은 재현성과 출처 증빙을 위해 유지한다.
 
@@ -212,6 +222,16 @@
 - 구도 보존: 원본과 같은 `887×1774` 크기를 유지하고 지상·B1·B2·B3·창고의 플랫폼 및 오브젝트 구도를 변경하지 않도록 지시함. 런타임에서도 낮·밤에 동일 좌표와 동일 배율을 적용함
 - 참고 이미지 출처·라이선스: 프로젝트 자체 생성 v7 낮·밤 배경만 직접 편집 원본으로 사용함
 - 제약: 해·달 이외의 지형·플랫폼·입구·가로등·광석·종유석·소품을 변경하지 않고 캐릭터·UI·문자·워터마크를 포함하지 않도록 지시함
+
+## Current Day/Night Forest Mine Background
+
+- 종류: 지상 숲과 지하 3개 전투층을 포함한 현재 낮·밤 세로형 배경 2종
+- 제공자: 프로젝트 사용자
+- 제공일: 2026-08-07
+- 저장 위치: `game/assets/backgrounds/bg.png`, `game/assets/backgrounds/bg_night.png`
+- 사용 범위: 현재 게임 런타임의 낮·밤 전장 배경
+- 변경 사항: 원본 픽셀은 수정하지 않고 두 `887×1774` 이미지를 같은 좌표와 가로·세로 균일 배율로 렌더링함
+- 출처·라이선스: 사용자 제공, 세부 출처와 배포 이용 조건 미제공. 외부 공개·제출 전에 팀이 사용 권한을 확인해야 함
 
 ## Combat Projectile, Flamethrower and Stun VFX v2
 
