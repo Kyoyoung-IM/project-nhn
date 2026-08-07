@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-07 15:11 KST
+- 마지막 갱신: 2026-08-07 15:53 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `ebf1d0b` (`Merge pull request #34 from Kyoyoung-IM/agent/remove-tower-selling-integration-20260807`)
+- 확인된 기준 커밋: `5fad2a8` (`Merge pull request #37 from Kyoyoung-IM/agent/web-release-main-20260807`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -24,11 +24,11 @@
 | 작업 영역 | 상태 | 최근 결과 | 다음 확인 |
 |---|---|---|---|
 | UI | 완료 | PR #29·#30 merge commit 병합, 주황색 `GAME CLEAR!` 타이틀과 Web Release 반영. PR #32 복구 배포 후 공개 PCK·해시 일치 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
-| 타워 판매 제거 | 완료 | PR #34를 merge commit으로 병합, 판매 UI·환급·임시 데이터 제거 및 Godot 회귀 테스트·Web Release 재검증. Pages 실행 `31153010910` 성공 | 실제 플레이 시 판매 UI·환급이 없는지 최종 확인 |
-| 버그 수정 | 완료 | 이슈 #16, PR #22 merge commit 병합, 가격 테스트·로컬 Web 상태 전환 및 최신 Pages PCK 반영 확인 | 새 버그 접수 시 CLI 인증 1회 확인 후 이슈 생성 |
+| 타워 판매 제거 | 완료 | PR #34 merge commit 병합 후 PR #37 Web Release로 최신 `main`과 함께 Pages 배포·공개 화면 로드 확인 | 새 판매 관련 요구가 생기면 기획 문서부터 갱신 |
+| 버그 수정 | 완료 | PR #36 원거리 투사체 정지 방지 수정과 PR #37 Web Release 병합·배포 완료 | 새 버그 접수 시 CLI 인증 1회 확인 후 이슈 생성 |
 | 데이터테이블 | 최신 | 2026-08-06 17:30 KST, 원본 5개 시트와 로컬 JSON 차이 0건 | 다음 최신화 요청 시 읽기 전용 비교 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
-| Pages 배포 | 완료 | PR #34 병합 SHA `ebf1d0b`의 실행 `31153010910` 성공 | 필요 시 공개 HTML의 PCK 참조와 원격 파일 해시 확인 |
+| Pages 배포 | 완료 | PR #37 병합 SHA `5fad2a8`의 실행 `31155369766` 성공. 공개 HTML의 `index-5fad2a8bc80a.pck` 참조와 로컬·원격 SHA-256 일치, 브라우저 오류 없음 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
 
