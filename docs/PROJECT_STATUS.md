@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-07 23:38 KST
+- 마지막 갱신: 2026-08-08 00:24 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `080ab5a` (`Merge pull request #49 from Kyoyoung-IM/agent/feature-enemy-hit-visual-20260807`)
+- 확인된 기준 커밋: `ed68a5a` (`Merge pull request #51 from Kyoyoung-IM/agent/grounded-layout-offscreen-route-20260808`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -28,10 +28,11 @@
 | 버그 수정 | 완료 | PR #43 merge commit `e9aa08a` 병합·배포. 공격 시트 지연 로드와 비활성 상태 표시 redraw 제한으로 일반·테스트 플레이 공통 Web 부하 경로를 완화하고, 5종 포탑 혼합 Wave 4·10배속 Web 전투와 자동 검증 통과 | 공개 빌드에서 간헐 정지 재발 여부를 장시간 플레이로 재확인 |
 | 로컬 Web 전투 정지 | 병합·배포 완료 | PR #47 merge commit `04a7ab0`에 Web 안정화와 최신 Release를 함께 병합. 혼합 16개 타워·10배속·18회 반복 실행과 자동 검사 통과 후 Pages 실행 `31186595306` 성공 | 공개 빌드의 장시간 일반 플레이에서 재발 여부 관찰 |
 | 타워 그래픽·에셋 정리 | 완료 | PR #39 merge commit `1bd231e` 병합 후 PR #41 Web Release로 배포. 타워 Tier별 캐릭터·4프레임 공격 애니메이션 교체, 미참조 구버전 에셋 100개 제거와 라이선스 기록 현행화. 프로토타입·UI·공개 PCK 검증 통과 | 다음 타워 그래픽 변경 시 같은 프레임 순서와 Web Release 검증 유지 |
-| 몬스터 그래픽·피격 | 병합·배포 완료 | PR #49 merge commit `080ab5a`에 타입별 피격 이미지, 직접 피격 0.25초 표시, 재피격 +0.1초, 화상 주기 피해 제외를 반영. Pages 실행 `31188463323` 성공 및 공개 PCK 해시 일치 확인 | 공개 플레이에서 연속 피격 가산과 화상 주기 피해 제외 체감 확인 |
+| 몬스터 그래픽·피격 | 병합·배포 완료 | PR #49 merge commit `080ab5a`에 타입별 피격 이미지를 반영하고, PR #51 merge commit `ed68a5a`에 5프레임 사망 애니메이션과 애니메이션 종료 후 제거를 반영. Pages 공개 플레이 확인 | 공개 플레이에서 연속 피격 가산과 사망 애니메이션 체감 확인 |
+| 전장 배경·접지 경로 | 병합·배포 완료 | PR #51 merge commit `ed68a5a`에 `bg`·`bg_night` 배경, 일반 타워 접지·기절 타워 36px 부양, 화면 밖 몬스터 진입·퇴장 및 지면 경로를 반영. 자동 전투와 공개 Web 실화면 확인 | 새 전장 좌표 변경 시 카메라·접지 자동 검사 함께 실행 |
 | 데이터테이블 | 병합 완료 | PR #45 merge commit `f7ee996` 병합, 최신 Turret·Monster·SpawnTable 반영 및 정적 무결성 검사 통과 | PR #46 Web Release Pages 배포 확인 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
-| Pages 배포 | 완료 | PR #49 병합 SHA `080ab5a`의 실행 `31188463323` 성공. 공개 HTML의 `index-080ab5aac5f3.pck` 참조, 19,480,348-byte PCK와 로컬·원격 SHA-256 `CF4AB34DA5D775DCA6CEC50F3CA746BE91CFE7BFB7A56BF92B0F9193BFE61122` 일치 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
+| Pages 배포 | 완료 | PR #51 병합 SHA `ed68a5a`의 실행 `31192176411` 성공. 공개 HTML의 `index-ed68a5a71b0c.pck` 참조, 18,963,400-byte PCK와 로컬·원격 SHA-256 `75213CFC045280D22BADE7A759C9804FEDE62C1DDD6A95738D10057FF468CEFB` 일치 및 공개 브라우저 오류 없음 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
 
