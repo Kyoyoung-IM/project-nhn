@@ -28,16 +28,17 @@ func _run() -> void:
 		return
 	for card_number in range(1, 6):
 		var card := shop_ui.get_node_or_null("ShopCard%d" % card_number) as Button
-		if card == null or card.get_node_or_null("Frame") == null or card.get_node_or_null("PriceLabel") == null:
+		if card == null or card.get_node_or_null("Frame") == null or card.get_node_or_null("PriceRow/PriceLabel") == null or card.get_node_or_null("PriceRow/CoinIcon") == null:
 			_fail("editable shop card %d is incomplete" % card_number)
 			return
 		if card.size != Vector2(306.0, 270.0):
 			_fail("shop card %d size changed unexpectedly" % card_number)
 			return
 
-	var price_label := shop_ui.get_node("ShopCard1/PriceLabel") as Label
-	if price_label.horizontal_alignment != HORIZONTAL_ALIGNMENT_CENTER or price_label.vertical_alignment != VERTICAL_ALIGNMENT_CENTER:
-		_fail("shop price label is not centered inside the editable price area")
+	var price_row := shop_ui.get_node("ShopCard1/PriceRow") as HBoxContainer
+	var price_label := price_row.get_node("PriceLabel") as Label
+	if price_row.alignment != BoxContainer.ALIGNMENT_CENTER or price_label.vertical_alignment != VERTICAL_ALIGNMENT_CENTER:
+		_fail("shop coin and price are not centered as one editable row")
 		return
 	if price_label.get_theme_font("font") == null:
 		_fail("shop card font is not stored in the editable scene")

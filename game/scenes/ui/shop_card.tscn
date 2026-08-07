@@ -1,18 +1,12 @@
 [gd_scene load_steps=7 format=3 uid="uid://m2jiqpu5qgrk"]
 
 [ext_resource type="Script" uid="uid://du6fenriobhgq" path="res://scripts/shop_card.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://bao4ivugo0cwk" path="res://assets/ui/generated/shop_card_frame_v1.png" id="2_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/frame_1.png" id="2_frame"]
 [ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="3_font"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/coin.png" id="4_coin"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/dimmed.png" id="5_dimmed"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleButtonEmpty"]
-
-[sub_resource type="Shader" id="ShaderPriceGoldGrayscale"]
-code = "shader_type canvas_item;\n\nvarying vec4 canvas_modulate;\nuniform float price_gold_grayscale : hint_range(0.0, 1.0) = 0.0;\n\nvoid vertex() {\n\tcanvas_modulate = COLOR;\n}\n\nvoid fragment() {\n\tvec4 texture_color = texture(TEXTURE, UV);\n\tvec4 frame_color = texture_color * canvas_modulate;\n\tfloat price_region = step(0.755, UV.y);\n\tfloat warm_red = step(texture_color.b + 0.025, texture_color.r);\n\tfloat warm_green = step(texture_color.b + 0.01, texture_color.g);\n\tfloat chroma = max(texture_color.r, max(texture_color.g, texture_color.b)) - min(texture_color.r, min(texture_color.g, texture_color.b));\n\tfloat colored_gold = step(0.06, chroma);\n\tfloat gold_mask = price_region * warm_red * warm_green * colored_gold * price_gold_grayscale;\n\tfloat luminance = dot(frame_color.rgb, vec3(0.299, 0.587, 0.114));\n\tCOLOR = vec4(mix(frame_color.rgb, vec3(luminance), gold_mask), frame_color.a);\n}\n"
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterialPriceGoldGrayscale"]
-resource_local_to_scene = true
-shader = SubResource("ShaderPriceGoldGrayscale")
-shader_parameter/price_gold_grayscale = 0.0
 
 [node name="ShopCard" type="Button" unique_id=1367150427]
 custom_minimum_size = Vector2(306, 270)
@@ -27,14 +21,16 @@ theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 script = ExtResource("1_script")
 
-[node name="Frame" type="TextureRect" parent="." unique_id=1049085495]
-material = SubResource("ShaderMaterialPriceGoldGrayscale")
+[node name="Frame" type="NinePatchRect" parent="." unique_id=1049085495]
 layout_mode = 0
 offset_right = 306.0
 offset_bottom = 270.0
 mouse_filter = 2
 texture = ExtResource("2_frame")
-expand_mode = 1
+patch_margin_left = 28
+patch_margin_top = 28
+patch_margin_right = 28
+patch_margin_bottom = 28
 
 [node name="TowerBody" type="TextureRect" parent="." unique_id=1809487854]
 layout_mode = 0
@@ -71,29 +67,45 @@ text = "터렛"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PriceLabel" type="Label" parent="." unique_id=2103996370]
+[node name="PriceRow" type="HBoxContainer" parent="." unique_id=1648707120]
 layout_mode = 0
 offset_left = 73.0
-offset_top = 206.0
-offset_right = 257.0
-offset_bottom = 244.0
+offset_top = 207.0
+offset_right = 233.0
+offset_bottom = 247.0
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="CoinIcon" type="TextureRect" parent="PriceRow" unique_id=1527463141]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("4_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PriceLabel" type="Label" parent="PriceRow" unique_id=2103996370]
+custom_minimum_size = Vector2(72, 40)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.964706, 0.776471, 0.32549, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.07, 0.86)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 22
-text = "0 G"
-horizontal_alignment = 1
+text = "0"
+horizontal_alignment = 0
 vertical_alignment = 1
 
-[node name="PurchasedOverlay" type="ColorRect" parent="." unique_id=1939924107]
+[node name="PurchasedOverlay" type="TextureRect" parent="." unique_id=1939924107]
 visible = false
 z_index = 10
 layout_mode = 0
 offset_right = 306.0
 offset_bottom = 263.0
 mouse_filter = 2
-color = Color(0.05, 0.045, 0.09, 0.82)
+texture = ExtResource("5_dimmed")
+expand_mode = 1
 
 [node name="PurchasedLabel" type="Label" parent="PurchasedOverlay" unique_id=1730924179]
 layout_mode = 1
@@ -111,14 +123,15 @@ text = "구매 완료"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HoverOverlay" type="ColorRect" parent="." unique_id=223281184]
+[node name="HoverOverlay" type="TextureRect" parent="." unique_id=223281184]
 visible = false
 z_index = 20
 layout_mode = 0
 offset_right = 306.0
 offset_bottom = 263.0
 mouse_filter = 2
-color = Color(0.025, 0.02, 0.055, 0.8)
+texture = ExtResource("5_dimmed")
+expand_mode = 1
 
 [node name="NameLabel" type="Label" parent="HoverOverlay" unique_id=867076827]
 layout_mode = 0

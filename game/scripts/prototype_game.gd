@@ -133,16 +133,15 @@ var action_button: Button
 var reroll_button: Button
 var speed_button: Button
 var pause_button: Button
-var action_button_backplate: TextureRect
-var speed_button_backplate: TextureRect
-var pause_button_backplate: TextureRect
+var action_button_backplate: Control
+var speed_button_backplate: Control
+var pause_button_backplate: Control
+var reroll_button_backplate: CanvasItem
 var action_button_label: Label
 var speed_button_label: Label
 var day_night_hud: Control
 var day_frame: TextureRect
 var night_frame: TextureRect
-var sun_icon: TextureRect
-var moon_icon: TextureRect
 var gold_gain_base_position := Vector2.ZERO
 var options_overlay: Control
 var options_menu_open: bool = false
@@ -809,25 +808,24 @@ func _build_interface() -> void:
 	day_night_hud = layout.get_node("DayNightHUD") as Control
 	day_frame = day_night_hud.get_node("DayFrame") as TextureRect
 	night_frame = day_night_hud.get_node("NightFrame") as TextureRect
-	sun_icon = day_night_hud.get_node("SunIcon") as TextureRect
-	moon_icon = day_night_hud.get_node("MoonIcon") as TextureRect
 	phase_label = day_night_hud.get_node("PhaseLabel") as Label
 	wave_title_label = day_night_hud.get_node("WaveTitleLabel") as Label
 	wave_label = day_night_hud.get_node("WaveLabel") as Label
 
 	var top_controls := layout.get_node("TopControls") as Control
 	test_mode_badge = top_controls.get_node("TestModeBadge") as Label
-	action_button_backplate = top_controls.get_node("ActionBackplate") as TextureRect
+	action_button_backplate = top_controls.get_node("ActionBackplate") as Control
 	action_button = top_controls.get_node("ActionButton") as Button
 	action_button_label = top_controls.get_node("ActionLabel") as Label
-	speed_button_backplate = top_controls.get_node("SpeedBackplate") as TextureRect
+	speed_button_backplate = top_controls.get_node("SpeedBackplate") as Control
 	speed_button = top_controls.get_node("SpeedButton") as Button
 	speed_button_label = top_controls.get_node("SpeedLabel") as Label
-	pause_button_backplate = top_controls.get_node("PauseBackplate") as TextureRect
+	pause_button_backplate = top_controls.get_node("PauseBackplate") as Control
 	pause_button = top_controls.get_node("PauseButton") as Button
 
 	var shop_ui := layout.get_node("ShopUI") as Control
 	gold_label = shop_ui.get_node("GoldLabel") as Label
+	reroll_button_backplate = shop_ui.get_node("RerollBackplate") as CanvasItem
 	reroll_button = shop_ui.get_node("RerollButton") as Button
 	gold_gain_label = layout.get_node("GoldGainLabel") as Label
 	status_label = layout.get_node("StatusLabel") as Label
@@ -1001,21 +999,11 @@ func _on_speed_button_pressed() -> void:
 	_update_speed_controls()
 
 
-# 현재 단계와 선택값에 맞춰 배속 캡슐의 삼각형 개수와 두 버튼의 상태를 갱신한다.
+# 현재 단계와 선택값에 맞춰 이미지 삼각형 옆 배속 숫자와 두 버튼의 상태를 갱신한다.
 func _update_speed_controls() -> void:
 	if speed_button == null:
 		return
-	match game_speed_multiplier:
-		2:
-			speed_button.text = "▶ ▶"
-		3:
-			speed_button.text = "▶ ▶ ▶"
-		5:
-			speed_button.text = "×5"
-		10:
-			speed_button.text = "×10"
-		_:
-			speed_button.text = "▶"
+	speed_button.text = "×%d" % game_speed_multiplier
 	speed_button.visible = phase == Phase.WAVE
 	if speed_button_backplate != null:
 		speed_button_backplate.visible = speed_button.visible
@@ -1538,7 +1526,7 @@ func _run_wave_features_automated_test() -> void:
 	_on_speed_button_pressed()
 	_on_speed_button_pressed()
 	passing_monster._process(0.1)
-	var night_state_ok := not phase_label.visible and wave_label.visible and speed_button.visible and speed_button.text == "▶ ▶ ▶" and pause_button.visible and not action_button.visible
+	var night_state_ok := not phase_label.visible and wave_label.visible and speed_button.visible and speed_button.text == "×3" and pause_button.visible and not action_button.visible
 	var triple_speed_applied := game_speed_multiplier == 3 and is_equal_approx(Engine.time_scale, 3.0)
 	var tower_remained_fixed := is_instance_valid(test_tower) and towers.has(test_tower) and passing_monster.position.x < monster_start_x
 	monsters.erase(passing_monster)
@@ -2141,6 +2129,8 @@ func _update_shop_cards() -> void:
 		var reroll_cost := _current_reroll_cost()
 		var can_reroll := _is_shop_available() and gold >= reroll_cost
 		reroll_button.disabled = not can_reroll
+		if reroll_button_backplate != null:
+			reroll_button_backplate.modulate = Color.WHITE if can_reroll else Color("77777f")
 		if can_reroll:
 			reroll_button.text = "새로고침\n%d G" % reroll_cost
 		elif _is_shop_available():
@@ -2204,25 +2194,8 @@ func _update_interface() -> void:
 				action_button_label.visible = false
 
 
-# 낮·밤 프레임과 아이콘은 씬 노드로 유지해 편집기에서 크기와 기준 위치를 직접 조절한다.
+# 낮·밤 풍경이 포함된 두 프레임을 현재 전환량에 맞춰 교차한다.
 func _update_day_night_hud_nodes() -> void:
 	if not is_instance_valid(day_night_hud) or not is_instance_valid(night_frame):
 		return
 	night_frame.modulate = Color(1.0, 1.0, 1.0, night_visual_amount)
-
-	# 기존 반원 궤도는 유지하되 위치는 DayNightHUD 로컬 좌표로 계산한다.
-	var orbit_center := Vector2(250.0, 165.0)
-	var orbit_radius := 88.0
-	var sun_angle := -PI * 0.5 - night_visual_amount * PI * 0.5
-	var moon_angle := -night_visual_amount * PI * 0.5
-	_set_hud_orbit_icon(sun_icon, orbit_center + Vector2(cos(sun_angle), sin(sun_angle)) * orbit_radius, night_visual_amount * TAU, 1.0 - night_visual_amount)
-	_set_hud_orbit_icon(moon_icon, orbit_center + Vector2(cos(moon_angle), sin(moon_angle)) * orbit_radius, -night_visual_amount * PI * 0.5, night_visual_amount)
-
-
-func _set_hud_orbit_icon(icon: TextureRect, center_position: Vector2, rotation_radians: float, opacity: float) -> void:
-	if not is_instance_valid(icon):
-		return
-	icon.position = center_position - icon.size * 0.5
-	icon.pivot_offset = icon.size * 0.5
-	icon.rotation = rotation_radians
-	icon.modulate = Color(1.0, 1.0, 1.0, opacity)

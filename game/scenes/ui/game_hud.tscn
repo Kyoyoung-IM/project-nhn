@@ -1,12 +1,15 @@
 [gd_scene format=3 uid="uid://jcmxg05necpc"]
 
-[ext_resource type="Texture2D" uid="uid://cbwrmjxj22jth" path="res://assets/ui/day_night_hud_day_frame_v2.png" id="1_day"]
-[ext_resource type="Texture2D" uid="uid://d0cmfsbyv21br" path="res://assets/ui/day_night_hud_night_frame_v2.png" id="2_night"]
-[ext_resource type="Texture2D" uid="uid://3qtv4ofuf6mc" path="res://assets/ui/day_night_sun_icon_v1.png" id="3_sun"]
-[ext_resource type="Texture2D" uid="uid://b32wm1l03eblp" path="res://assets/ui/day_night_moon_icon_v1.png" id="4_moon"]
-[ext_resource type="Texture2D" uid="uid://0qwc32huqlj" path="res://assets/ui/generated/shop_controls_panel_v1.png" id="5_shop_controls"]
-[ext_resource type="Texture2D" uid="uid://dwy4464por041" path="res://assets/ui/generated/speed_capsule_v2.png" id="6_speed"]
-[ext_resource type="Texture2D" uid="uid://ck100su0asnhp" path="res://assets/ui/generated/pause_button_v2.png" id="7_pause"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/top_1.png" id="1_day"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/top_2.png" id="2_night"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/frame_2.png" id="3_panel"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/btn_1.png" id="4_action"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/btn_2.png" id="5_secondary"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/btn_4.png" id="6_round"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/coin.png" id="7_coin"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/icon1.png" id="8_refresh"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/icon2.png" id="9_pause"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/icon3.png" id="10_play"]
 [ext_resource type="PackedScene" uid="uid://m2jiqpu5qgrk" path="res://scenes/ui/shop_card.tscn" id="8_card"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_clear_overlay.tscn" id="9_game_clear"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
@@ -33,8 +36,8 @@ shadow_offset = Vector2(0, 5)
 [sub_resource type="StyleBoxEmpty" id="StyleInputEmpty"]
 
 [sub_resource type="StyleBoxFlat" id="StyleRerollNormal"]
-content_margin_left = 10.0
-content_margin_top = 94.0
+content_margin_left = 18.0
+content_margin_top = 8.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
 bg_color = Color(0, 0, 0, 0)
@@ -44,8 +47,8 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleRerollPressed"]
-content_margin_left = 10.0
-content_margin_top = 98.0
+content_margin_left = 18.0
+content_margin_top = 12.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
 bg_color = Color(0.02, 0.08, 0.1, 0.16)
@@ -55,8 +58,8 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleRerollHover"]
-content_margin_left = 10.0
-content_margin_top = 94.0
+content_margin_left = 18.0
+content_margin_top = 8.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
 bg_color = Color(1, 1, 1, 0.1)
@@ -66,8 +69,8 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleRerollDisabled"]
-content_margin_left = 10.0
-content_margin_top = 94.0
+content_margin_left = 18.0
+content_margin_top = 8.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
 bg_color = Color(0.08, 0.08, 0.1, 0.34)
@@ -96,7 +99,7 @@ mouse_filter = 2
 [node name="DayFrame" type="TextureRect" parent="Layout/DayNightHUD" unique_id=1571776901]
 layout_mode = 0
 offset_right = 500.0
-offset_bottom = 250.0
+offset_bottom = 210.0
 mouse_filter = 2
 texture = ExtResource("1_day")
 expand_mode = 1
@@ -105,35 +108,10 @@ expand_mode = 1
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_right = 500.0
-offset_bottom = 250.0
+offset_bottom = 210.0
 mouse_filter = 2
 texture = ExtResource("2_night")
 expand_mode = 1
-
-[node name="SunIcon" type="TextureRect" parent="Layout/DayNightHUD" unique_id=653561021]
-layout_mode = 0
-offset_left = 221.0
-offset_top = 48.0
-offset_right = 279.0
-offset_bottom = 106.0
-pivot_offset = Vector2(29, 29)
-mouse_filter = 2
-texture = ExtResource("3_sun")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="MoonIcon" type="TextureRect" parent="Layout/DayNightHUD" unique_id=209760934]
-modulate = Color(1, 1, 1, 0)
-layout_mode = 0
-offset_left = 309.0
-offset_top = 136.0
-offset_right = 367.0
-offset_bottom = 194.0
-pivot_offset = Vector2(29, 29)
-mouse_filter = 2
-texture = ExtResource("4_moon")
-expand_mode = 1
-stretch_mode = 5
 
 [node name="PhaseLabel" type="Label" parent="Layout/DayNightHUD" unique_id=1094984239]
 layout_mode = 0
@@ -200,23 +178,37 @@ text = "TEST"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ActionBackplate" type="TextureRect" parent="Layout/TopControls" unique_id=984093334]
+[node name="ActionBackplate" type="NinePatchRect" parent="Layout/TopControls" unique_id=984093334]
 layout_mode = 0
 offset_left = 1450.0
-offset_top = 38.0
+offset_top = 28.0
 offset_right = 1780.0
-offset_bottom = 98.0
+offset_bottom = 108.0
 mouse_filter = 2
-texture = ExtResource("6_speed")
+texture = ExtResource("4_action")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
+
+[node name="ActionIcon" type="TextureRect" parent="Layout/TopControls/ActionBackplate" unique_id=1214095155]
+layout_mode = 0
+offset_left = 34.0
+offset_top = 16.0
+offset_right = 74.0
+offset_bottom = 64.0
+mouse_filter = 2
+texture = ExtResource("10_play")
 expand_mode = 1
+stretch_mode = 5
 
 [node name="ActionButton" type="Button" parent="Layout/TopControls" unique_id=330084082]
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 1450.0
-offset_top = 38.0
+offset_top = 28.0
 offset_right = 1780.0
-offset_bottom = 98.0
+offset_bottom = 108.0
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleInputEmpty")
 theme_override_styles/pressed = SubResource("StyleInputEmpty")
@@ -227,9 +219,9 @@ theme_override_styles/focus = SubResource("StyleInputEmpty")
 [node name="ActionLabel" type="Label" parent="Layout/TopControls" unique_id=2039006298]
 layout_mode = 0
 offset_left = 1450.0
-offset_top = 38.0
+offset_top = 28.0
 offset_right = 1780.0
-offset_bottom = 98.0
+offset_bottom = 108.0
 theme_override_colors/font_color = Color(0.203922, 0.156863, 0.227451, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
 theme_override_constants/outline_size = 4
@@ -238,23 +230,37 @@ theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SpeedBackplate" type="TextureRect" parent="Layout/TopControls" unique_id=145501103]
+[node name="SpeedBackplate" type="NinePatchRect" parent="Layout/TopControls" unique_id=145501103]
 layout_mode = 0
 offset_left = 1600.0
-offset_top = 38.0
+offset_top = 28.0
 offset_right = 1780.0
-offset_bottom = 98.0
+offset_bottom = 108.0
 mouse_filter = 2
-texture = ExtResource("6_speed")
+texture = ExtResource("5_secondary")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
+
+[node name="SpeedIcon" type="TextureRect" parent="Layout/TopControls/SpeedBackplate" unique_id=1183625390]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 18.0
+offset_right = 62.0
+offset_bottom = 62.0
+mouse_filter = 2
+texture = ExtResource("10_play")
 expand_mode = 1
+stretch_mode = 5
 
 [node name="SpeedButton" type="Button" parent="Layout/TopControls" unique_id=334617550]
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 1600.0
-offset_top = 38.0
+offset_top = 28.0
 offset_right = 1780.0
-offset_bottom = 98.0
+offset_bottom = 108.0
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleInputEmpty")
 theme_override_styles/pressed = SubResource("StyleInputEmpty")
@@ -264,11 +270,11 @@ theme_override_styles/focus = SubResource("StyleInputEmpty")
 
 [node name="SpeedLabel" type="Label" parent="Layout/TopControls" unique_id=1816033523]
 layout_mode = 0
-offset_left = 1600.0
-offset_top = 38.0
+offset_left = 1655.0
+offset_top = 28.0
 offset_right = 1780.0
-offset_bottom = 98.0
-theme_override_colors/font_color = Color(0.203922, 0.156863, 0.227451, 1)
+offset_bottom = 108.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("14_symbol")
@@ -283,8 +289,19 @@ offset_top = 34.0
 offset_right = 1878.0
 offset_bottom = 102.0
 mouse_filter = 2
-texture = ExtResource("7_pause")
+texture = ExtResource("6_round")
 expand_mode = 1
+
+[node name="PauseIcon" type="TextureRect" parent="Layout/TopControls/PauseBackplate" unique_id=1404515912]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 8.0
+offset_right = 51.0
+offset_bottom = 60.0
+mouse_filter = 2
+texture = ExtResource("9_pause")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="PauseButton" type="Button" parent="Layout/TopControls" unique_id=774662062]
 process_mode = 3
@@ -307,20 +324,34 @@ offset_right = 1920.0
 offset_bottom = 1060.0
 mouse_filter = 2
 
-[node name="ControlsBackplate" type="TextureRect" parent="Layout/ShopUI" unique_id=717882468]
+[node name="ControlsBackplate" type="NinePatchRect" parent="Layout/ShopUI" unique_id=717882468]
 layout_mode = 0
 offset_left = 24.0
 offset_right = 274.0
 offset_bottom = 270.0
 mouse_filter = 2
-texture = ExtResource("5_shop_controls")
+texture = ExtResource("3_panel")
+patch_margin_left = 28
+patch_margin_top = 28
+patch_margin_right = 28
+patch_margin_bottom = 28
+
+[node name="GoldCoin" type="TextureRect" parent="Layout/ShopUI" unique_id=1941527206]
+layout_mode = 0
+offset_left = 64.0
+offset_top = 28.0
+offset_right = 116.0
+offset_bottom = 80.0
+mouse_filter = 2
+texture = ExtResource("7_coin")
 expand_mode = 1
+stretch_mode = 5
 
 [node name="GoldLabel" type="Label" parent="Layout/ShopUI" unique_id=2125538987]
 layout_mode = 0
-offset_left = 82.0
+offset_left = 108.0
 offset_top = 18.0
-offset_right = 236.0
+offset_right = 246.0
 offset_bottom = 90.0
 theme_override_colors/font_color = Color(0.964706, 0.776471, 0.32549, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
@@ -330,16 +361,33 @@ theme_override_font_sizes/font_size = 25
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="RerollBackplate" type="NinePatchRect" parent="Layout/ShopUI" unique_id=1649939750]
+layout_mode = 0
+offset_left = 42.0
+offset_top = 116.0
+offset_right = 256.0
+offset_bottom = 250.0
+mouse_filter = 2
+texture = ExtResource("5_secondary")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
+
 [node name="RerollButton" type="Button" parent="Layout/ShopUI" unique_id=950780711]
 layout_mode = 0
-offset_left = 38.0
-offset_top = 94.0
-offset_right = 262.0
-offset_bottom = 270.0
+offset_left = 42.0
+offset_top = 116.0
+offset_right = 256.0
+offset_bottom = 250.0
 focus_mode = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_disabled_color = Color(0.6, 0.580392, 0.654902, 1)
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_pressed_color = Color(0.88, 0.92, 1, 1)
+theme_override_colors/icon_disabled_color = Color(0.55, 0.55, 0.58, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("13_font")
@@ -349,6 +397,8 @@ theme_override_styles/pressed = SubResource("StyleRerollPressed")
 theme_override_styles/hover = SubResource("StyleRerollHover")
 theme_override_styles/disabled = SubResource("StyleRerollDisabled")
 theme_override_styles/focus = SubResource("StyleInputEmpty")
+icon = ExtResource("8_refresh")
+icon_max_width = 44
 text = "새로고침
 10 G"
 

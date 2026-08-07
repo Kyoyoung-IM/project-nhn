@@ -1,8 +1,13 @@
 [gd_scene format=3 uid="uid://bibm7rj2pfhdd"]
 
-[ext_resource type="Texture2D" uid="uid://mmmwluwjh3qx" path="res://assets/ui/generated/options_panel_v1.png" id="1_panel"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/frame_2.png" id="1_panel"]
 [ext_resource type="FontFile" uid="uid://d4bssxj634h2e" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
 [ext_resource type="Script" uid="uid://b67axnfhqhoqa" path="res://scripts/options_menu.gd" id="3_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/ribbon.png" id="4_ribbon"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/btn_1.png" id="5_positive"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/btn_2.png" id="6_secondary"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/btn_3.png" id="7_danger"]
+[ext_resource type="Texture2D" path="res://assets/ui/images/dimmed.png" id="8_dimmed"]
 
 [sub_resource type="StyleBoxFlat" id="StyleButtonNormal"]
 bg_color = Color(0, 0, 0, 0)
@@ -38,13 +43,14 @@ offset_right = 1920.0
 offset_bottom = 1080.0
 script = ExtResource("3_script")
 
-[node name="Dimmer" type="ColorRect" parent="." unique_id=750231242]
+[node name="Dimmer" type="TextureRect" parent="." unique_id=750231242]
 layout_mode = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
-color = Color(0.035, 0.03, 0.07, 0.78)
+texture = ExtResource("8_dimmed")
+expand_mode = 1
 
-[node name="PanelArt" type="TextureRect" parent="." unique_id=1199956159]
+[node name="PanelArt" type="NinePatchRect" parent="." unique_id=1199956159]
 layout_mode = 0
 offset_left = 700.0
 offset_top = 140.0
@@ -52,20 +58,47 @@ offset_right = 1220.0
 offset_bottom = 940.0
 mouse_filter = 2
 texture = ExtResource("1_panel")
+patch_margin_left = 30
+patch_margin_top = 30
+patch_margin_right = 30
+patch_margin_bottom = 30
+
+[node name="TitleRibbon" type="TextureRect" parent="." unique_id=1261095167]
+layout_mode = 0
+offset_left = 820.0
+offset_top = 202.0
+offset_right = 1100.0
+offset_bottom = 290.0
+mouse_filter = 2
+texture = ExtResource("4_ribbon")
 expand_mode = 1
+stretch_mode = 5
 
 [node name="TitleLabel" type="Label" parent="." unique_id=1087333340]
 layout_mode = 0
-offset_left = 757.0
-offset_top = 221.0
-offset_right = 1157.0
-offset_bottom = 285.0
-theme_override_colors/font_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+offset_left = 830.0
+offset_top = 214.0
+offset_right = 1090.0
+offset_bottom = 278.0
+theme_override_colors/font_color = Color(0.113725, 0.145098, 0.0627451, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 42
 text = "일시정지"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="ContinueBackplate" type="NinePatchRect" parent="." unique_id=1884185630]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 300.0
+offset_right = 1130.0
+offset_bottom = 378.0
+mouse_filter = 2
+texture = ExtResource("5_positive")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
 
 [node name="ContinueButton" type="Button" parent="." unique_id=383538830]
 process_mode = 3
@@ -90,6 +123,19 @@ theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "계속하기"
 
+[node name="TestModeBackplate" type="NinePatchRect" parent="." unique_id=1535369812]
+layout_mode = 0
+offset_left = 788.0
+offset_top = 447.0
+offset_right = 1128.0
+offset_bottom = 525.0
+mouse_filter = 2
+texture = ExtResource("6_secondary")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
+
 [node name="TestModeButton" type="Button" parent="." unique_id=1954922972]
 process_mode = 3
 layout_mode = 0
@@ -113,6 +159,19 @@ theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "테스트 환경 시작"
 
+[node name="ResetBackplate" type="NinePatchRect" parent="." unique_id=1612019620]
+layout_mode = 0
+offset_left = 792.0
+offset_top = 588.0
+offset_right = 1132.0
+offset_bottom = 666.0
+mouse_filter = 2
+texture = ExtResource("6_secondary")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
+
 [node name="ResetButton" type="Button" parent="." unique_id=1677842784]
 process_mode = 3
 layout_mode = 0
@@ -135,6 +194,19 @@ theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 text = "프로토타입 초기화"
+
+[node name="QuitBackplate" type="NinePatchRect" parent="." unique_id=1296314465]
+layout_mode = 0
+offset_left = 789.0
+offset_top = 731.0
+offset_right = 1129.0
+offset_bottom = 809.0
+mouse_filter = 2
+texture = ExtResource("7_danger")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
 
 [node name="QuitButton" type="Button" parent="." unique_id=1243524719]
 process_mode = 3

@@ -5,7 +5,6 @@ extends Button
 # 위치·크기·내부 텍스트 배치는 scenes/ui/shop_card.tscn에서 직접 편집한다.
 
 const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
-const PRICE_GOLD_GRAYSCALE_PARAMETER := &"price_gold_grayscale"
 
 var tower_data: Dictionary = {}
 var card_available: bool = true
@@ -18,14 +17,16 @@ var card_hovered: bool = false
 @export var affordable_price_color := Color("f6c653")
 @export var unaffordable_price_color := Color("a0a0aa")
 
-@onready var frame: TextureRect = $Frame
+@onready var frame: Control = $Frame
 @onready var tower_body: TextureRect = $TowerBody
 @onready var tower_effect: TextureRect = $TowerEffect
 @onready var name_label: Label = $NameLabel
-@onready var price_label: Label = $PriceLabel
-@onready var purchased_overlay: ColorRect = $PurchasedOverlay
+@onready var price_row: HBoxContainer = $PriceRow
+@onready var price_coin: TextureRect = $PriceRow/CoinIcon
+@onready var price_label: Label = $PriceRow/PriceLabel
+@onready var purchased_overlay: Control = $PurchasedOverlay
 @onready var purchased_label: Label = $PurchasedOverlay/PurchasedLabel
-@onready var hover_overlay: ColorRect = $HoverOverlay
+@onready var hover_overlay: Control = $HoverOverlay
 @onready var hover_name_label: Label = $HoverOverlay/NameLabel
 @onready var hover_effect_label: Label = $HoverOverlay/EffectLabel
 @onready var hover_damage_label: Label = $HoverOverlay/DamageLabel
@@ -75,6 +76,7 @@ func _update_content() -> void:
 	if tower_data.is_empty():
 		name_label.text = "상점 준비 중"
 		price_label.text = ""
+		price_row.visible = false
 		tower_body.texture = null
 		tower_effect.texture = null
 		return
@@ -82,7 +84,8 @@ func _update_content() -> void:
 	var display_name := str(tower_data.get("display_name", "터렛"))
 	var turret_type := str(tower_data.get("type", "RANGED"))
 	name_label.text = display_name
-	price_label.text = "%d G" % int(tower_data.get("base_price", 0))
+	price_label.text = "%d" % int(tower_data.get("base_price", 0))
+	price_row.visible = true
 	hover_name_label.text = display_name
 	hover_effect_label.text = _effect_description()
 	hover_damage_label.text = "공격력  %.0f" % float(tower_data.get("damage", 0.0))
@@ -100,11 +103,14 @@ func _apply_visual_state() -> void:
 		return
 	# 선택·호버 시에도 별도의 코드 테두리를 그리지 않고 프레임 밝기만 작게 바꾼다.
 	frame.modulate = Color("fff5cf") if card_selected else Color.WHITE
-	var price_material := frame.material as ShaderMaterial
-	if price_material != null:
-		var should_grayscale := not card_affordable and card_available and not card_hovered
-		price_material.set_shader_parameter(PRICE_GOLD_GRAYSCALE_PARAMETER, 1.0 if should_grayscale else 0.0)
-	price_label.add_theme_color_override("font_color", affordable_price_color if card_affordable else unaffordable_price_color)
+	var should_grayscale := not card_affordable and card_available and not card_hovered
+	var price_tint := Color("8c8c94") if should_grayscale else Color.WHITE
+	price_coin.modulate = price_tint
+	price_label.add_theme_color_override("font_color", unaffordable_price_color if should_grayscale else affordable_price_color)
+	var show_base_content := not card_hovered and not tower_data.is_empty()
+	tower_body.visible = show_base_content
+	name_label.visible = not card_hovered
+	price_row.visible = show_base_content
 	purchased_overlay.visible = not card_available and not card_hovered
 	hover_overlay.visible = card_hovered
 
