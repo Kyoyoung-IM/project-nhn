@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-08 00:24 KST
+- 마지막 갱신: 2026-08-08 00:39 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `ed68a5a` (`Merge pull request #51 from Kyoyoung-IM/agent/grounded-layout-offscreen-route-20260808`)
+- 확인된 기준 커밋: `ed64e47` (`Merge pull request #53 from Kyoyoung-IM/agent/graphics-turret-dot-fx-20260808`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -27,7 +27,7 @@
 | 타워 판매 제거 | 완료 | PR #34 merge commit 병합 후 PR #37 Web Release로 최신 `main`과 함께 Pages 배포·공개 화면 로드 확인 | 새 판매 관련 요구가 생기면 기획 문서부터 갱신 |
 | 버그 수정 | 완료 | PR #43 merge commit `e9aa08a` 병합·배포. 공격 시트 지연 로드와 비활성 상태 표시 redraw 제한으로 일반·테스트 플레이 공통 Web 부하 경로를 완화하고, 5종 포탑 혼합 Wave 4·10배속 Web 전투와 자동 검증 통과 | 공개 빌드에서 간헐 정지 재발 여부를 장시간 플레이로 재확인 |
 | 로컬 Web 전투 정지 | 병합·배포 완료 | PR #47 merge commit `04a7ab0`에 Web 안정화와 최신 Release를 함께 병합. 혼합 16개 타워·10배속·18회 반복 실행과 자동 검사 통과 후 Pages 실행 `31186595306` 성공 | 공개 빌드의 장시간 일반 플레이에서 재발 여부 관찰 |
-| 타워 그래픽·에셋 정리 | 완료 | PR #39 merge commit `1bd231e` 병합 후 PR #41 Web Release로 배포. 타워 Tier별 캐릭터·4프레임 공격 애니메이션 교체, 미참조 구버전 에셋 100개 제거와 라이선스 기록 현행화. 프로토타입·UI·공개 PCK 검증 통과 | 다음 타워 그래픽 변경 시 같은 프레임 순서와 Web Release 검증 유지 |
+| 타워 그래픽·에셋 정리 | 에셋 병합 완료 | PR #53 merge commit `ed64e47`에 포탑 도트 FX PNG 24개와 UI 이미지 PNG 14개 및 각 Godot import 메타데이터를 추가. PNG 무결성·38개 임포트 쌍·Godot headless 임포트 검증 통과. 코드·UI 참조와 Web Release는 미변경 | 실제 연출·UI 적용 시 에셋 참조, 출처·라이선스와 Web Release 갱신 확인 |
 | 몬스터 그래픽·피격 | 병합·배포 완료 | PR #49 merge commit `080ab5a`에 타입별 피격 이미지를 반영하고, PR #51 merge commit `ed68a5a`에 5프레임 사망 애니메이션과 애니메이션 종료 후 제거를 반영. Pages 공개 플레이 확인 | 공개 플레이에서 연속 피격 가산과 사망 애니메이션 체감 확인 |
 | 전장 배경·접지 경로 | 병합·배포 완료 | PR #51 merge commit `ed68a5a`에 `bg`·`bg_night` 배경, 일반 타워 접지·기절 타워 36px 부양, 화면 밖 몬스터 진입·퇴장 및 지면 경로를 반영. 자동 전투와 공개 Web 실화면 확인 | 새 전장 좌표 변경 시 카메라·접지 자동 검사 함께 실행 |
 | 데이터테이블 | 병합 완료 | PR #45 merge commit `f7ee996` 병합, 최신 Turret·Monster·SpawnTable 반영 및 정적 무결성 검사 통과 | PR #46 Web Release Pages 배포 확인 |
