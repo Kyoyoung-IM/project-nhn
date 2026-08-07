@@ -12,7 +12,7 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-08 03:33 KST
+- 마지막 갱신: 2026-08-08 04:38 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
 - 확인된 기준 커밋: `1ad6a5e` (`Merge pull request #59 from Kyoyoung-IM/agent/fixed-overview-battlefield-layout-20260808`)
@@ -27,7 +27,8 @@
 | 타워 판매 제거 | 완료 | PR #34 merge commit 병합 후 PR #37 Web Release로 최신 `main`과 함께 Pages 배포·공개 화면 로드 확인 | 새 판매 관련 요구가 생기면 기획 문서부터 갱신 |
 | 버그 수정 | 완료 | PR #43 merge commit `e9aa08a` 병합·배포. 공격 시트 지연 로드와 비활성 상태 표시 redraw 제한으로 일반·테스트 플레이 공통 Web 부하 경로를 완화하고, 5종 포탑 혼합 Wave 4·10배속 Web 전투와 자동 검증 통과 | 공개 빌드에서 간헐 정지 재발 여부를 장시간 플레이로 재확인 |
 | 로컬 Web 전투 정지 | 병합·배포 완료 | PR #47 merge commit `04a7ab0`에 Web 안정화와 최신 Release를 함께 병합. 혼합 16개 타워·10배속·18회 반복 실행과 자동 검사 통과 후 Pages 실행 `31186595306` 성공 | 공개 빌드의 장시간 일반 플레이에서 재발 여부 관찰 |
-| 타워 그래픽·에셋 정리 | UI 에셋 적용·배포 완료 | PR #57 merge commit `2caa99f`에 포탑 5종 Tier 1~4 대기 이미지 20개와 import 메타데이터를 추가하고 미사용 DOT FX 세부 프레임을 정리해 Web Release에 포함 | 대기 이미지를 실제 포탑 표시로 연결할 때 에셋 참조와 전투 성능 확인 |
+| 타워 그래픽·에셋 정리 | UI 에셋 적용·배포 완료 | PR #57 merge commit `2caa99f`에 포탑 5종 Tier 1~4 대기 이미지 20개와 import 메타데이터를 추가하고 미사용 DOT FX 세부 프레임을 정리해 Web Release에 포함 | 후속 런타임 연결은 타워 애니메이션 행에서 관리 |
+| 타워 애니메이션 | 기능 브랜치 임시 빌드 검증 완료 | `agent/tower-idle-attack-animation-20260808`에서 5종 Tier 1~4의 2프레임 대기와 좌상→우상→좌하→우하 공격 애니메이션을 Web에 연결. 시트 512px 제한·지연 로드로 PCK를 `16,685,296` bytes로 유지하고 10배속 Web 전투·콘솔 확인 완료 | 임시 플레이 피드백 후 PR·병합·정식 Pages 배포 여부 결정 |
 | 몬스터 그래픽·피격 | 병합·배포 완료 | PR #57 merge commit `2caa99f`에서 보스 제외 몬스터의 원본 픽셀 크기 차이를 반영하고 체력바를 머리 위 4px로 축소. 피격·사망·접지 전용 검사와 공개 Pages 확인 완료 | 공개 플레이에서 타입별 크기 차이와 체력바 가독성 체감 확인 |
 | 전장 배경·접지 경로 | 병합·배포 완료 | PR #59 merge commit `1ad6a5e`에서 적이 각 층의 화면 오른쪽 밖 X `1980`에서 왼쪽 밖 X `-60`까지 이동하도록 경로를 확장하고 고정 전체 뷰 좌표 검사를 반영. 자동 승리·패배와 공개 Web 확인 완료 | 공개 플레이에서 길어진 층별 이동 시간과 전투 밀도 체감 확인 |
 | 데이터테이블 | 병합 완료 | PR #45 merge commit `f7ee996` 병합, 최신 Turret·Monster·SpawnTable 반영 및 정적 무결성 검사 통과 | PR #46 Web Release Pages 배포 확인 |

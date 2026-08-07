@@ -128,8 +128,13 @@ func _init() -> void:
 	if not _texture_has_opaque_coverage(MonsterScript.STUN_STATUS_TEXTURE, 0.08):
 		_fail("stun status texture lost its visible interior during alpha processing")
 		return
-	# 공격 시트는 런타임에 설치된 타입·Tier만 지연 로드해야 한다. 20장을 정적 preload하면
-	# Web 메모리가 전투 시작 전부터 크게 늘어나 낮은 메모리 환경에서 전체 캔버스가 멎을 수 있다.
+	# 대기·공격 시트는 런타임에 설치된 타입·Tier만 지연 로드해야 한다. 40장을 정적
+	# preload하면 Web 메모리가 전투 시작 전부터 크게 늘어나 전체 캔버스가 멎을 수 있다.
+	for turret_type in TowerVisualAssetsScript.IDLE_TEXTURE_PATHS:
+		for idle_texture_path in TowerVisualAssetsScript.IDLE_TEXTURE_PATHS[turret_type]:
+			if ResourceLoader.has_cached(str(idle_texture_path)):
+				_fail("tower idle sheet must not preload before it is requested: %s" % str(idle_texture_path))
+				return
 	for turret_type in TowerVisualAssetsScript.ATTACK_TEXTURE_PATHS:
 		for attack_texture_path in TowerVisualAssetsScript.ATTACK_TEXTURE_PATHS[turret_type]:
 			if ResourceLoader.has_cached(str(attack_texture_path)):
@@ -182,17 +187,47 @@ func _init() -> void:
 				_fail("tower visual size must grow consistently: %s tier %d" % [turret_type, tier])
 				return
 			previous_visible_side = normalized_visible_side
-	# 모든 공격 시트는 임포트 후 512px 프레임 4개를 2x2로 제공하며 1번 프레임 경계가 유효해야 한다.
+	# 모든 대기·공격 시트는 임포트 후 256px 프레임을 제공하며 첫 프레임 경계가 유효해야 한다.
 	for turret_type in ["MELEE", "RANGED", "DOT", "SLOW", "STUN"]:
 		for tier in range(1, 5):
+			var idle_texture: Texture2D = TowerVisualAssetsScript.idle_texture(turret_type, tier)
+			var idle_bounds: Rect2 = TowerVisualAssetsScript.idle_first_frame_visible_bounds(turret_type, tier)
+			if idle_texture.get_size() != Vector2(TowerVisualAssetsScript.IDLE_FRAME_SIZE.x * 2.0, TowerVisualAssetsScript.IDLE_FRAME_SIZE.y):
+				_fail("tower idle sheet must import as a 512x256 2-frame sheet: %s tier %d" % [turret_type, tier])
+				return
+			if idle_bounds.size.x <= 0.0 or idle_bounds.size.y <= 0.0 or idle_bounds.end.x > TowerVisualAssetsScript.IDLE_FRAME_SIZE.x or idle_bounds.end.y > TowerVisualAssetsScript.IDLE_FRAME_SIZE.y:
+				_fail("tower idle frame bounds are outside frame 1: %s tier %d" % [turret_type, tier])
+				return
 			var attack_texture: Texture2D = TowerVisualAssetsScript.attack_texture(turret_type, tier)
 			var attack_bounds: Rect2 = TowerVisualAssetsScript.attack_first_frame_visible_bounds(turret_type, tier)
 			if attack_texture.get_size() != TowerVisualAssetsScript.ATTACK_FRAME_SIZE * 2.0:
-				_fail("tower attack sheet must import as a 1024px 2x2 sheet: %s tier %d" % [turret_type, tier])
+				_fail("tower attack sheet must import as a 512px 2x2 sheet: %s tier %d" % [turret_type, tier])
 				return
 			if attack_bounds.size.x <= 0.0 or attack_bounds.size.y <= 0.0 or attack_bounds.end.x > TowerVisualAssetsScript.ATTACK_FRAME_SIZE.x or attack_bounds.end.y > TowerVisualAssetsScript.ATTACK_FRAME_SIZE.y:
 				_fail("tower attack frame bounds are outside frame 1: %s tier %d" % [turret_type, tier])
 				return
+	# Sprite2D의 행 우선 프레임 번호가 실제 재생에서도 좌상→우상→좌하→우하(0→1→2→3)
+	# 순서를 유지하고, 끝나면 다시 대기 애니메이션을 표시해야 한다.
+	var animation_probe := TowerScript.new() as PrototypeTower
+	get_root().add_child(animation_probe)
+	animation_probe.setup(database.get_turret_data("turretMelee1"), 0, false)
+	animation_probe.attack_sprite.texture = TowerVisualAssetsScript.attack_texture("MELEE", 1)
+	animation_probe.attack_sprite.hframes = TowerVisualAssetsScript.ATTACK_FRAME_COLUMNS
+	animation_probe.attack_sprite.vframes = TowerVisualAssetsScript.ATTACK_FRAME_ROWS
+	animation_probe.attack_visual_ready = true
+	animation_probe.call("_play_attack_animation")
+	var observed_attack_frames := [animation_probe.attack_sprite.frame]
+	for _step in 3:
+		animation_probe.call("_update_attack_animation", TowerScript.ATTACK_FRAME_DURATION_SEC + 0.001)
+		observed_attack_frames.append(animation_probe.attack_sprite.frame)
+	if observed_attack_frames != [0, 1, 2, 3]:
+		_fail("tower attack frames must play top-left, top-right, bottom-left, bottom-right")
+		return
+	animation_probe.call("_update_attack_animation", TowerScript.ATTACK_FRAME_DURATION_SEC + 0.001)
+	if animation_probe.attack_sprite.visible or not animation_probe.body_sprite.visible:
+		_fail("tower must return to idle animation after attack frame 4")
+		return
+	animation_probe.free()
 	# v7 낮/밤 이미지의 세 전투 플랫폼은 같은 픽셀 행이며 렌더링 추가 변형도 없어야 한다.
 	var night_source_rows := [848.0, 1081.0, 1320.0]
 	var day_target_rows := [848.0, 1081.0, 1320.0]
