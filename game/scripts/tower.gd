@@ -16,7 +16,10 @@ const STUN_CHARGE_AURA_TEXTURE := preload("res://assets/combat_vfx/stun_charge_a
 # 각 Tier의 실제 불투명 그림 면적이 아래 정사각형과 같은 면적이 되도록 정규화한다.
 # 캔버스 크기가 아닌 육안 면적을 기준으로 하므로 모든 포탑이 단계별로 일정하게 커진다.
 const BODY_VISIBLE_AREA_SIDE_BY_TIER := [132.0, 154.0, 178.0, 205.0]
+# 슬롯 노드는 발판 접지선보다 100px 위에 있으며 일반 타워의 실제 발끝은 이 위치에 맞춘다.
 const BODY_BOTTOM_Y := 100.0
+# STUN은 다리가 지면에 닿는 타워가 아니라 공중부양형이므로 접지선 위에 여백을 둔다.
+const STUN_HOVER_HEIGHT := 36.0
 # 공격 시트는 좌상→우상→좌하→우하 순서로 0.08초씩 재생한다.
 const ATTACK_FRAME_DURATION_SEC := 0.08
 # STUN 공격의 충전 시간은 피해 밸런스와 분리된 시각 전용 PLACEHOLDER 값이다.
@@ -106,7 +109,8 @@ func _refresh_visual_nodes(request_attack_visual: bool = true) -> void:
 	body_sprite.texture = TowerVisualAssetsScript.body_texture(turret_type, tier)
 	var body_bounds: Rect2 = TowerVisualAssetsScript.body_visible_bounds(turret_type, tier)
 	var body_scale := _scale_for_visible_area(body_bounds, body_visible_area_side(turret_type, tier))
-	body_base_position = _position_visible_bounds(body_sprite.texture, body_bounds, Vector2(0.0, BODY_BOTTOM_Y), body_scale)
+	var target_bottom_y := body_target_bottom_y(turret_type)
+	body_base_position = _position_visible_bounds(body_sprite.texture, body_bounds, Vector2(0.0, target_bottom_y), body_scale)
 	body_sprite.position = body_base_position
 	body_sprite.scale = Vector2.ONE * body_scale
 	body_sprite.z_index = 0
@@ -138,7 +142,7 @@ func _try_bind_attack_texture() -> void:
 	attack_sprite.position = _position_visible_bounds_for_size(
 		TowerVisualAssetsScript.ATTACK_FRAME_SIZE,
 		attack_bounds,
-		Vector2(0.0, BODY_BOTTOM_Y),
+		Vector2(0.0, body_target_bottom_y(turret_type)),
 		attack_scale
 	)
 	attack_sprite.scale = Vector2.ONE * attack_scale
@@ -158,6 +162,10 @@ static func _scale_for_visible_area(bounds: Rect2, target_area_side: float) -> f
 static func body_visible_area_side(_turret_type_value: String, tier_value: int) -> float:
 	var tier_index := clampi(tier_value - 1, 0, BODY_VISIBLE_AREA_SIDE_BY_TIER.size() - 1)
 	return float(BODY_VISIBLE_AREA_SIDE_BY_TIER[tier_index])
+
+
+static func body_target_bottom_y(turret_type_value: String) -> float:
+	return BODY_BOTTOM_Y - STUN_HOVER_HEIGHT if turret_type_value == "STUN" else BODY_BOTTOM_Y
 
 
 # 텍스처 중심 기준 Sprite2D에서 실제 그림의 아래 중앙을 원하는 월드 좌표에 고정한다.
