@@ -10,9 +10,15 @@ func _init() -> void:
 	for monster_type in ["NORMAL", "SPEED", "TANK", "BOSS"]:
 		var texture: Texture2D = MonsterScript._texture_for_type(monster_type)
 		var bounds: Rect2 = MonsterScript._visible_bounds_for_type(monster_type)
+		var hit_texture: Texture2D = MonsterScript._hit_texture_for_type(monster_type)
+		var hit_bounds: Rect2 = MonsterScript._hit_visible_bounds_for_type(monster_type)
 		if texture == null or bounds.size.x <= 0.0 or bounds.size.y <= 0.0 \
 				or bounds.end.x > texture.get_width() or bounds.end.y > texture.get_height():
 			_fail("invalid monster texture bounds: %s" % monster_type)
+			return
+		if hit_texture == null or hit_bounds.size.x <= 0.0 or hit_bounds.size.y <= 0.0 \
+				or hit_bounds.end.x > hit_texture.get_width() or hit_bounds.end.y > hit_texture.get_height():
+			_fail("invalid monster hit texture bounds: %s" % monster_type)
 			return
 		var uniform_scale: float = MonsterScript._texture_scale_for_type(monster_type)
 		var visible_size := bounds.size * uniform_scale
@@ -51,6 +57,41 @@ func _init() -> void:
 		if not is_equal_approx(monster.position.y + monster.body_bottom_offset_y, floor_contact.y):
 			monster.free()
 			_fail("monster was not grounded after setup: %s" % monster_type)
+			return
+		if monster.hit_sprite == null or monster.hit_sprite.texture != hit_texture \
+				or monster.hit_sprite.visible \
+				or not is_equal_approx(monster.hit_sprite.scale.x, monster.hit_sprite.scale.y):
+			monster.free()
+			_fail("monster hit visual must start hidden and use one uniformly scaled Sprite2D: %s" % monster_type)
+			return
+		var hit_local_bottom := monster.hit_sprite.position.y \
+				+ (hit_bounds.end.y - hit_texture.get_height() * 0.5) * monster.hit_sprite.scale.y
+		if not is_equal_approx(hit_local_bottom * MonsterScript.MONSTER_VISUAL_SCALE, monster.body_bottom_offset_y):
+			monster.free()
+			_fail("monster hit visual was not grounded: %s" % monster_type)
+			return
+
+		monster.receive_turret_hit(1.0, "RANGED", 0.0, 0.0)
+		if monster.body_sprite.visible or not monster.hit_sprite.visible \
+				or not is_equal_approx(monster.hit_visual_remaining_sec, MonsterScript.HIT_VISUAL_DURATION_SEC):
+			monster.free()
+			_fail("direct hit did not start the monster hit visual: %s" % monster_type)
+			return
+		monster.receive_turret_hit(1.0, "RANGED", 0.0, 0.0)
+		if not is_equal_approx(
+				monster.hit_visual_remaining_sec,
+				MonsterScript.HIT_VISUAL_DURATION_SEC + MonsterScript.HIT_VISUAL_STACK_SEC
+		):
+			monster.free()
+			_fail("repeated direct hit did not extend the monster hit visual: %s" % monster_type)
+			return
+		monster._process_hit_visual(MonsterScript.HIT_VISUAL_DURATION_SEC + MonsterScript.HIT_VISUAL_STACK_SEC)
+		monster.receive_turret_hit(1.0, "DOT", 2.0, 0.5)
+		monster._process_hit_visual(MonsterScript.HIT_VISUAL_DURATION_SEC)
+		monster._process_status_effects(1.0)
+		if not monster.body_sprite.visible or monster.hit_sprite.visible or monster.hit_visual_remaining_sec > 0.0:
+			monster.free()
+			_fail("damage-over-time must not show the monster hit visual: %s" % monster_type)
 			return
 		monster.free()
 
