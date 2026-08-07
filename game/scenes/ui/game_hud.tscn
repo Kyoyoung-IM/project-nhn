@@ -1,19 +1,19 @@
 [gd_scene format=3 uid="uid://jcmxg05necpc"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/images/top_1.png" id="1_day"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/top_2.png" id="2_night"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/frame_2.png" id="3_panel"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/btn_1.png" id="4_action"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/btn_2.png" id="5_secondary"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/btn_4.png" id="6_round"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/coin.png" id="7_coin"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/icon1.png" id="8_refresh"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/icon2.png" id="9_pause"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/icon3.png" id="10_play"]
+[ext_resource type="Texture2D" uid="uid://b41b455jjty85" path="res://assets/ui/images/top_1.png" id="1_day"]
+[ext_resource type="Texture2D" uid="uid://dkho8ycv55qbq" path="res://assets/ui/images/top_2.png" id="2_night"]
+[ext_resource type="Texture2D" uid="uid://1e7v888ksm3l" path="res://assets/ui/images/frame_2.png" id="3_panel"]
+[ext_resource type="Texture2D" uid="uid://b05mw20gijjhu" path="res://assets/ui/images/btn_1.png" id="4_action"]
+[ext_resource type="Texture2D" uid="uid://ep62b65a1jll" path="res://assets/ui/images/btn_2.png" id="5_secondary"]
+[ext_resource type="Texture2D" uid="uid://dj3f7on5xib88" path="res://assets/ui/images/btn_4.png" id="6_round"]
+[ext_resource type="Texture2D" uid="uid://sv6vfd5ce0x6" path="res://assets/ui/images/coin.png" id="7_coin"]
 [ext_resource type="PackedScene" uid="uid://m2jiqpu5qgrk" path="res://scenes/ui/shop_card.tscn" id="8_card"]
+[ext_resource type="Texture2D" uid="uid://djltfke1jsiph" path="res://assets/ui/images/icon1.png" id="8_refresh"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_clear_overlay.tscn" id="9_game_clear"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_over_overlay.tscn" id="9_game_over"]
+[ext_resource type="Texture2D" uid="uid://c2sh6p1wvopaf" path="res://assets/ui/images/icon2.png" id="9_pause"]
 [ext_resource type="PackedScene" uid="uid://bibm7rj2pfhdd" path="res://scenes/ui/options_menu.tscn" id="10_options"]
+[ext_resource type="Texture2D" uid="uid://k7e1tf3yrk88" path="res://assets/ui/images/icon3.png" id="10_play"]
 [ext_resource type="PackedScene" path="res://scenes/ui/test_balance_panel.tscn" id="12_test"]
 [ext_resource type="FontFile" uid="uid://d4bssxj634h2e" path="res://assets/fonts/Jua-Regular.ttf" id="13_font"]
 [ext_resource type="FontFile" uid="uid://d04qwd7rn2ao0" path="res://assets/fonts/NotoSansKR.ttf" id="14_symbol"]
@@ -90,10 +90,10 @@ mouse_filter = 2
 
 [node name="DayNightHUD" type="Control" parent="Layout" unique_id=1714048299]
 anchors_preset = 0
-offset_left = -80.0
-offset_top = -5.0
-offset_right = 420.0
-offset_bottom = 245.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 516.0
+offset_bottom = 266.0
 mouse_filter = 2
 
 [node name="DayFrame" type="TextureRect" parent="Layout/DayNightHUD" unique_id=1571776901]
@@ -129,9 +129,9 @@ vertical_alignment = 1
 
 [node name="WaveTitleLabel" type="Label" parent="Layout/DayNightHUD" unique_id=1403213627]
 layout_mode = 0
-offset_left = 185.0
+offset_left = 180.0
 offset_top = 131.0
-offset_right = 315.0
+offset_right = 310.0
 offset_bottom = 161.0
 theme_override_colors/font_color = Color(0.960784, 0.968627, 1, 1)
 theme_override_colors/font_outline_color = Color(0.07, 0.06, 0.11, 0.9)
@@ -184,7 +184,6 @@ offset_left = 1450.0
 offset_top = 28.0
 offset_right = 1780.0
 offset_bottom = 108.0
-mouse_filter = 2
 texture = ExtResource("4_action")
 patch_margin_left = 32
 patch_margin_top = 25
@@ -236,7 +235,6 @@ offset_left = 1600.0
 offset_top = 28.0
 offset_right = 1780.0
 offset_bottom = 108.0
-mouse_filter = 2
 texture = ExtResource("5_secondary")
 patch_margin_left = 32
 patch_margin_top = 25
@@ -329,7 +327,6 @@ layout_mode = 0
 offset_left = 24.0
 offset_right = 274.0
 offset_bottom = 270.0
-mouse_filter = 2
 texture = ExtResource("3_panel")
 patch_margin_left = 28
 patch_margin_top = 28
@@ -367,7 +364,6 @@ offset_left = 42.0
 offset_top = 116.0
 offset_right = 256.0
 offset_bottom = 250.0
-mouse_filter = 2
 texture = ExtResource("5_secondary")
 patch_margin_left = 32
 patch_margin_top = 25
@@ -384,11 +380,11 @@ focus_mode = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_disabled_color = Color(0.6, 0.580392, 0.654902, 1)
-theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_pressed_color = Color(0.88, 0.92, 1, 1)
-theme_override_colors/icon_disabled_color = Color(0.55, 0.55, 0.58, 1)
 theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_pressed_color = Color(0.88, 0.92, 1, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_disabled_color = Color(0.55, 0.55, 0.58, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("13_font")
 theme_override_font_sizes/font_size = 22
@@ -397,10 +393,10 @@ theme_override_styles/pressed = SubResource("StyleRerollPressed")
 theme_override_styles/hover = SubResource("StyleRerollHover")
 theme_override_styles/disabled = SubResource("StyleRerollDisabled")
 theme_override_styles/focus = SubResource("StyleInputEmpty")
-icon = ExtResource("8_refresh")
-icon_max_width = 44
 text = "새로고침
+
 10 G"
+icon = ExtResource("8_refresh")
 
 [node name="ShopCard1" parent="Layout/ShopUI" unique_id=413573491 instance=ExtResource("8_card")]
 layout_mode = 0

@@ -11,13 +11,17 @@ signal reached_deepest_floor(monster: PrototypeMonster)
 # SPAWNING부터 DEAD까지 몬스터의 현재 행동을 명시적으로 구분한다.
 enum MoveState { SPAWNING, WALKING, DESCENDING, STUNNED, EXIT, DEAD }
 
-# 몬스터 노드의 등장·층 이동 연출 배율이다. 실제 스프라이트 크기는 불투명 영역을
-# 기준으로 별도 계산하며, 이 노드 배율과 접지 오프셋을 함께 적용해 발판 접촉을 유지한다.
+# 몬스터 노드의 등장·층 이동 연출 배율이다. 실제 스프라이트 크기는 타입별 텍스처
+# 배율과 이 노드 배율을 나눠 적용하며, 접지 오프셋을 함께 적용해 발판 접촉을 유지한다.
 const MONSTER_VISUAL_SCALE := 1.6
 const STUN_STATUS_TEXTURE := preload("res://assets/combat_vfx/status_stun_stars_v2.png")
 const STUN_STATUS_DRAW_SIZE := Vector2(126.0, 84.0)
-const REGULAR_VISIBLE_AREA_SIDE := 132.0
+# 일반형의 기존 표시 크기를 보존하는 원본 픽셀 공통 배율이다. SPEED와 TANK에도
+# 같은 값을 적용해 불투명 그림의 절대 픽셀 크기 차이가 화면 크기 차이로 이어지게 한다.
+const REGULAR_TEXTURE_SCALE := 0.654589271
 const BOSS_VISIBLE_HEIGHT := 440.0
+const HEALTH_BAR_HEIGHT := 4.0
+const HEALTH_BAR_HEAD_GAP := 10.0
 const HIT_VISUAL_DURATION_SEC := 0.25
 const HIT_VISUAL_STACK_SEC := 0.1
 const DEATH_FRAME_SIZE := Vector2(512.0, 512.0)
@@ -55,8 +59,8 @@ const MONSTER_DEATH_FLOOR_Y := {
 	"BOSS": 492.0,
 }
 
-# 512px 원본 안에서 알파가 있는 실제 그림 경계다. 캔버스 여백을 제외한 이 영역을
-# 기준으로 크기를 맞춰 타입별 원본 여백 차이가 게임 표시 크기에 영향을 주지 않게 한다.
+# 512px 원본 안에서 알파가 있는 실제 그림 경계다. 캔버스 여백을 제외하고 실제 그림의
+# 크기와 중심, 발끝을 계산하되 일반 몬스터 사이의 원본 픽셀 크기 차이는 보존한다.
 const MONSTER_VISIBLE_BOUNDS := {
 	"NORMAL": Rect2(164.0, 146.0, 184.0, 221.0),
 	"SPEED": Rect2(94.0, 121.0, 325.0, 271.0),
@@ -197,13 +201,13 @@ static func _death_floor_y_for_type(type_value: String) -> float:
 	return float(MONSTER_DEATH_FLOOR_Y.get(type_value, MONSTER_DEATH_FLOOR_Y["NORMAL"]))
 
 
-# 일반형은 Tier 1 타워와 같은 육안 면적, 보스는 한 층보다 약간 작은 높이에 맞춘다.
-# 반환값 하나를 가로·세로에 똑같이 적용하므로 어떤 타입도 종횡비가 변하지 않는다.
+# 일반 몬스터에는 원본 픽셀 크기 차이를 보존하는 공통 배율을 적용하고, 보스만 한 층보다
+# 약간 작은 기존 높이에 맞춘다. 가로·세로에 같은 값을 적용해 종횡비를 보존한다.
 static func _texture_scale_for_type(type_value: String) -> float:
 	var bounds := _visible_bounds_for_type(type_value)
 	if type_value == "BOSS":
 		return BOSS_VISIBLE_HEIGHT / maxf(1.0, bounds.size.y)
-	return REGULAR_VISIBLE_AREA_SIDE / sqrt(maxf(1.0, bounds.size.x * bounds.size.y))
+	return REGULAR_TEXTURE_SCALE
 
 
 static func _visible_world_size_for_type(type_value: String) -> Vector2:
@@ -566,10 +570,14 @@ func _configure_health_bar_layout() -> void:
 	if health_bar == null:
 		return
 	var bar_width_world := 180.0 if monster_type == "BOSS" else 84.0
-	var bar_height_world := 7.0
-	var bar_top_world := -body_bottom_offset_y - 14.0
+	var bar_top_world := -body_bottom_offset_y - HEALTH_BAR_HEAD_GAP
+	var target_local_height := HEALTH_BAR_HEIGHT / MONSTER_VISUAL_SCALE
 	health_bar.position = Vector2(-bar_width_world * 0.5, bar_top_world) / MONSTER_VISUAL_SCALE
-	health_bar.size = Vector2(bar_width_world, bar_height_world) / MONSTER_VISUAL_SCALE
+	health_bar.size = Vector2(bar_width_world / MONSTER_VISUAL_SCALE, target_local_height)
+	# ProgressBar의 테마 최소 높이가 요청 두께보다 크므로 위쪽 가장자리를 기준으로 세로만
+	# 축소한다. 부모 노드 배율까지 적용된 최종 화면 두께는 HEALTH_BAR_HEIGHT가 된다.
+	health_bar.pivot_offset = Vector2.ZERO
+	health_bar.scale = Vector2(1.0, target_local_height / maxf(target_local_height, health_bar.size.y))
 
 
 # 체력 바의 배치·크기·스타일은 monster.tscn에서 편집하고 현재 수치와 표시 여부만 연결한다.
