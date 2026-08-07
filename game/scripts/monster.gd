@@ -18,12 +18,21 @@ const STUN_STATUS_TEXTURE := preload("res://assets/combat_vfx/status_stun_stars_
 const STUN_STATUS_DRAW_SIZE := Vector2(126.0, 84.0)
 const REGULAR_VISIBLE_AREA_SIDE := 132.0
 const BOSS_VISIBLE_HEIGHT := 440.0
+const HIT_VISUAL_DURATION_SEC := 0.25
+const HIT_VISUAL_STACK_SEC := 0.1
 
 const MONSTER_TEXTURES := {
 	"NORMAL": preload("res://assets/enemy/normal1.png"),
 	"SPEED": preload("res://assets/enemy/spped1.png"),
 	"TANK": preload("res://assets/enemy/tank1.png"),
 	"BOSS": preload("res://assets/enemy/boss1.png"),
+}
+
+const MONSTER_HIT_TEXTURES := {
+	"NORMAL": preload("res://assets/enemy/hit animation/normal1_hit.png"),
+	"SPEED": preload("res://assets/enemy/hit animation/spped1_hit.png"),
+	"TANK": preload("res://assets/enemy/hit animation/tank1_hit.png"),
+	"BOSS": preload("res://assets/enemy/hit animation/boss1_hit.png"),
 }
 
 # 512px 원본 안에서 알파가 있는 실제 그림 경계다. 캔버스 여백을 제외한 이 영역을
@@ -33,6 +42,13 @@ const MONSTER_VISIBLE_BOUNDS := {
 	"SPEED": Rect2(94.0, 121.0, 325.0, 271.0),
 	"TANK": Rect2(124.0, 83.0, 262.0, 345.0),
 	"BOSS": Rect2(4.0, 21.0, 502.0, 469.0),
+}
+
+const MONSTER_HIT_VISIBLE_BOUNDS := {
+	"NORMAL": Rect2(198.0, 120.0, 184.0, 240.0),
+	"SPEED": Rect2(147.0, 80.0, 307.0, 364.0),
+	"TANK": Rect2(137.0, 12.0, 319.0, 403.0),
+	"BOSS": Rect2(44.0, 3.0, 459.0, 500.0),
 }
 
 # 데이터 식별자와 표시용 속성이다.
@@ -47,6 +63,8 @@ var move_speed_px_sec: float = 1.0
 var reward_gold: int = 0
 var body_visible_world_size := Vector2.ZERO
 var body_sprite: Sprite2D
+var hit_sprite: Sprite2D
+var hit_visual_remaining_sec: float = 0.0
 # 처음 피해를 받기 전에는 체력 바를 숨기고, 첫 유효 피해부터 남은 전투 동안 표시한다.
 var health_bar_visible: bool = false
 var health_bar: ProgressBar
@@ -89,9 +107,10 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	move_speed_px_sec = float(config.get("move_speed_px_sec", 1.0))
 	reward_gold = int(config.get("reward_gold", 0))
 	body_visible_world_size = _visible_world_size_for_type(monster_type)
-	_configure_body_sprite()
-	health_bar_visible = false
 	body_bottom_offset_y = _body_bottom_offset_for_type(monster_type)
+	_configure_body_sprite()
+	_configure_hit_sprite()
+	health_bar_visible = false
 	_configure_health_bar_layout()
 	_update_health_bar()
 	stun_remaining_sec = 0.0
@@ -100,6 +119,8 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	dot_remaining_sec = 0.0
 	dot_tick_damage = 0.0
 	dot_tick_cooldown_sec = 0.0
+	hit_visual_remaining_sec = 0.0
+	_set_hit_visual_active(false)
 	path_points.clear()
 	for floor_contact_point in movement_path:
 		path_points.append(center_position_for_floor_contact(floor_contact_point))
@@ -135,6 +156,14 @@ static func _visible_bounds_for_type(type_value: String) -> Rect2:
 	return MONSTER_VISIBLE_BOUNDS.get(type_value, MONSTER_VISIBLE_BOUNDS["NORMAL"]) as Rect2
 
 
+static func _hit_texture_for_type(type_value: String) -> Texture2D:
+	return MONSTER_HIT_TEXTURES.get(type_value, MONSTER_HIT_TEXTURES["NORMAL"]) as Texture2D
+
+
+static func _hit_visible_bounds_for_type(type_value: String) -> Rect2:
+	return MONSTER_HIT_VISIBLE_BOUNDS.get(type_value, MONSTER_HIT_VISIBLE_BOUNDS["NORMAL"]) as Rect2
+
+
 # 일반형은 Tier 1 타워와 같은 육안 면적, 보스는 한 층보다 약간 작은 높이에 맞춘다.
 # 반환값 하나를 가로·세로에 똑같이 적용하므로 어떤 타입도 종횡비가 변하지 않는다.
 static func _texture_scale_for_type(type_value: String) -> float:
@@ -167,6 +196,30 @@ func _configure_body_sprite() -> void:
 	body_sprite.scale = Vector2.ONE * local_texture_scale
 
 
+# 피격 이미지는 본체와 같은 원본 픽셀 배율을 사용하고, 자세가 달라도 발끝은 기존
+# 접지선에 고정한다. 평소에는 본체만, 직접 피해 중에는 피격 이미지만 표시한다.
+func _configure_hit_sprite() -> void:
+	if hit_sprite == null:
+		hit_sprite = Sprite2D.new()
+		hit_sprite.name = "HitSprite"
+		hit_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		hit_sprite.z_index = -1
+		add_child(hit_sprite)
+	var texture := _hit_texture_for_type(monster_type)
+	var bounds := _hit_visible_bounds_for_type(monster_type)
+	var local_texture_scale := _texture_scale_for_type(monster_type) / MONSTER_VISUAL_SCALE
+	var texture_center := texture.get_size() * 0.5
+	var visible_center_x := bounds.position.x + bounds.size.x * 0.5
+	var local_body_bottom := body_bottom_offset_y / MONSTER_VISUAL_SCALE
+	hit_sprite.texture = texture
+	hit_sprite.position = Vector2(
+		-(visible_center_x - texture_center.x) * local_texture_scale,
+		local_body_bottom - (bounds.end.y - texture_center.y) * local_texture_scale
+	)
+	hit_sprite.scale = Vector2.ONE * local_texture_scale
+	hit_sprite.visible = false
+
+
 # 스프라이트의 실제 최하단을 중심점 기준으로 반환해 종류별 뜨거나 파묻히는 차이를 없앤다.
 static func _body_bottom_offset_for_type(type_value: String) -> float:
 	return _visible_world_size_for_type(type_value).y * 0.5
@@ -180,6 +233,7 @@ func center_position_for_floor_contact(floor_contact_position: Vector2) -> Vecto
 func _process(delta: float) -> void:
 	visual_elapsed_sec += delta
 	_process_status_effects(delta)
+	_process_hit_visual(delta)
 	if move_state == MoveState.DEAD:
 		return
 	if move_state == MoveState.SPAWNING:
@@ -254,11 +308,13 @@ func _process_floor_transfer(delta: float) -> void:
 
 
 # 즉시 피해를 적용하고 체력이 0이 되면 보상 처리를 위한 처치 신호를 보낸다.
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, show_hit_visual: bool = true) -> void:
 	if move_state == MoveState.DEAD or move_state == MoveState.EXIT:
 		return
 	if amount > 0.0 and hp > 0.0:
 		health_bar_visible = true
+		if show_hit_visual:
+			_show_hit_visual()
 	hp = maxf(0.0, hp - amount)
 	_update_health_bar()
 	_queue_status_redraw()
@@ -301,7 +357,8 @@ func _process_status_effects(delta: float) -> void:
 		dot_remaining_sec = maxf(0.0, dot_remaining_sec - delta)
 		dot_tick_cooldown_sec -= delta
 		if dot_tick_cooldown_sec <= 0.0:
-			take_damage(dot_tick_damage)
+			# 화상의 주기 피해는 체력만 줄이고 피격 이미지는 다시 표시하지 않는다.
+			take_damage(dot_tick_damage, false)
 			dot_tick_cooldown_sec += 1.0
 		if dot_remaining_sec <= 0.0:
 			dot_tick_damage = 0.0
@@ -309,6 +366,30 @@ func _process_status_effects(delta: float) -> void:
 	# 실제로 보이는 동안에만 갱신해 다수 몬스터가 쌓여도 Web 메인 스레드 부하가 증가하지 않게 한다.
 	if status_visual_was_active or stun_remaining_sec > 0.0 or slow_remaining_sec > 0.0 or dot_remaining_sec > 0.0:
 		_queue_status_redraw()
+
+
+# 직접 명중 시 새 재생은 0.25초, 이미 재생 중인 명중은 남은 시간에 0.1초를 더한다.
+func _show_hit_visual() -> void:
+	if hit_visual_remaining_sec > 0.0:
+		hit_visual_remaining_sec += HIT_VISUAL_STACK_SEC
+	else:
+		hit_visual_remaining_sec = HIT_VISUAL_DURATION_SEC
+	_set_hit_visual_active(true)
+
+
+func _process_hit_visual(delta: float) -> void:
+	if hit_visual_remaining_sec <= 0.0:
+		return
+	hit_visual_remaining_sec = maxf(0.0, hit_visual_remaining_sec - delta)
+	if hit_visual_remaining_sec <= 0.0:
+		_set_hit_visual_active(false)
+
+
+func _set_hit_visual_active(active: bool) -> void:
+	if body_sprite != null:
+		body_sprite.visible = not active
+	if hit_sprite != null:
+		hit_sprite.visible = active
 
 
 # Web에서는 피해로 죽는 프레임에 redraw 예약과 queue_free가 겹치면 해제된
