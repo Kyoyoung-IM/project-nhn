@@ -1,14 +1,14 @@
 class_name PrototypeBattlefieldWorld
 extends Node2D
 
-# 고정 HUD와 상점 아래에서 수직 이동하는 배경 전용 그리기 노드다.
+# 고정 HUD와 상점 아래에서 전체 층을 함께 보여주는 배경 전용 그리기 노드다.
 # 전투 오브젝트와 분리되어 상점 카드 사이에서도 배경만 끊김 없이 이어진다.
 
 const DAY_ENVIRONMENT_BACKGROUND := preload("res://assets/backgrounds/bg.png")
 const NIGHT_ENVIRONMENT_BACKGROUND := preload("res://assets/backgrounds/bg_night.png")
 
 # 세로형 낮·밤 원본을 화면 폭에 맞춰 가로·세로 동일한 배율로 확대한다.
-# 카메라는 확대된 한 장의 배경을 세로로 잘라 보여주므로 플랫폼과 원형 요소가 찌그러지지 않는다.
+# 전체 뷰는 확대된 한 장의 배경을 다시 균일 축소하므로 플랫폼과 원형 요소가 찌그러지지 않는다.
 const REFERENCE_VIEWPORT_WIDTH := 1920.0
 const BACKGROUND_SOURCE_SIZE := Vector2(887.0, 1774.0)
 const BACKGROUND_UNIFORM_SCALE := REFERENCE_VIEWPORT_WIDTH / BACKGROUND_SOURCE_SIZE.x
@@ -18,7 +18,7 @@ const BATTLEFIELD_EXTENDED_HEIGHT := BACKGROUND_SOURCE_SIZE.y * BACKGROUND_UNIFO
 const NIGHT_VERTICAL_SCALE := 1.0
 const NIGHT_VERTICAL_OFFSET_SOURCE_PX := 0.0
 
-# 균일 축소 카메라가 만드는 좌우 여백은 원본 가장자리 일부를 같은 배율로 거울 연장해 채운다.
+# 균일 축소 전체 뷰가 만드는 좌우 여백은 원본 가장자리 일부를 같은 배율로 거울 연장해 채운다.
 # 원본 전체를 가로로 늘리지 않으므로 배경의 종횡비와 플랫폼 비율은 유지된다.
 var horizontal_extension_px: float = 0.0:
 	set(value):
