@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-07 22:04 KST
+- 마지막 갱신: 2026-08-07 23:16 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `ec41f96` (`Merge pull request #41 from Kyoyoung-IM/agent/web-release-tower-sprites-20260807`)
+- 확인된 기준 커밋: `04a7ab0` (`Merge pull request #47 from Kyoyoung-IM/agent/graphics-enemy-sprites-20260807`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -26,12 +26,12 @@
 | UI | 완료 | PR #29·#30 merge commit 병합, 주황색 `GAME CLEAR!` 타이틀과 Web Release 반영. PR #32 복구 배포 후 공개 PCK·해시 일치 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
 | 타워 판매 제거 | 완료 | PR #34 merge commit 병합 후 PR #37 Web Release로 최신 `main`과 함께 Pages 배포·공개 화면 로드 확인 | 새 판매 관련 요구가 생기면 기획 문서부터 갱신 |
 | 버그 수정 | 완료 | PR #43 merge commit `e9aa08a` 병합·배포. 공격 시트 지연 로드와 비활성 상태 표시 redraw 제한으로 일반·테스트 플레이 공통 Web 부하 경로를 완화하고, 5종 포탑 혼합 Wave 4·10배속 Web 전투와 자동 검증 통과 | 공개 빌드에서 간헐 정지 재발 여부를 장시간 플레이로 재확인 |
-| 로컬 Web 전투 정지 | 수정·검증 완료 | 실제 멈춘 탭에서 `memory access out of bounds`와 `null function`을 반복 재현. 단일 스레드 Web에서 제거 예정 노드의 동적 `_draw` 예약이 다수 전투 효과와 겹치는 경로로 좁혀, 몬스터·타워·투사체·화염·타격 효과는 Web에서 반복 draw만 생략하고 이동 시간·피해·상태이상 판정은 보존. 공격 시트도 Web에서 요청하지 않도록 유지. 혼합 16개 타워·10배속·18회 반복 실행과 콘솔 검사 통과 | 배포 요청 시 임시·구버전 Web 산출물을 정리하고 최신 Web Release로 다시 검증 |
+| 로컬 Web 전투 정지 | 병합·배포 완료 | PR #47 merge commit `04a7ab0`에 Web 안정화와 최신 Release를 함께 병합. 혼합 16개 타워·10배속·18회 반복 실행과 자동 검사 통과 후 Pages 실행 `31186595306` 성공 | 공개 빌드의 장시간 일반 플레이에서 재발 여부 관찰 |
 | 타워 그래픽·에셋 정리 | 완료 | PR #39 merge commit `1bd231e` 병합 후 PR #41 Web Release로 배포. 타워 Tier별 캐릭터·4프레임 공격 애니메이션 교체, 미참조 구버전 에셋 100개 제거와 라이선스 기록 현행화. 프로토타입·UI·공개 PCK 검증 통과 | 다음 타워 그래픽 변경 시 같은 프레임 순서와 Web Release 검증 유지 |
-| 몬스터 그래픽 | 로컬 작업 완료 | `agent/graphics-enemy-sprites-20260807`에서 더미 도형을 사용자 제공 적 PNG 4종으로 교체. 일반 3종은 Tier 1 타워 면적, 보스는 440px 높이로 종횡비·발판 접지를 유지하며 전용 검사와 임시 Web 화면·콘솔 확인 통과 | 배포 명령 시 임시·구버전 Web 산출물을 먼저 정리하고 최신 Release만 포함 |
+| 몬스터 그래픽 | 병합·배포 완료 | PR #47 merge commit `04a7ab0`에 일반·속도·탱크·보스 PNG와 크기·접지 규칙을 반영. Pages 실행 `31186595306` 성공 및 공개 PCK 해시 일치 확인 | 공개 플레이에서 타입별 크기·접지 최종 확인 |
 | 데이터테이블 | 병합 완료 | PR #45 merge commit `f7ee996` 병합, 최신 Turret·Monster·SpawnTable 반영 및 정적 무결성 검사 통과 | PR #46 Web Release Pages 배포 확인 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
-| Pages 배포 | 완료 | PR #43 병합 SHA `e9aa08a`의 실행 `31162477264` 성공. 공개 HTML의 `index-e9aa08aa3598.pck` 참조, 17,236,696-byte PCK와 로컬·원격 SHA-256 `F2611942239C5A9BDA6ED9854A50494019CB96568C7275E0EEB6E384D3CC7D2B` 일치 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
+| Pages 배포 | 완료 | PR #47 병합 SHA `04a7ab0`의 실행 `31186595306` 성공. 공개 HTML의 `index-04a7ab09d4d8.pck` 참조, 18,771,240-byte PCK와 로컬·원격 SHA-256 `E9856A16D84333602ABDEC14EF6624C8F105D5FF2FD379BEABBEC7CF23CA517E` 일치 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
 
