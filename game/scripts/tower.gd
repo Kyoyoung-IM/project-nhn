@@ -55,10 +55,12 @@ var body_sprite: Sprite2D
 var attack_sprite: Sprite2D
 var body_base_position := Vector2.ZERO
 var attack_animation_elapsed_sec: float = -1.0
+var attack_visual_requested: bool = false
+var attack_visual_ready: bool = false
 
 
 # 로더가 만든 내부 설정을 복사하고 해당 층의 터렛 그룹에 등록한다.
-func setup(config: Dictionary, assigned_floor_index: int) -> void:
+func setup(config: Dictionary, assigned_floor_index: int, request_attack_visual: bool = true) -> void:
 	turret_id = str(config.get("id", ""))
 	display_name = str(config.get("display_name", turret_id))
 	turret_type = str(config.get("type", "RANGED"))
@@ -72,9 +74,9 @@ func setup(config: Dictionary, assigned_floor_index: int) -> void:
 	tower_color = Color(str(config.get("color_hex", "68d8c1")))
 	floor_index = assigned_floor_index
 	cooldown_sec = 0.0
-	_refresh_visual_nodes()
+	_refresh_visual_nodes(request_attack_visual)
 	add_to_group("prototype_towers")
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 # 테스트 밸런스 편집에서 ID·Tier·현재 쿨다운은 보존하고 전투 수치만 즉시 갱신한다.
@@ -85,11 +87,11 @@ func apply_runtime_balance(config: Dictionary) -> void:
 	cc_duration = maxf(0.0, float(config.get("cc_duration", cc_duration)))
 	cc_value = float(config.get("cc_value", cc_value))
 	cooldown_sec = minf(cooldown_sec, attack_interval_sec)
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 # 타입·Tier별 정지 본체와 공격 시트를 자식 Sprite2D에 연결한다.
-func _refresh_visual_nodes() -> void:
+func _refresh_visual_nodes(request_attack_visual: bool = true) -> void:
 	if body_sprite == null:
 		body_sprite = Sprite2D.new()
 		body_sprite.name = "BodySprite"
@@ -108,7 +110,26 @@ func _refresh_visual_nodes() -> void:
 	body_sprite.position = body_base_position
 	body_sprite.scale = Vector2.ONE * body_scale
 	body_sprite.z_index = 0
-	attack_sprite.texture = TowerVisualAssetsScript.attack_texture(turret_type, tier)
+	attack_sprite.texture = null
+	# 단일 스레드 Web 빌드에서는 타입·Tier마다 1024px 공격 시트를 유지할수록
+	# WASM 선형 메모리가 계속 커져 다수 타워 전투 중 memory access out of bounds로
+	# 중단될 수 있다. Web은 정지 본체와 기존 투사체·타격 VFX를 사용하고, 공격 시트는
+	# 메모리 여유가 있는 네이티브 실행에서만 요청한다.
+	attack_visual_requested = request_attack_visual and not OS.has_feature("web")
+	attack_visual_ready = false
+	if attack_visual_requested:
+		TowerVisualAssetsScript.request_attack_texture(turret_type, tier)
+	_try_bind_attack_texture()
+
+
+# 비동기 로드가 완료된 프레임에서만 공격 시트를 연결해 상점 입력 프레임의 정지를 피한다.
+func _try_bind_attack_texture() -> void:
+	if not attack_visual_requested or attack_visual_ready or attack_sprite == null:
+		return
+	var attack_texture := TowerVisualAssetsScript.try_get_attack_texture(turret_type, tier)
+	if attack_texture == null:
+		return
+	attack_sprite.texture = attack_texture
 	attack_sprite.hframes = TowerVisualAssetsScript.ATTACK_FRAME_COLUMNS
 	attack_sprite.vframes = TowerVisualAssetsScript.ATTACK_FRAME_ROWS
 	attack_sprite.frame = 0
@@ -122,6 +143,7 @@ func _refresh_visual_nodes() -> void:
 	)
 	attack_sprite.scale = Vector2.ONE * attack_scale
 	attack_sprite.z_index = 1
+	attack_visual_ready = true
 	attack_animation_elapsed_sec = -1.0
 	_set_attack_visual_active(false)
 
@@ -157,26 +179,27 @@ func reset_for_wave() -> void:
 	stun_charge_target = null
 	attack_animation_elapsed_sec = -1.0
 	_set_attack_visual_active(false)
-	queue_redraw()
+	_queue_effect_redraw()
 
 
 # 실제 VFX 리소스가 들어오기 전까지 확장 원과 빛 점으로 짧은 머지 완료 연출을 재생한다.
 func play_upgrade_effect() -> void:
 	upgrade_effect_remaining_sec = UPGRADE_EFFECT_DURATION_SEC
-	queue_redraw()
+	_queue_effect_redraw()
 
 # 공격 간격을 갱신하고 같은 층·사거리 안의 최우선 몬스터를 자동 공격한다.
 func _process(delta: float) -> void:
+	_try_bind_attack_texture()
 	_update_attack_animation(delta)
 	if upgrade_effect_remaining_sec > 0.0:
 		upgrade_effect_remaining_sec = maxf(0.0, upgrade_effect_remaining_sec - delta)
-		queue_redraw()
+		_queue_effect_redraw()
 
 	if not enabled:
 		return
 	if stun_charge_remaining_sec > 0.0:
 		stun_charge_remaining_sec = maxf(0.0, stun_charge_remaining_sec - delta)
-		queue_redraw()
+		_queue_effect_redraw()
 		if stun_charge_remaining_sec <= 0.0:
 			_finish_stun_attack()
 		return
@@ -198,14 +221,14 @@ func _process(delta: float) -> void:
 		"STUN":
 			stun_charge_target = target
 			stun_charge_remaining_sec = STUN_CHARGE_DURATION_SEC
-			queue_redraw()
+			_queue_effect_redraw()
 		_:
 			_spawn_projectile(target)
 	cooldown_sec = attack_interval_sec
 
 
 func _play_attack_animation() -> void:
-	if attack_sprite == null:
+	if attack_sprite == null or not attack_visual_ready:
 		return
 	attack_animation_elapsed_sec = 0.0
 	attack_sprite.frame = 0
@@ -312,6 +335,8 @@ func _select_target() -> PrototypeMonster:
 
 # 타워 이미지는 자식 Sprite2D가 그리며, 여기서는 STUN 충전과 머지 피드백만 그린다.
 func _draw() -> void:
+	if OS.has_feature("web"):
+		return
 	if stun_charge_remaining_sec > 0.0:
 		var charge_progress := 1.0 - stun_charge_remaining_sec / STUN_CHARGE_DURATION_SEC
 		var charge_center := body_sprite.position if body_sprite != null else Vector2(0.0, -100.0)
@@ -334,6 +359,11 @@ func _draw() -> void:
 			var spark_angle := TAU * float(spark_index) / 8.0
 			var spark_position := Vector2.from_angle(spark_angle) * effect_radius
 			draw_circle(spark_position, 4.0 * (1.0 - effect_progress * 0.6), effect_color)
+
+
+func _queue_effect_redraw() -> void:
+	if not OS.has_feature("web"):
+		queue_redraw()
 
 
 # 커진 스프라이트를 가장자리에서도 잡을 수 있도록 선택 반경도 Tier와 함께 확장한다.

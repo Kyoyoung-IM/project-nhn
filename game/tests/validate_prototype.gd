@@ -82,13 +82,31 @@ func _init() -> void:
 		if monster.is_empty() or float(monster.get("max_hp", 0.0)) <= 0.0:
 			_fail("missing prototype monster object: %s" % monster_id)
 			return
-	# 정식 몬스터 그래픽을 대비한 확대 배율과 발판 접지 오프셋이 같은 배율을 사용해야 한다.
+	# 타입별 실제 스프라이트가 유효하고 종횡비 보존 배율·발판 접지 크기가 일치해야 한다.
 	if not is_equal_approx(MonsterScript.MONSTER_VISUAL_SCALE, 1.6):
-		_fail("placeholder monster visual scale must remain 1.6")
+		_fail("monster transition scale must remain 1.6")
 		return
-	if not is_equal_approx(MonsterScript._body_bottom_offset_for_type("NORMAL"), 25.6):
-		_fail("scaled monster floor contact offset is invalid")
-		return
+	for monster_type in ["NORMAL", "SPEED", "TANK", "BOSS"]:
+		var monster_texture: Texture2D = MonsterScript._texture_for_type(monster_type)
+		var monster_bounds: Rect2 = MonsterScript._visible_bounds_for_type(monster_type)
+		if monster_texture == null or monster_bounds.size.x <= 0.0 or monster_bounds.size.y <= 0.0 \
+				or monster_bounds.end.x > monster_texture.get_width() or monster_bounds.end.y > monster_texture.get_height():
+			_fail("monster visible bounds are outside the texture: %s" % monster_type)
+			return
+		var monster_texture_scale: float = MonsterScript._texture_scale_for_type(monster_type)
+		var monster_visible_size: Vector2 = monster_bounds.size * monster_texture_scale
+		if not is_equal_approx(monster_visible_size.y * 0.5, MonsterScript._body_bottom_offset_for_type(monster_type)):
+			_fail("monster floor contact offset does not match visible height: %s" % monster_type)
+			return
+		if monster_type == "BOSS":
+			if not is_equal_approx(monster_visible_size.y, MonsterScript.BOSS_VISIBLE_HEIGHT):
+				_fail("boss visual height must remain below one combat-floor interval")
+				return
+		else:
+			var normalized_visible_side := sqrt(monster_visible_size.x * monster_visible_size.y)
+			if not is_equal_approx(normalized_visible_side, MonsterScript.REGULAR_VISIBLE_AREA_SIDE):
+				_fail("regular monster visual area must match a tier 1 tower: %s" % monster_type)
+				return
 	# 생성형 이미지로 교체한 투사체와 히트스캔 텍스처가 모두 빌드에 포함되는지 검사한다.
 	var combat_vfx_textures: Array[Texture2D] = [
 		TowerProjectileScript.SLOW_PROJECTILE_TEXTURE,
