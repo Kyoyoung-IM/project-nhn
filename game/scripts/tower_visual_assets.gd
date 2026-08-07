@@ -43,38 +43,42 @@ const BODY_TEXTURES := {
 	],
 }
 
-const ATTACK_TEXTURES := {
+const ATTACK_TEXTURE_PATHS := {
 	"MELEE": [
-		preload("res://assets/towers/charactor/turretMelee/atk animation/turretMelee1_atk.png"),
-		preload("res://assets/towers/charactor/turretMelee/atk animation/turretMelee2_atk.png"),
-		preload("res://assets/towers/charactor/turretMelee/atk animation/turretMelee3_atk.png"),
-		preload("res://assets/towers/charactor/turretMelee/atk animation/turretMelee4_atk.png"),
+		"res://assets/towers/charactor/turretMelee/atk animation/turretMelee1_atk.png",
+		"res://assets/towers/charactor/turretMelee/atk animation/turretMelee2_atk.png",
+		"res://assets/towers/charactor/turretMelee/atk animation/turretMelee3_atk.png",
+		"res://assets/towers/charactor/turretMelee/atk animation/turretMelee4_atk.png",
 	],
 	"RANGED": [
-		preload("res://assets/towers/charactor/turretRanged/atk animation/turretRanged1_atk.png"),
-		preload("res://assets/towers/charactor/turretRanged/atk animation/turretRanged2_atk.png"),
-		preload("res://assets/towers/charactor/turretRanged/atk animation/turretRanged3_atk.png"),
-		preload("res://assets/towers/charactor/turretRanged/atk animation/turretRanged4_atk.png"),
+		"res://assets/towers/charactor/turretRanged/atk animation/turretRanged1_atk.png",
+		"res://assets/towers/charactor/turretRanged/atk animation/turretRanged2_atk.png",
+		"res://assets/towers/charactor/turretRanged/atk animation/turretRanged3_atk.png",
+		"res://assets/towers/charactor/turretRanged/atk animation/turretRanged4_atk.png",
 	],
 	"DOT": [
-		preload("res://assets/towers/charactor/turretDot/atk animation/turretDot1_atk.png"),
-		preload("res://assets/towers/charactor/turretDot/atk animation/turretDot2_atk.png"),
-		preload("res://assets/towers/charactor/turretDot/atk animation/turretDot3_atk.png"),
-		preload("res://assets/towers/charactor/turretDot/atk animation/turretDot4_atk.png"),
+		"res://assets/towers/charactor/turretDot/atk animation/turretDot1_atk.png",
+		"res://assets/towers/charactor/turretDot/atk animation/turretDot2_atk.png",
+		"res://assets/towers/charactor/turretDot/atk animation/turretDot3_atk.png",
+		"res://assets/towers/charactor/turretDot/atk animation/turretDot4_atk.png",
 	],
 	"SLOW": [
-		preload("res://assets/towers/charactor/turretSlow/atk animation/turretSlow1_atk.png"),
-		preload("res://assets/towers/charactor/turretSlow/atk animation/turretSlow2_atk.png"),
-		preload("res://assets/towers/charactor/turretSlow/atk animation/turretSlow3_atk.png"),
-		preload("res://assets/towers/charactor/turretSlow/atk animation/turretSlow4_atk.png"),
+		"res://assets/towers/charactor/turretSlow/atk animation/turretSlow1_atk.png",
+		"res://assets/towers/charactor/turretSlow/atk animation/turretSlow2_atk.png",
+		"res://assets/towers/charactor/turretSlow/atk animation/turretSlow3_atk.png",
+		"res://assets/towers/charactor/turretSlow/atk animation/turretSlow4_atk.png",
 	],
 	"STUN": [
-		preload("res://assets/towers/charactor/turretStun/atk animation/turretStun1_atk.png"),
-		preload("res://assets/towers/charactor/turretStun/atk animation/turretStun2_atk.png"),
-		preload("res://assets/towers/charactor/turretStun/atk animation/turretStun3_atk.png"),
-		preload("res://assets/towers/charactor/turretStun/atk animation/turretStun4_atk.png"),
+		"res://assets/towers/charactor/turretStun/atk animation/turretStun1_atk.png",
+		"res://assets/towers/charactor/turretStun/atk animation/turretStun2_atk.png",
+		"res://assets/towers/charactor/turretStun/atk animation/turretStun3_atk.png",
+		"res://assets/towers/charactor/turretStun/atk animation/turretStun4_atk.png",
 	],
 }
+
+# Web 빌드에서 1024px 공격 시트 20장을 시작 시 한꺼번에 디코딩하면 전투 전부터
+# 메모리를 크게 점유한다. 실제로 배치된 타입·Tier의 시트만 처음 필요할 때 로드하고 재사용한다.
+static var attack_texture_cache: Dictionary = {}
 
 # 정지 이미지는 투명 여백 없이 잘려 있으므로 전체 캔버스를 사용한다.
 const BODY_VISIBLE_BOUNDS := {
@@ -107,8 +111,11 @@ static func body_visible_bounds(turret_type: String, tier: int) -> Rect2:
 
 
 static func attack_texture(turret_type: String, tier: int) -> Texture2D:
-	var textures: Array = ATTACK_TEXTURES.get(turret_type, ATTACK_TEXTURES["RANGED"])
-	return textures[clampi(tier - 1, 0, textures.size() - 1)] as Texture2D
+	var paths: Array = ATTACK_TEXTURE_PATHS.get(turret_type, ATTACK_TEXTURE_PATHS["RANGED"])
+	var texture_path := str(paths[clampi(tier - 1, 0, paths.size() - 1)])
+	if not attack_texture_cache.has(texture_path):
+		attack_texture_cache[texture_path] = load(texture_path) as Texture2D
+	return attack_texture_cache[texture_path] as Texture2D
 
 
 static func attack_first_frame_visible_bounds(turret_type: String, tier: int) -> Rect2:
