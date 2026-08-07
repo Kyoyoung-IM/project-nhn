@@ -38,6 +38,8 @@
 - Pages 배포는 `github-pages` 동시성 그룹에서 직렬 실행하며 진행 중 실행을 새 실행이 취소하지 않도록 `cancel-in-progress: false`를 유지한다.
 - `actions/deploy-pages@v4`의 Pages 상태 대기 제한은 최대 600,000ms(10분)이며 더 늘릴 수 없다. `timeout`에 더 큰 값을 넣어 우회하지 않고 기본 제한을 사용한다.
 - 업로드 완료 후 `deployment_queued` 또는 `in_progress`이면 10분 제한까지 기다린다. 제한시간 실패는 Web 빌드 실패와 구분해 Pages 서비스 지연으로 기록하고, 같은 SHA를 즉시 재실행하지 않는다.
+- 실패 작업의 `runner_name`이 비어 있고 실행 step이 0개이며 `The job was not acquired by Runner of type hosted even after multiple attempts` 주석이 있으면 Pages 큐 지연이 아니라 GitHub-hosted runner 미할당으로 판정한다. 이 경우 checkout과 아티팩트 업로드가 시작되지 않았으므로 뒤늦은 Pages 게시를 기다리는 대상이 아니다.
+- runner 미할당 실패 후 공개 HTML이 직전 PCK를 유지하는 것을 확인했으면 같은 SHA를 재실행하지 않는다. 빈 커밋이나 문서 전용 커밋 대신 실패 실행 ID를 식별할 수 있는 배포 복구 메타데이터처럼 `build/web/**`에 실제 변경을 남긴 새 Web Release SHA를 만들고, 한 실행만 병합·추적한다. 성공 후에는 새 병합 SHA 기반 PCK 이름과 원격 해시를 확인한다.
 - Actions가 제한시간 실패로 끝나도 Pages 백엔드가 해당 배포를 뒤늦게 게시할 수 있다. 실패 직후 새 실행을 만들지 말고 배포 객체 상태와 공개 HTML의 PCK 참조를 다시 확인한 뒤 실제 미배포 여부를 판정한다.
 - 사용자가 작업 중단을 요청해도 모니터링만 중단하며, 이미 시작된 Actions나 Pages 배포까지 취소하라는 명시적 지시가 없으면 외부 배포는 취소하지 않는다.
 - 같은 SHA의 Pages 배포를 취소한 뒤 워크플로만 재실행하면 취소된 Pages 상태를 재사용할 수 있으므로 반복 재실행하지 않는다. 원인을 수정한 실제 커밋으로 새 SHA를 만든 뒤 한 번만 배포한다.
