@@ -10,6 +10,8 @@
 - `tower_slot.gd`: 3개 층 × 5개 배치 슬롯의 입력과 점유 상태
 - `shop_card.gd`: 상점 카드의 기본/호버 정보와 타입별 더미 이미지
 - `../tests/validate_prototype.gd`: 데이터 테이블 헤드리스 검증
+- `../tests/validate_balance_table_editing.gd`: 테스트 데이터 CSV·TSV·JSON 파싱과 행 추가·삭제 트랜잭션 검증
+- `../tests/validate_balance_editor_ui.gd`: 데이터 편집 모달의 행 추가·삭제·파싱·적용·원본 복원 흐름 검증
 
 JSON은 문법상 주석을 지원하지 않는다. 데이터 컬럼과 프로토타입 확장 필드 설명은 `res://data/README.md`에서 관리한다.
 

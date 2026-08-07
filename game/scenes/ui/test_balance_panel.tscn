@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/test_balance_panel.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
@@ -198,6 +198,22 @@ corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleParseInput"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.137255, 0.129412, 0.188235, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.466667, 0.439216, 0.556863, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
 
 [node name="TestBalancePanel" type="Control"]
 visible = false
@@ -432,12 +448,27 @@ theme_override_styles/panel = SubResource("StyleEditorPanel")
 layout_mode = 0
 offset_left = 150.0
 offset_top = 94.0
-offset_right = 1190.0
+offset_right = 1158.0
 offset_bottom = 158.0
 theme_override_colors/font_color = Color(1, 0.941176, 0.772549, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 36
 vertical_alignment = 1
+
+[node name="AddRowButton" type="Button" parent="EditorOverlay"]
+layout_mode = 0
+offset_left = 1172.0
+offset_top = 92.0
+offset_right = 1314.0
+offset_bottom = 148.0
+focus_mode = 0
+process_mode = 3
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("StylePanelNormal")
+theme_override_styles/hover = SubResource("StylePanelHover")
+theme_override_styles/pressed = SubResource("StylePanelPressed")
+text = "행 추가"
 
 [node name="ApplyButton" type="Button" parent="EditorOverlay"]
 layout_mode = 0
@@ -489,9 +520,50 @@ layout_mode = 0
 offset_left = 150.0
 offset_top = 172.0
 offset_right = 1760.0
-offset_bottom = 902.0
+offset_bottom = 738.0
 horizontal_scroll_mode = 2
 vertical_scroll_mode = 2
+
+[node name="ParseHint" type="Label" parent="EditorOverlay"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 750.0
+offset_right = 1760.0
+offset_bottom = 784.0
+theme_override_colors/font_color = Color(0.847059, 0.827451, 0.909804, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "행 파싱 · 헤더 포함 CSV/TSV 또는 JSON 객체/배열을 붙여넣으세요."
+vertical_alignment = 1
+
+[node name="ParseInput" type="TextEdit" parent="EditorOverlay"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 790.0
+offset_right = 1588.0
+offset_bottom = 902.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleParseInput")
+theme_override_styles/focus = SubResource("StyleParseInput")
+placeholder_text = "예: waveGroup,monsterId,spawnOrder,value"
+wrap_mode = 1
+
+[node name="ParseButton" type="Button" parent="EditorOverlay"]
+layout_mode = 0
+offset_left = 1600.0
+offset_top = 790.0
+offset_right = 1760.0
+offset_bottom = 846.0
+focus_mode = 0
+process_mode = 3
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("StyleTealNormal")
+theme_override_styles/hover = SubResource("StyleTealHover")
+theme_override_styles/pressed = SubResource("StyleTealPressed")
+text = "행 파싱"
 
 [node name="Status" type="Label" parent="EditorOverlay"]
 layout_mode = 0
