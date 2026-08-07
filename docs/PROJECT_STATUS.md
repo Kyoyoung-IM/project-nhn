@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-07 13:58 KST
+- 마지막 갱신: 2026-08-07 14:09 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `b0a89e5` (`Merge pull request #30 from Kyoyoung-IM/agent/web-release-game-clear-20260807`)
+- 확인된 기준 커밋: `daffacb` (`Merge pull request #32 from Kyoyoung-IM/agent/pages-runner-recovery-20260807`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -23,11 +23,11 @@
 
 | 작업 영역 | 상태 | 최근 결과 | 다음 확인 |
 |---|---|---|---|
-| UI | 배포 대기 | PR #29·#30 merge commit 병합, 주황색 `GAME CLEAR!` 타이틀과 Web Release 반영. 로컬 Web·콘솔 정상 | Pages 실행 `31121957609` 오류 후 새 PCK 실제 게시 여부 확인 |
+| UI | 완료 | PR #29·#30 merge commit 병합, 주황색 `GAME CLEAR!` 타이틀과 Web Release 반영. PR #32 복구 배포 후 공개 PCK·해시 일치 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
 | 버그 수정 | 완료 | 이슈 #16, PR #22 merge commit 병합, 가격 테스트·로컬 Web 상태 전환 및 최신 Pages PCK 반영 확인 | 새 버그 접수 시 CLI 인증 1회 확인 후 이슈 생성 |
 | 데이터테이블 | 최신 | 2026-08-06 17:30 KST, 원본 5개 시트와 로컬 JSON 차이 0건 | 다음 최신화 요청 시 읽기 전용 비교 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
-| Pages 배포 | 실패 | 실행 `31121957609`, 배포 객체 `5783191705`가 `waiting → queued → error`로 종료. 공개 사이트는 직전 `index-e336672148d7.pck` 유지 | 같은 SHA 재실행 금지. 공개 PCK 재확인 후 미게시 지속 시 GitHub Support 문의 |
+| Pages 배포 | 완료 | 실행 `31149609342` 성공, `index-daffacb556e1.pck` 게시. 로컬·원격 SHA-256 일치 확인 | runner 미할당은 step 0개·작업 주석 확인 후 새 Web Release SHA로 한 번만 복구 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
 
@@ -48,4 +48,4 @@
 - UI 배포는 소스 수정, Web Release 갱신, 로컬 Web 확인, 고유 PCK, 원격 해시와 필요 시 Pages 실화면 확인을 하나의 완료 흐름으로 묶는다.
 - Pages는 정적 호스팅이므로 다른 사용자의 플레이가 배포를 잠그지 않는다. 이미 실행 중인 게임은 배포 교체와 무관하게 계속 동작하고, 배포 실패 시 직전 성공 버전이 계속 제공된다.
 - 2026-08-06 Pages 지연 조사에서 실행 `31104659648`, `31107055816`, `31108448751`, `31109558641`이 Web 아티팩트 업로드 후 Pages 내부 큐에서 제한시간에 도달했다. 이후 `index-b7fd21ea1dea.pck`가 비동기로 게시됐으므로 timeout 직후 새 실행을 만들지 말고 공개 PCK를 재확인한다.
-- 2026-08-07 실행 `31121957609`와 배포 객체 `5783191705`는 약 15분 뒤 오류로 종료됐고, 공개 사이트는 직전 `index-e336672148d7.pck`를 유지했다. GitHub 공식 상태가 정상인 상태에서 로컬 PCK `878C3F727F863E4A5980B0E9F2B6EE00151826BAE0579BAA95A87A3AA9B882FA`는 미게시이므로 같은 SHA를 재실행하지 않는다.
+- 2026-08-07 실행 `31121957609`는 runner 이름과 실행 step이 없고 hosted runner 미할당 주석을 남긴 채 종료됐다. 같은 SHA를 재실행하지 않고 PR #32의 식별 가능한 Web Release 메타데이터로 새 SHA를 만든 뒤 실행 `31149609342`에서 복구했으며, `index-daffacb556e1.pck`와 로컬 PCK SHA-256 `878C3F727F863E4A5980B0E9F2B6EE00151826BAE0579BAA95A87A3AA9B882FA` 일치를 확인했다.
