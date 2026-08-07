@@ -12,7 +12,7 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-07 15:04 KST
+- 마지막 갱신: 2026-08-07 15:08 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
 - 확인된 기준 커밋: `daffacb` (`Merge pull request #32 from Kyoyoung-IM/agent/pages-runner-recovery-20260807`)
@@ -24,7 +24,7 @@
 | 작업 영역 | 상태 | 최근 결과 | 다음 확인 |
 |---|---|---|---|
 | UI | 완료 | PR #29·#30 merge commit 병합, 주황색 `GAME CLEAR!` 타이틀과 Web Release 반영. PR #32 복구 배포 후 공개 PCK·해시 일치 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
-| 타워 판매 제거 | PR 준비 | 최신 `origin/main`에 판매 UI·환급·임시 데이터 제거를 통합하고 Godot 회귀 테스트 및 Web Release를 재검증 | merge commit 병합 후 원격 `main` 반영 확인 |
+| 타워 판매 제거 | 완료 | PR #34를 merge commit으로 병합, 판매 UI·환급·임시 데이터 제거 및 Godot 회귀 테스트·Web Release 재검증 | 배포 요청 시 Actions·Pages와 공개 PCK 확인 |
 | 버그 수정 | 완료 | 이슈 #16, PR #22 merge commit 병합, 가격 테스트·로컬 Web 상태 전환 및 최신 Pages PCK 반영 확인 | 새 버그 접수 시 CLI 인증 1회 확인 후 이슈 생성 |
 | 데이터테이블 | 최신 | 2026-08-06 17:30 KST, 원본 5개 시트와 로컬 JSON 차이 0건 | 다음 최신화 요청 시 읽기 전용 비교 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
