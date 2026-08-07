@@ -19,13 +19,11 @@ const REFERENCE_VIEWPORT_SIZE := Vector2(1920.0, 1080.0)
 
 # 터렛·몬스터 같은 전투 오브젝트만 상점 위에서 자르고, 배경은 별도 층에서 화면 전체에 표시한다.
 const BATTLEFIELD_ENTITY_VIEW_HEIGHT := 770.0
-const BATTLEFIELD_CAMERA_TRANSITION_SEC := 0.26
-# 두 층의 위·아래 여백을 확보하되 모든 전장 이미지의 원본 비율을 유지하도록 균일 축소한다.
-const BATTLEFIELD_CAMERA_SCALE := 0.9
-const BATTLEFIELD_CAMERA_UNIFORM_SCALE := Vector2(BATTLEFIELD_CAMERA_SCALE, BATTLEFIELD_CAMERA_SCALE)
-const BATTLEFIELD_CAMERA_HORIZONTAL_INSET := REFERENCE_VIEWPORT_SIZE.x * (1.0 - BATTLEFIELD_CAMERA_SCALE) * 0.5
-# 두 층 화면에서는 아래층과 상점 사이의 불필요한 여백을 위층 표시 영역으로 돌린다.
-const BATTLEFIELD_TWO_FLOOR_VERTICAL_OFFSET := 130.0
+# 최초 16:9 초안과 같은 층 간격으로 지상과 B1~B3를 한 화면에 모두 보여주는 고정 균일 배율이다.
+const BATTLEFIELD_OVERVIEW_SCALE := 0.37
+const BATTLEFIELD_OVERVIEW_UNIFORM_SCALE := Vector2(BATTLEFIELD_OVERVIEW_SCALE, BATTLEFIELD_OVERVIEW_SCALE)
+const BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET := REFERENCE_VIEWPORT_SIZE.x * (1.0 - BATTLEFIELD_OVERVIEW_SCALE) * 0.5
+const BATTLEFIELD_OVERVIEW_GROUND_SCREEN_Y := 170.0
 # 플레이어가 전투 중 선택할 수 있는 게임 진행 배속이다.
 const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
 # 테스트 환경은 시작 보상 없이 일반 조건을 사용하되 빠른 반복 확인용 추가 배속은 유지한다.
@@ -45,11 +43,10 @@ const AUTOMATED_TEST_TIMEOUT_SEC := 300.0
 # READY는 낮, WAVE는 밤 자동 전투, VICTORY/DEFEAT는 입력 대기 결과 화면이다.
 enum Phase { READY, WAVE, VICTORY, DEFEAT }
 
-# 적 경로, 최종 패배 지점, 타워 슬롯과 카메라 정지 위치는 battlefield_layout.tscn에서 읽는다.
+# 적 경로, 최종 패배 지점과 타워 슬롯은 battlefield_layout.tscn에서 읽는다.
 # 배열 순서는 몬스터의 상태 전환 인덱스와 연결되므로 장면의 Marker2D 순서를 그대로 보존한다.
 @onready var battlefield_layout: PrototypeBattlefieldLayout = $BattlefieldLayout
 var movement_path := PackedVector2Array()
-var battlefield_camera_y := PackedFloat32Array()
 
 # 로드된 데이터베이스와 현재 장면 단계다.
 var database: PrototypeDatabase
@@ -90,13 +87,11 @@ var night_visual_amount: float = 0.0:
 		_update_day_night_hud_nodes()
 var day_night_tween: Tween
 
-# 기준 화면에 제한된 배경과 마스킹된 전투 오브젝트 월드, 현재 층 쌍과 전환 Tween을 추적한다.
+# 기준 화면에 제한된 배경과 마스킹된 고정 전투 오브젝트 월드를 추적한다.
 var battlefield_background_clip: Control
 var battlefield_background: PrototypeBattlefieldWorld
 var battlefield_clip: Control
 var battlefield_world: Node2D
-var battlefield_view_index: int = 0
-var battlefield_camera_tween: Tween
 
 # 일반 플레이에서는 무작위화하고 자동 테스트·디버그 시드에서는 재현 가능한 상점 RNG다.
 var shop_rng := RandomNumberGenerator.new()
@@ -113,7 +108,7 @@ var automated_test_melee_attack: bool = false
 var automated_test_attack_styles: bool = false
 var automated_test_wave_features: bool = false
 var automated_test_merge: bool = false
-var automated_test_camera_navigation: bool = false
+var automated_test_battlefield_overview: bool = false
 var automated_test_test_environment: bool = false
 
 # 플레이어와 Codex가 같은 샌드박스를 재현하도록 일반 자동 테스트와 구분한 테스트 환경 플래그다.
@@ -173,7 +168,7 @@ var shop_drag_target_slot: PrototypeTowerSlot = null
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-attack-styles" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-camera-navigation" in user_args or "--auto-test-test-environment" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-attack-styles" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-battlefield-overview" in user_args or "--auto-test-test-environment" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args
 	automated_test_economy = "--auto-test-economy" in user_args
 	automated_test_drag = "--auto-test-drag" in user_args
@@ -184,7 +179,7 @@ func _ready() -> void:
 	automated_test_attack_styles = "--auto-test-attack-styles" in user_args
 	automated_test_wave_features = "--auto-test-wave-features" in user_args
 	automated_test_merge = "--auto-test-merge" in user_args
-	automated_test_camera_navigation = "--auto-test-camera-navigation" in user_args
+	automated_test_battlefield_overview = "--auto-test-battlefield-overview" in user_args
 	automated_test_test_environment = "--auto-test-test-environment" in user_args
 	tower_visual_test_type = _requested_tower_visual_test_type(user_args)
 	test_mode = "--test-mode" in user_args or automated_test_test_environment or _web_query_requests_test_mode() or not tower_visual_test_type.is_empty()
@@ -224,7 +219,6 @@ func _load_editor_battlefield_layout() -> bool:
 	if not layout_errors.is_empty():
 		return false
 	movement_path = battlefield_layout.get_monster_path_points()
-	battlefield_camera_y = battlefield_layout.get_camera_y_offsets()
 	return true
 
 
@@ -258,7 +252,6 @@ func _populate_tower_visual_test() -> void:
 	var turret_ids: Array = TOWER_VISUAL_TEST_IDS[tower_visual_test_type]
 	for slot_index in mini(5, turret_ids.size()):
 		_place_tower(tower_slots[slot_index], false, str(turret_ids[slot_index]))
-	_set_battlefield_view_index(1, true)
 
 
 # 최초 낮 카운트다운 또는 밤의 기준시간·몬스터 스폰을 매 프레임 처리한다.
@@ -330,11 +323,6 @@ func _input(event: InputEvent) -> void:
 			_toggle_options_menu()
 		get_viewport().set_input_as_handled()
 		return
-	# 상점 카드 드래그 중이 아닐 때 휠과 위·아래 방향키로 인접한 두 층 화면 사이를 이동한다.
-	# 설치 터렛 드래그 중에는 층간 머지 대상을 찾을 수 있도록 카메라 이동을 계속 허용한다.
-	if _handle_battlefield_navigation_input(event):
-		get_viewport().set_input_as_handled()
-		return
 	if not _is_shop_available():
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -371,28 +359,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-# 마우스 휠과 위·아래 방향키를 동일한 카메라 단계 변경으로 변환한다.
-func _handle_battlefield_navigation_input(event: InputEvent) -> bool:
-	if options_menu_open or dragged_shop_card_index >= 0:
-		return false
-	var direction := 0
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			direction = -1
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			direction = 1
-	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_UP:
-			direction = -1
-		elif event.keycode == KEY_DOWN:
-			direction = 1
-	if direction == 0:
-		return false
-	_set_battlefield_view_index(battlefield_view_index + direction)
-	return true
-
-
-# 화면 좌표를 현재 수직 카메라 위치가 적용된 전장 로컬 좌표로 바꿔 드래그 판정을 유지한다.
+# 화면 좌표를 고정 전체 전장의 로컬 좌표로 바꿔 드래그 판정을 유지한다.
 func _viewport_to_battlefield(viewport_position: Vector2) -> Vector2:
 	if not is_instance_valid(battlefield_world):
 		return to_local(viewport_position)
@@ -733,7 +700,7 @@ func _update_drag_slot_states(target: PrototypeTowerSlot) -> void:
 		slot.set_drag_state(eligible, eligible and slot == target)
 
 
-# 배경은 화면 전체에 두고 전투 오브젝트만 상점 위에서 자르는 두 개의 수직 이동 층을 생성한다.
+# 배경은 화면 전체에 두고 전투 오브젝트만 상점 위에서 자르는 두 개의 고정 렌더링 층을 생성한다.
 func _build_battlefield() -> void:
 	# 배경은 UI와 독립적으로 움직이되 1920×1080 기준 게임 화면 밖으로는 그리지 않는다.
 	battlefield_background_clip = Control.new()
@@ -747,9 +714,9 @@ func _build_battlefield() -> void:
 	# 기준 화면 안에서는 상점 카드 사이까지 배경이 끊김 없이 이어진다.
 	battlefield_background = BattlefieldWorldScript.new() as PrototypeBattlefieldWorld
 	battlefield_background.night_visual_amount = night_visual_amount
-	battlefield_background.horizontal_extension_px = BATTLEFIELD_CAMERA_HORIZONTAL_INSET / BATTLEFIELD_CAMERA_SCALE
-	battlefield_background.scale = BATTLEFIELD_CAMERA_UNIFORM_SCALE
-	battlefield_background.position.x = BATTLEFIELD_CAMERA_HORIZONTAL_INSET
+	battlefield_background.horizontal_extension_px = BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET / BATTLEFIELD_OVERVIEW_SCALE
+	battlefield_background.scale = BATTLEFIELD_OVERVIEW_UNIFORM_SCALE
+	battlefield_background.position = _battlefield_overview_position()
 	battlefield_background_clip.add_child(battlefield_background)
 
 	# 슬롯·터렛·몬스터는 상점 카드 뒤로 내려가지 않도록 기존 전장 높이에서만 표시한다.
@@ -764,39 +731,17 @@ func _build_battlefield() -> void:
 
 	battlefield_world = Node2D.new()
 	battlefield_world.name = "BattlefieldEntities"
-	battlefield_world.scale = BATTLEFIELD_CAMERA_UNIFORM_SCALE
-	battlefield_world.position.x = BATTLEFIELD_CAMERA_HORIZONTAL_INSET
+	battlefield_world.scale = BATTLEFIELD_OVERVIEW_UNIFORM_SCALE
+	battlefield_world.position = _battlefield_overview_position()
 	battlefield_clip.add_child(battlefield_world)
 
-	_set_battlefield_view_index(0, true)
 
-
-# 카메라 정지점의 원본 월드 좌표를 균일 축소된 화면 좌표로 바꾸고 두 층 화면만 아래로 당긴다.
-func _battlefield_view_target_y(view_index: int) -> float:
-	var target_y := float(battlefield_camera_y[view_index]) * BATTLEFIELD_CAMERA_SCALE
-	if view_index > 0:
-		target_y += BATTLEFIELD_TWO_FLOOR_VERTICAL_OFFSET
-	return target_y
-
-
-# 0=하늘+지상, 1=지상+B1, 2=B1+B2, 3=B2+B3으로 제한하고 균일 축소된 전장의 Y 위치를 보간한다.
-func _set_battlefield_view_index(requested_index: int, instant: bool = false) -> void:
-	if not is_instance_valid(battlefield_world) or not is_instance_valid(battlefield_background):
-		return
-	battlefield_view_index = clampi(requested_index, 0, battlefield_camera_y.size() - 1)
-	var target_y := _battlefield_view_target_y(battlefield_view_index)
-	if battlefield_camera_tween != null and battlefield_camera_tween.is_valid():
-		battlefield_camera_tween.kill()
-	if instant:
-		battlefield_world.position.y = target_y
-		battlefield_background.position.y = target_y
-		return
-	battlefield_camera_tween = create_tween()
-	# 밤의 2·3배속과 무관하게 카메라 조작 감각이 일정하도록 실제 시간을 사용한다.
-	battlefield_camera_tween.set_ignore_time_scale(true)
-	battlefield_camera_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	battlefield_camera_tween.tween_property(battlefield_world, "position:y", target_y, BATTLEFIELD_CAMERA_TRANSITION_SEC)
-	battlefield_camera_tween.parallel().tween_property(battlefield_background, "position:y", target_y, BATTLEFIELD_CAMERA_TRANSITION_SEC)
+# 지상 접지선을 초안과 가까운 화면 Y에 고정하고 가로 여백은 같은 비율로 중앙 정렬한다.
+func _battlefield_overview_position() -> Vector2:
+	return Vector2(
+		BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET,
+		BATTLEFIELD_OVERVIEW_GROUND_SCREEN_Y - battlefield_layout.get_ground_lane_y() * BATTLEFIELD_OVERVIEW_SCALE
+	)
 
 
 # 상단 HUD와 하단 상점을 편집 가능한 씬에서 불러오고 게임 로직 참조만 연결한다.
@@ -1215,8 +1160,8 @@ func _start_automated_test() -> void:
 	if automated_test_test_environment:
 		_run_test_environment_automated_test()
 		return
-	if automated_test_camera_navigation:
-		_run_camera_navigation_automated_test()
+	if automated_test_battlefield_overview:
+		_run_battlefield_overview_automated_test()
 		return
 	if automated_test_merge:
 		_run_merge_automated_test()
@@ -1258,7 +1203,7 @@ func _run_test_environment_automated_test() -> void:
 	var expected_test_shop := database.all_shop_turret_ids()
 	var full_shop_ok := shop_turret_ids == expected_test_shop and shop_turret_ids.size() == shop_cards.size()
 	var panel_visible_ok := test_balance_panel != null and test_balance_panel.visible
-	_set_battlefield_view_index(1, true)
+	var fixed_overview_position := _battlefield_overview_position()
 	test_balance_panel.call("_open_table", "Turret")
 	var modal_open_ok := test_balance_panel.is_editor_open() and get_tree().paused
 	var modal_focus_ok := get_viewport().gui_get_focus_owner() == test_balance_panel.editor_overlay
@@ -1271,7 +1216,8 @@ func _run_test_environment_automated_test() -> void:
 	wheel_event.button_index = MOUSE_BUTTON_WHEEL_DOWN
 	wheel_event.pressed = true
 	_input(wheel_event)
-	var modal_navigation_blocked_ok := battlefield_view_index == 1
+	var modal_navigation_blocked_ok := battlefield_world.position == fixed_overview_position \
+		and battlefield_background.position == fixed_overview_position
 	test_balance_panel.call("_close_editor")
 	var modal_close_ok := not test_balance_panel.is_editor_open() and not get_tree().paused
 	var preparation_before_manual_step := preparation_remaining_sec
@@ -1763,53 +1709,58 @@ func _tower_slot_layout_is_valid() -> bool:
 	return true
 
 
-# 네 카메라 정지점과 경계 제한, 전장 이미지의 균일 축소 조건을 헤드리스 환경에서 검증한다.
-func _run_camera_navigation_automated_test() -> void:
-	_set_battlefield_view_index(1, true)
-	var expected_middle_y := _battlefield_view_target_y(1)
-	var middle_view_valid := battlefield_view_index == 1 \
-		and is_equal_approx(battlefield_world.position.y, expected_middle_y) \
-		and is_equal_approx(battlefield_background.position.y, expected_middle_y)
-	_set_battlefield_view_index(99, true)
-	var bottom_index := battlefield_camera_y.size() - 1
-	var expected_bottom_y := _battlefield_view_target_y(bottom_index)
-	var bottom_clamped := battlefield_view_index == bottom_index \
-		and is_equal_approx(battlefield_world.position.y, expected_bottom_y) \
-		and is_equal_approx(battlefield_background.position.y, expected_bottom_y)
-	_set_battlefield_view_index(-99, true)
-	var expected_top_y := _battlefield_view_target_y(0)
-	var top_clamped := battlefield_view_index == 0 \
-		and is_equal_approx(battlefield_world.position.y, expected_top_y) \
-		and is_equal_approx(battlefield_background.position.y, expected_top_y)
+# 지상과 B1~B3 고정 전체 뷰, 이동 입력 폐지와 전장 이미지의 균일 축소 조건을 검증한다.
+func _run_battlefield_overview_automated_test() -> void:
+	var expected_position := _battlefield_overview_position()
+	var fixed_position_valid := battlefield_world.position == expected_position \
+		and battlefield_background.position == expected_position
 	# 배경·몬스터·터렛의 부모에 같은 X/Y 배율을 적용해 어떤 이미지도 찌그러뜨리지 않는다.
-	var uniform_scale_valid := battlefield_world.scale == BATTLEFIELD_CAMERA_UNIFORM_SCALE \
-		and battlefield_background.scale == BATTLEFIELD_CAMERA_UNIFORM_SCALE \
+	var uniform_scale_valid := battlefield_world.scale == BATTLEFIELD_OVERVIEW_UNIFORM_SCALE \
+		and battlefield_background.scale == BATTLEFIELD_OVERVIEW_UNIFORM_SCALE \
 		and is_equal_approx(battlefield_world.scale.x, battlefield_world.scale.y) \
 		and is_equal_approx(battlefield_background.scale.x, battlefield_background.scale.y) \
-		and is_equal_approx(battlefield_world.position.x, BATTLEFIELD_CAMERA_HORIZONTAL_INSET) \
-		and is_equal_approx(battlefield_background.position.x, BATTLEFIELD_CAMERA_HORIZONTAL_INSET) \
-		and is_equal_approx(battlefield_background.horizontal_extension_px * BATTLEFIELD_CAMERA_SCALE, BATTLEFIELD_CAMERA_HORIZONTAL_INSET)
+		and is_equal_approx(battlefield_world.position.x, BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET) \
+		and is_equal_approx(battlefield_background.position.x, BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET) \
+		and is_equal_approx(battlefield_background.horizontal_extension_px * BATTLEFIELD_OVERVIEW_SCALE, BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET)
 	var reference_frame_clipped := battlefield_background_clip.clip_contents and battlefield_background_clip.size == REFERENCE_VIEWPORT_SIZE
+	# 지상과 세 전투층이 오른쪽 화면 밖에서 시작해 왼쪽 화면 밖에서 끝나는지 확인한다.
 	var route_points := battlefield_layout.get_monster_path_points()
-	var visible_world_left := -BATTLEFIELD_CAMERA_HORIZONTAL_INSET / BATTLEFIELD_CAMERA_SCALE
-	var visible_world_right := (REFERENCE_VIEWPORT_SIZE.x - BATTLEFIELD_CAMERA_HORIZONTAL_INSET) / BATTLEFIELD_CAMERA_SCALE
-	var route_stays_offscreen_at_transitions := route_points[0].x < visible_world_left or route_points[0].x > visible_world_right
-	for route_index in [2, 3, 4, 5, 6, 7, 8]:
-		route_stays_offscreen_at_transitions = route_stays_offscreen_at_transitions and (
-			route_points[route_index].x < visible_world_left or route_points[route_index].x > visible_world_right
-		)
-	# 두 층 화면은 위층 오브젝트 공간을 넓히고 아래층 접촉선은 상점 바로 위에 유지한다.
-	var two_floor_clearance_valid := true
-	for view_index in range(1, battlefield_camera_y.size()):
-		var upper_floor_index := view_index - 2
-		var lower_floor_index := view_index - 1
-		var upper_lane_y := battlefield_layout.get_ground_lane_y() if upper_floor_index < 0 else battlefield_layout.get_combat_lane_y(upper_floor_index)
-		var target_y := _battlefield_view_target_y(view_index)
-		var upper_contact_screen_y: float = upper_lane_y * BATTLEFIELD_CAMERA_SCALE + target_y
-		var lower_contact_screen_y: float = battlefield_layout.get_combat_lane_y(lower_floor_index) * BATTLEFIELD_CAMERA_SCALE + target_y
-		two_floor_clearance_valid = two_floor_clearance_valid \
-			and upper_contact_screen_y >= 260.0 \
-			and lower_contact_screen_y <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 10.0
+	var route_spans_full_screen := route_points.size() == 9
+	for route_index in [0, 3, 5, 7]:
+		var entry_screen_x: float = expected_position.x + route_points[route_index].x * BATTLEFIELD_OVERVIEW_SCALE
+		route_spans_full_screen = route_spans_full_screen and absf(entry_screen_x - 1980.0) <= 0.25
+	for route_index in [2, 4, 6, 8]:
+		var exit_screen_x: float = expected_position.x + route_points[route_index].x * BATTLEFIELD_OVERVIEW_SCALE
+		route_spans_full_screen = route_spans_full_screen and absf(exit_screen_x + 60.0) <= 0.25
+	var surface_mid_screen_x: float = expected_position.x + route_points[1].x * BATTLEFIELD_OVERVIEW_SCALE
+	route_spans_full_screen = route_spans_full_screen and absf(surface_mid_screen_x - REFERENCE_VIEWPORT_SIZE.x * 0.5) <= 0.25
+	# B1~B3의 슬롯 5개가 중앙 50% 배치안에서 화면 너비 20%만큼 왼쪽으로 이동한 같은 X를 사용하는지 확인한다.
+	var expected_slot_screen_x := PackedFloat32Array([96.0, 336.0, 576.0, 816.0, 1056.0])
+	var left_shifted_slot_layout := true
+	for floor_slots in battlefield_layout.get_tower_slot_positions():
+		left_shifted_slot_layout = left_shifted_slot_layout and floor_slots.size() == expected_slot_screen_x.size()
+		for slot_index in mini(floor_slots.size(), expected_slot_screen_x.size()):
+			var slot_screen_x: float = expected_position.x + floor_slots[slot_index].x * BATTLEFIELD_OVERVIEW_SCALE
+			left_shifted_slot_layout = left_shifted_slot_layout and absf(slot_screen_x - expected_slot_screen_x[slot_index]) <= 0.25
+	# 초안의 층 배열처럼 모든 접지선이 위에서 아래 순서로 한 화면에 들어오고 보스 머리와 B3 발끝도 잘리지 않는다.
+	var lane_screen_y := PackedFloat32Array([BATTLEFIELD_OVERVIEW_GROUND_SCREEN_Y])
+	for floor_index in 3:
+		lane_screen_y.append(battlefield_layout.get_combat_lane_y(floor_index) * BATTLEFIELD_OVERVIEW_SCALE + expected_position.y)
+	var all_floors_visible := lane_screen_y[0] - PrototypeMonster.BOSS_VISIBLE_HEIGHT * BATTLEFIELD_OVERVIEW_SCALE >= 0.0 \
+		and lane_screen_y[-1] <= BATTLEFIELD_ENTITY_VIEW_HEIGHT - 10.0
+	for lane_index in range(1, lane_screen_y.size()):
+		all_floors_visible = all_floors_visible and lane_screen_y[lane_index] > lane_screen_y[lane_index - 1]
+	# 휠과 위·아래 방향키가 더 이상 전장 위치를 바꾸지 않는지 실제 입력 경로로 확인한다.
+	var wheel_event := InputEventMouseButton.new()
+	wheel_event.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel_event.pressed = true
+	_input(wheel_event)
+	var arrow_event := InputEventKey.new()
+	arrow_event.keycode = KEY_UP
+	arrow_event.pressed = true
+	_input(arrow_event)
+	var navigation_removed := battlefield_world.position == expected_position \
+		and battlefield_background.position == expected_position
 	# 지상 등장 애니메이션 중간에도 스케일된 몸체의 발끝은 경로 접촉선에 고정돼야 한다.
 	var spawn_test_monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	spawn_test_monster.setup(database.get_monster_data("normal1"), movement_path)
@@ -1831,18 +1782,19 @@ func _run_camera_navigation_automated_test() -> void:
 		and movement_path[0].is_equal_approx(battlefield_layout.get_monster_path_points()[0]) \
 		and movement_path[-1].is_equal_approx(battlefield_layout.get_monster_path_points()[-1]) \
 		and _tower_slot_layout_is_valid()
-	var passed := middle_view_valid and bottom_clamped and top_clamped and uniform_scale_valid and reference_frame_clipped and route_stays_offscreen_at_transitions and two_floor_clearance_valid and grounded_spawn_valid and tower_grounding_valid and editable_layout_valid
+	var passed := fixed_position_valid and uniform_scale_valid and reference_frame_clipped and route_spans_full_screen and left_shifted_slot_layout and all_floors_visible and navigation_removed and grounded_spawn_valid and tower_grounding_valid and editable_layout_valid
 	if passed:
-		print("Automated camera navigation test passed: FOUR_STOPS_UNIFORM_90_PERCENT_SCALE")
+		print("Automated battlefield overview test passed: SURFACE_B1_B2_B3_FIXED_16_9")
 	else:
-		push_error("Automated camera navigation test failed: %s" % {
-			"middle_view": middle_view_valid,
-			"bottom_clamped": bottom_clamped,
-			"top_clamped": top_clamped,
+		push_error("Automated battlefield overview test failed: %s" % {
+			"fixed_position": fixed_position_valid,
 			"uniform_scale": uniform_scale_valid,
 			"reference_clip": reference_frame_clipped,
-			"offscreen_route": route_stays_offscreen_at_transitions,
-			"two_floor_clearance": two_floor_clearance_valid,
+			"route_spans_full_screen": route_spans_full_screen,
+			"left_shifted_slot_layout": left_shifted_slot_layout,
+			"all_floors_visible": all_floors_visible,
+			"lane_screen_y": lane_screen_y,
+			"navigation_removed": navigation_removed,
 			"spawn_grounded": grounded_spawn_valid,
 			"tower_grounding": tower_grounding_valid,
 			"editable_layout": editable_layout_valid,
@@ -2062,7 +2014,6 @@ func _reset_game() -> void:
 		if is_instance_valid(coin_popup):
 			coin_popup.queue_free()
 	current_wave_number = 1
-	_set_battlefield_view_index(0, true)
 	_configure_shop_rng()
 	_begin_preparation(true)
 

@@ -8,7 +8,6 @@ extends Node2D
 const REQUIRED_ROUTE_POINT_COUNT := 9
 const REQUIRED_COMBAT_FLOOR_COUNT := 3
 const REQUIRED_SLOT_COUNT_PER_FLOOR := 5
-const REQUIRED_CAMERA_STOP_COUNT := 4
 
 @export_category("Editor Guides")
 @export var show_route_guide: bool = true:
@@ -19,14 +18,9 @@ const REQUIRED_CAMERA_STOP_COUNT := 4
 	set(value):
 		show_tower_slot_guide = value
 		queue_redraw()
-@export var show_camera_stop_guide: bool = true:
-	set(value):
-		show_camera_stop_guide = value
-		queue_redraw()
 
 @onready var monster_route: Node2D = $MonsterRoute
 @onready var tower_slots_root: Node2D = $TowerSlots
-@onready var camera_stops_root: Node2D = $CameraStops
 
 
 func _ready() -> void:
@@ -59,14 +53,6 @@ func get_tower_slot_positions() -> Array[PackedVector2Array]:
 	return floor_positions
 
 
-# CameraStops Marker2D의 Y는 월드에서 화면 상단이 위치할 선이며 실제 월드 이동값은 그 반대 부호다.
-func get_camera_y_offsets() -> PackedFloat32Array:
-	var offsets := PackedFloat32Array()
-	for marker in _marker_children(camera_stops_root):
-		offsets.append(-to_local(marker.global_position).y)
-	return offsets
-
-
 func get_ground_lane_y() -> float:
 	var points := get_monster_path_points()
 	return points[0].y if not points.is_empty() else 0.0
@@ -93,8 +79,6 @@ func validate_layout() -> PackedStringArray:
 		var slot_count := _marker_children(floor_nodes[floor_index]).size()
 		if slot_count != REQUIRED_SLOT_COUNT_PER_FLOOR:
 			errors.append("TowerSlots floor %d must contain exactly %d Marker2D nodes." % [floor_index + 1, REQUIRED_SLOT_COUNT_PER_FLOOR])
-	if _marker_children(camera_stops_root).size() != REQUIRED_CAMERA_STOP_COUNT:
-		errors.append("CameraStops must contain exactly %d Marker2D nodes." % REQUIRED_CAMERA_STOP_COUNT)
 	return errors
 
 
@@ -129,7 +113,3 @@ func _draw() -> void:
 			for slot_position in floor_positions:
 				draw_circle(slot_position, 24.0, Color(0.48, 1.0, 0.42, 0.28))
 				draw_arc(slot_position, 24.0, 0.0, TAU, 24, Color(0.48, 1.0, 0.42, 0.9), 3.0)
-	if show_camera_stop_guide:
-		for marker in _marker_children(camera_stops_root):
-			var guide_y := to_local(marker.global_position).y
-			draw_dashed_line(Vector2(0.0, guide_y), Vector2(1920.0, guide_y), Color(0.35, 0.75, 1.0, 0.65), 3.0, 24.0)
