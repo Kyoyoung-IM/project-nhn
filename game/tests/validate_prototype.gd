@@ -42,8 +42,8 @@ func _init() -> void:
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
 		return
-	if database.get_wave_monster_ids("wave3").size() != 29:
-		_fail("wave3 must preserve all source rows and expand to 29 monsters")
+	if database.get_wave_monster_ids("wave3").size() != 53:
+		_fail("wave3 must preserve all source rows and expand to 53 monsters")
 		return
 	var wave3 := database.get_wave_monster_ids("wave3")
 	if wave3[0] != "tank1" or wave3[4] != "tank1" or wave3[8] != "spped1":
@@ -53,7 +53,7 @@ func _init() -> void:
 		_fail("waves without duplicate spawnOrder must remain ordered by spawnOrder")
 		return
 	var wave1_schedule := database.get_wave_spawn_entries("wave1")
-	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[1].get("delay_after_sec", -1.0)), 0.5):
+	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[14].get("delay_after_sec", -1.0)), 0.5):
 		_fail("spawn entries must use source values 0.4 seconds inside an order and 0.5 seconds between orders")
 		return
 	for turret_id in EXPECTED_TURRET_IDS:
@@ -103,9 +103,8 @@ func _init() -> void:
 				_fail("boss visual height must remain below one combat-floor interval")
 				return
 		else:
-			var normalized_visible_side := sqrt(monster_visible_size.x * monster_visible_size.y)
-			if not is_equal_approx(normalized_visible_side, MonsterScript.REGULAR_VISIBLE_AREA_SIDE):
-				_fail("regular monster visual area must match a tier 1 tower: %s" % monster_type)
+			if not is_equal_approx(monster_texture_scale, MonsterScript.REGULAR_TEXTURE_SCALE):
+				_fail("regular monster must preserve the shared source-pixel scale: %s" % monster_type)
 				return
 	# 생성형 이미지로 교체한 투사체와 히트스캔 텍스처가 모두 빌드에 포함되는지 검사한다.
 	var combat_vfx_textures: Array[Texture2D] = [
@@ -150,7 +149,7 @@ func _init() -> void:
 		_fail("projectile trail history did not discard the oldest point")
 		return
 	projectile_trail_probe.free()
-	if int(database.get_monster_data("boss1").get("reward_gold", 0)) != 555555:
+	if int(database.get_monster_data("boss1").get("reward_gold", 0)) != 50:
 		_fail("boss1 rewardGold must match the read-only source value")
 		return
 	var dot_turret := database.get_turret_data("turretDot1")

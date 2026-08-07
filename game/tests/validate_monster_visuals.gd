@@ -38,8 +38,8 @@ func _init() -> void:
 			if not is_equal_approx(visible_size.y, MonsterScript.BOSS_VISIBLE_HEIGHT) or visible_size.y >= COMBAT_FLOOR_INTERVAL:
 				_fail("boss must remain slightly shorter than one combat floor")
 				return
-		elif not is_equal_approx(sqrt(visible_size.x * visible_size.y), MonsterScript.REGULAR_VISIBLE_AREA_SIDE):
-			_fail("regular monster must match the tier 1 tower visual area: %s" % monster_type)
+		elif not is_equal_approx(uniform_scale, MonsterScript.REGULAR_TEXTURE_SCALE):
+			_fail("regular monster must preserve the shared source-pixel scale: %s" % monster_type)
 			return
 
 		var monster := MONSTER_SCENE.instantiate() as PrototypeMonster
@@ -63,6 +63,19 @@ func _init() -> void:
 		if not is_equal_approx(monster.position.y + monster.body_bottom_offset_y, floor_contact.y):
 			monster.free()
 			_fail("monster was not grounded after setup: %s" % monster_type)
+			return
+		var expected_bar_top := (-monster.body_bottom_offset_y - MonsterScript.HEALTH_BAR_HEAD_GAP) \
+			/ MonsterScript.MONSTER_VISUAL_SCALE
+		var actual_bar_height := monster.health_bar.size.y * monster.health_bar.scale.y \
+			* MonsterScript.MONSTER_VISUAL_SCALE
+		if not is_equal_approx(monster.health_bar.position.y, expected_bar_top) \
+				or not is_equal_approx(actual_bar_height, MonsterScript.HEALTH_BAR_HEIGHT):
+			var health_bar_error := (
+				"monster health bar must remain thin and above the visible head: %s position=%s/%s height=%s/%s"
+				% [monster_type, monster.health_bar.position.y, expected_bar_top, actual_bar_height, MonsterScript.HEALTH_BAR_HEIGHT]
+			)
+			monster.free()
+			_fail(health_bar_error)
 			return
 		if monster.hit_sprite == null or monster.hit_sprite.texture != hit_texture \
 				or monster.hit_sprite.visible \

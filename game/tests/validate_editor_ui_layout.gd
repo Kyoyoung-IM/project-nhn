@@ -22,6 +22,12 @@ func _run() -> void:
 	if hud == null:
 		_fail("editable GameHUD scene was not instantiated")
 		return
+	var hud_layout := hud.get_node("Layout") as Control
+	var day_night_hud := hud_layout.get_node("DayNightHUD") as Control
+	var day_night_bounds := Rect2(day_night_hud.position, day_night_hud.size)
+	if not Rect2(Vector2.ZERO, hud_layout.size).encloses(day_night_bounds):
+		_fail("day/night HUD extends outside the editable viewport layout")
+		return
 	var shop_ui := hud.get_node_or_null("Layout/ShopUI") as Control
 	if shop_ui == null:
 		_fail("editable ShopUI node is missing")

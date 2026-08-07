@@ -1,10 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://m2jiqpu5qgrk"]
+[gd_scene format=3 uid="uid://m2jiqpu5qgrk"]
 
 [ext_resource type="Script" uid="uid://du6fenriobhgq" path="res://scripts/shop_card.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/frame_1.png" id="2_frame"]
-[ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="3_font"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/coin.png" id="4_coin"]
-[ext_resource type="Texture2D" path="res://assets/ui/images/dimmed.png" id="5_dimmed"]
+[ext_resource type="Texture2D" uid="uid://lltr70lfvq6s" path="res://assets/ui/images/frame_1.png" id="2_frame"]
+[ext_resource type="FontFile" uid="uid://d4bssxj634h2e" path="res://assets/fonts/Jua-Regular.ttf" id="3_font"]
+[ext_resource type="Texture2D" uid="uid://sv6vfd5ce0x6" path="res://assets/ui/images/coin.png" id="4_coin"]
+[ext_resource type="Texture2D" uid="uid://tw5xtif26wqv" path="res://assets/ui/images/dimmed.png" id="5_dimmed"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleButtonEmpty"]
 
@@ -12,11 +12,11 @@
 custom_minimum_size = Vector2(306, 270)
 offset_right = 306.0
 offset_bottom = 270.0
-mouse_default_cursor_shape = 2
 focus_mode = 0
+mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("StyleButtonEmpty")
-theme_override_styles/hover = SubResource("StyleButtonEmpty")
 theme_override_styles/pressed = SubResource("StyleButtonEmpty")
+theme_override_styles/hover = SubResource("StyleButtonEmpty")
 theme_override_styles/disabled = SubResource("StyleButtonEmpty")
 theme_override_styles/focus = SubResource("StyleButtonEmpty")
 script = ExtResource("1_script")
@@ -25,7 +25,6 @@ script = ExtResource("1_script")
 layout_mode = 0
 offset_right = 306.0
 offset_bottom = 270.0
-mouse_filter = 2
 texture = ExtResource("2_frame")
 patch_margin_left = 28
 patch_margin_top = 28
@@ -94,7 +93,7 @@ theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 22
 text = "0"
-horizontal_alignment = 0
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PurchasedOverlay" type="TextureRect" parent="." unique_id=1939924107]
