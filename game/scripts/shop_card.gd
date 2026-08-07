@@ -89,8 +89,9 @@ func _update_content() -> void:
 	hover_interval_label.text = "공격 주기  %.2f초" % float(tower_data.get("attack_interval_sec", 0.0))
 	hover_range_label.text = "사거리  %.0f" % float(tower_data.get("range_px", 0.0))
 	tower_body.texture = TowerVisualAssetsScript.body_texture(turret_type, 1)
-	tower_effect.visible = turret_type == "DOT"
-	tower_effect.texture = TowerVisualAssetsScript.dot_flame_texture(1) if turret_type == "DOT" else null
+	# 새 캐릭터 이미지는 완성형 한 장이므로 기존 분리 불꽃 레이어를 겹치지 않는다.
+	tower_effect.visible = false
+	tower_effect.texture = null
 	_apply_visual_state()
 
 

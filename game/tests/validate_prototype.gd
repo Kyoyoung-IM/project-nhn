@@ -158,13 +158,17 @@ func _init() -> void:
 				_fail("tower visual size must grow consistently: %s tier %d" % [turret_type, tier])
 				return
 			previous_visible_side = normalized_visible_side
-	# 지속 포탑 Tier 4 idle 불꽃은 원본의 분리된 좌측 공격 조각을 제외한 AtlasTexture여야 한다.
-	if TowerVisualAssetsScript.dot_flame_texture(4).get_size() != Vector2(184.0, 192.0):
-		_fail("DOT tier 4 idle flame must use the cropped main-flame region")
-		return
-	if TowerVisualAssetsScript.dot_front_texture(3).get_size() != Vector2(256.0, 242.0) or TowerVisualAssetsScript.dot_front_texture(4).get_size() != Vector2(256.0, 189.0):
-		_fail("DOT tier 3 and 4 must provide separate front body layers")
-		return
+	# 모든 공격 시트는 임포트 후 512px 프레임 4개를 2x2로 제공하며 1번 프레임 경계가 유효해야 한다.
+	for turret_type in ["MELEE", "RANGED", "DOT", "SLOW", "STUN"]:
+		for tier in range(1, 5):
+			var attack_texture: Texture2D = TowerVisualAssetsScript.attack_texture(turret_type, tier)
+			var attack_bounds: Rect2 = TowerVisualAssetsScript.attack_first_frame_visible_bounds(turret_type, tier)
+			if attack_texture.get_size() != TowerVisualAssetsScript.ATTACK_FRAME_SIZE * 2.0:
+				_fail("tower attack sheet must import as a 1024px 2x2 sheet: %s tier %d" % [turret_type, tier])
+				return
+			if attack_bounds.size.x <= 0.0 or attack_bounds.size.y <= 0.0 or attack_bounds.end.x > TowerVisualAssetsScript.ATTACK_FRAME_SIZE.x or attack_bounds.end.y > TowerVisualAssetsScript.ATTACK_FRAME_SIZE.y:
+				_fail("tower attack frame bounds are outside frame 1: %s tier %d" % [turret_type, tier])
+				return
 	# v7 낮/밤 이미지의 세 전투 플랫폼은 같은 픽셀 행이며 렌더링 추가 변형도 없어야 한다.
 	var night_source_rows := [848.0, 1081.0, 1320.0]
 	var day_target_rows := [848.0, 1081.0, 1320.0]

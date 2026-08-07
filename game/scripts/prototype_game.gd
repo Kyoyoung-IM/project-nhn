@@ -1314,7 +1314,6 @@ func _run_test_environment_automated_test() -> void:
 		and observed_speed_cycle == [3, 5, 10, 1] \
 		and is_equal_approx(Engine.time_scale, 1.0)
 	automated_test_mode = true
-	var stun_hover_height_ok := is_equal_approx(float(TowerScript.STUN_HOVER_HEIGHT), 96.0)
 	var test_button_ok := options_test_mode_button != null and options_test_mode_button.text == "일반 모드로 돌아가기"
 	var passed := test_mode \
 		and normal_start_gold_ok \
@@ -1337,7 +1336,6 @@ func _run_test_environment_automated_test() -> void:
 		and test_mode_badge != null \
 		and test_mode_badge.visible \
 		and speed_values_ok \
-		and stun_hover_height_ok \
 		and test_button_ok
 	if passed:
 		print("Automated test environment passed: MANUAL_WAVES_FULL_SHOP_RUNTIME_TABLE_SPEED_10X")
