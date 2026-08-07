@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-07 16:53 KST
+- 마지막 갱신: 2026-08-07 17:05 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `1bd231e` (`Merge pull request #39 from Kyoyoung-IM/agent/graphics-tower-sprites-20260807`)
+- 확인된 기준 커밋: `ec41f96` (`Merge pull request #41 from Kyoyoung-IM/agent/web-release-tower-sprites-20260807`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -26,10 +26,10 @@
 | UI | 완료 | PR #29·#30 merge commit 병합, 주황색 `GAME CLEAR!` 타이틀과 Web Release 반영. PR #32 복구 배포 후 공개 PCK·해시 일치 확인 | 다음 UI 변경 전 최신 `origin/main`과 배포 체크리스트 확인 |
 | 타워 판매 제거 | 완료 | PR #34 merge commit 병합 후 PR #37 Web Release로 최신 `main`과 함께 Pages 배포·공개 화면 로드 확인 | 새 판매 관련 요구가 생기면 기획 문서부터 갱신 |
 | 버그 수정 | 완료 | PR #36 원거리 투사체 정지 방지 수정과 PR #37 Web Release 병합·배포 완료 | 새 버그 접수 시 CLI 인증 1회 확인 후 이슈 생성 |
-| 타워 그래픽·에셋 정리 | 완료 | PR #39 merge commit `1bd231e` 병합. 타워 Tier별 캐릭터·공격 애니메이션 교체, 미참조 구버전 에셋 100개 제거와 라이선스 기록 현행화. 프로토타입·UI 검증 통과 | `build/web/` 미변경 상태이므로 다음 Web Release에서 새 타워 그래픽 반영 |
+| 타워 그래픽·에셋 정리 | 완료 | PR #39 merge commit `1bd231e` 병합 후 PR #41 Web Release로 배포. 타워 Tier별 캐릭터·4프레임 공격 애니메이션 교체, 미참조 구버전 에셋 100개 제거와 라이선스 기록 현행화. 프로토타입·UI·공개 PCK 검증 통과 | 다음 타워 그래픽 변경 시 같은 프레임 순서와 Web Release 검증 유지 |
 | 데이터테이블 | 최신 | 2026-08-06 17:30 KST, 원본 5개 시트와 로컬 JSON 차이 0건 | 다음 최신화 요청 시 읽기 전용 비교 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
-| Pages 배포 | 완료 | PR #37 병합 SHA `5fad2a8`의 실행 `31155369766` 성공. 공개 HTML의 `index-5fad2a8bc80a.pck` 참조와 로컬·원격 SHA-256 일치, 브라우저 오류 없음 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
+| Pages 배포 | 완료 | PR #41 병합 SHA `ec41f96`의 실행 `31160106904` 성공. 공개 HTML의 `index-ec41f9634902.pck` 참조, 17,236,232-byte PCK와 로컬·원격 SHA-256 `C8DD8612BC74E3C73FCC6794A5A1C51C0136DCB5BE7D59C9133F5E6BA7CF9B30` 일치 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
 
