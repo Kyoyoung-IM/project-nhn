@@ -5,6 +5,7 @@ extends SceneTree
 const GAME_SCENE := preload("res://scenes/prototype_game.tscn")
 const MONSTER_SCENE := preload("res://scenes/entities/monster.tscn")
 const EDIT_CELL_SCENE := preload("res://scenes/ui/balance_edit_cell.tscn")
+const DELETE_BUTTON_SCENE := preload("res://scenes/ui/balance_row_delete_button.tscn")
 
 
 func _init() -> void:
@@ -66,7 +67,7 @@ func _run() -> void:
 		_fail("removed sell feedback must not remain in the HUD")
 		return
 	var test_panel := hud.get_node_or_null("Layout/TestBalancePanel") as Control
-	if test_panel == null or test_panel.get_node_or_null("SidePanel/WaveSpinBox") == null or test_panel.get_node_or_null("EditorOverlay/TableScroll") == null:
+	if test_panel == null or test_panel.get_node_or_null("SidePanel/WaveSpinBox") == null or test_panel.get_node_or_null("EditorOverlay/TableScroll") == null or test_panel.get_node_or_null("EditorOverlay/AddRowButton") == null or test_panel.get_node_or_null("EditorOverlay/ParseInput") == null or test_panel.get_node_or_null("EditorOverlay/ParseButton") == null:
 		_fail("editable test balance panel scene is incomplete")
 		return
 	var edit_cell := EDIT_CELL_SCENE.instantiate() as LineEdit
@@ -74,6 +75,11 @@ func _run() -> void:
 		_fail("editable balance table cell template is incomplete")
 		return
 	edit_cell.free()
+	var delete_button := DELETE_BUTTON_SCENE.instantiate() as Button
+	if delete_button == null or delete_button.get_theme_stylebox("normal") == null:
+		_fail("editable balance row delete template is incomplete")
+		return
+	delete_button.free()
 
 	var tower_slots: Array = game.get("tower_slots")
 	if tower_slots.is_empty() or (tower_slots[0] as Node).get_node_or_null("Visual/PlusLabel") == null or (tower_slots[0] as Node).get_node_or_null("CollisionShape2D") == null:

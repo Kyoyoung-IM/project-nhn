@@ -135,9 +135,96 @@ func balance_table_rows(table_name: String) -> Array[Dictionary]:
 	return result
 
 
+# 새 행 입력과 CSV·TSV·JSON 파싱에서 공통으로 사용하는 테이블별 기본값이다.
+# ID와 참조 문자열은 적용 전 UI에서 입력하며, 숨겨진 prototypeExtensions는 행 적용 시 안전한 기본값으로 만든다.
+func balance_table_new_row(table_name: String) -> Dictionary:
+	match table_name:
+		"Define":
+			return {"name": "", "value": 0.0}
+		"Turret":
+			return {
+				"turretId": "", "type": "RANGED", "nextTurretId": "-1", "isShop": false,
+				"basePrice": -1, "damage": 1.0, "attackspeed": 1.0, "range": 2.0, "rangeValue": 0.0,
+				"ccDuration": 0.0, "ccValue": "0%", "vfxResource": "", "turretResource": "",
+			}
+		"Monster":
+			return {
+				"monsterId": "", "type": "normal", "baseHp": 1.0, "moveSpeed": 1.0,
+				"rewardGold": 0, "prefabResource": "",
+			}
+		"SpawnTable":
+			return {"waveGroup": "wave1", "monsterId": "", "spawnOrder": 1, "value": 1}
+		"ShopGacha":
+			return {"turretIndex": "", "probability": 0.0}
+	return {}
+
+
+# 현재 테이블 스키마에 맞춰 JSON 객체·배열 또는 헤더 포함 CSV·TSV를 타입 변환한다.
+# 성공한 행도 적용 전 편집 화면에만 추가되며 이 함수는 런타임 데이터를 변경하지 않는다.
+func parse_balance_rows(table_name: String, source_text: String) -> Dictionary:
+	var text := source_text.strip_edges()
+	if text.is_empty():
+		return {"rows": [], "errors": ["파싱할 행 데이터를 입력하세요"]}
+	var raw_rows: Array = []
+	var errors: Array[String] = []
+	if text.begins_with("{") or text.begins_with("["):
+		var json := JSON.new()
+		var json_error := json.parse(text)
+		if json_error != OK:
+			return {"rows": [], "errors": ["JSON 파싱 오류(%d행): %s" % [json.get_error_line(), json.get_error_message()]]}
+		var parsed_json: Variant = json.data
+		if typeof(parsed_json) == TYPE_DICTIONARY:
+			raw_rows.append(parsed_json)
+		elif typeof(parsed_json) == TYPE_ARRAY:
+			raw_rows = parsed_json as Array
+		else:
+			return {"rows": [], "errors": ["JSON은 객체 한 개 또는 객체 배열이어야 합니다"]}
+	else:
+		var delimited := _parse_delimited_balance_rows(text)
+		errors.append_array(delimited.get("errors", []) as Array[String])
+		raw_rows = delimited.get("rows", []) as Array
+	if not errors.is_empty():
+		return {"rows": [], "errors": errors}
+	var defaults := balance_table_new_row(table_name)
+	if defaults.is_empty():
+		return {"rows": [], "errors": ["지원하지 않는 테이블입니다: %s" % table_name]}
+	var result: Array[Dictionary] = []
+	for row_index in raw_rows.size():
+		var raw_value: Variant = raw_rows[row_index]
+		if typeof(raw_value) != TYPE_DICTIONARY:
+			errors.append("%d행: 객체 형식이 아닙니다" % (row_index + 1))
+			continue
+		var raw_row := raw_value as Dictionary
+		var normalized: Dictionary = {}
+		for raw_key in raw_row:
+			if not defaults.has(str(raw_key)):
+				errors.append("%d행: 알 수 없는 컬럼 %s" % [row_index + 1, str(raw_key)])
+		for column in balance_table_columns(table_name):
+			var key := str(column.get("key", ""))
+			if not raw_row.has(key):
+				errors.append("%d행: 필수 컬럼 %s이(가) 없습니다" % [row_index + 1, key])
+				continue
+			var parsed := _parse_balance_value(str(raw_row[key]), defaults.get(key))
+			if not bool(parsed.get("ok", false)):
+				errors.append("%d행 %s: %s" % [row_index + 1, key, str(parsed.get("error", "값 형식 오류"))])
+				continue
+			normalized[key] = parsed["value"]
+		if normalized.size() == defaults.size():
+			result.append(normalized)
+	if not errors.is_empty():
+		return {"rows": [], "errors": errors}
+	return {"rows": result, "errors": []}
+
+
 # 편집 창의 문자열 값을 현재 데이터 타입으로 변환해 적용하고 전체 참조 검증에 실패하면 원상 복구한다.
 # 반환 배열이 비어 있으면 성공이며, 메시지가 있으면 어떤 값도 적용하지 않는다.
 func apply_balance_edits(table_name: String, edits: Array[Dictionary]) -> Array[String]:
+	return apply_balance_changes(table_name, edits, [], [])
+
+
+# 셀 편집, 기존 행 삭제와 신규 행 추가를 한 트랜잭션으로 적용한다.
+# 어느 단계든 실패하면 런타임 사본 전체를 적용 전 상태로 되돌린다.
+func apply_balance_changes(table_name: String, edits: Array[Dictionary], added_rows: Array[Dictionary], deleted_row_ids: Array) -> Array[String]:
 	var before := _make_runtime_snapshot()
 	var edit_errors: Array[String] = []
 	for edit in edits:
@@ -156,6 +243,11 @@ func apply_balance_edits(table_name: String, edits: Array[Dictionary]) -> Array[
 			edit_errors.append("%s.%s: %s" % [str(row_id), column, str(parsed.get("error", "값 형식 오류"))])
 			continue
 		container[target_column] = parsed["value"]
+	_remove_balance_rows(table_name, deleted_row_ids, edit_errors)
+	for row_index in added_rows.size():
+		var normalized := _normalize_added_balance_row(table_name, added_rows[row_index], row_index, edit_errors)
+		if not normalized.is_empty():
+			_append_balance_row(table_name, normalized, edit_errors)
 	if not edit_errors.is_empty():
 		_restore_runtime_snapshot(before)
 		return edit_errors
@@ -267,9 +359,14 @@ func _parse_balance_value(value_text: String, old_value: Variant) -> Dictionary:
 				return {"ok": true, "value": false}
 			return {"ok": false, "error": "true/false 값을 입력하세요"}
 		TYPE_INT:
-			if not value_text.strip_edges().is_valid_int():
-				return {"ok": false, "error": "정수를 입력하세요"}
-			return {"ok": true, "value": int(value_text)}
+			var integer_text := value_text.strip_edges()
+			if integer_text.is_valid_int():
+				return {"ok": true, "value": int(integer_text)}
+			if integer_text.is_valid_float():
+				var float_value := float(integer_text)
+				if is_equal_approx(float_value, roundf(float_value)):
+					return {"ok": true, "value": int(float_value)}
+			return {"ok": false, "error": "정수를 입력하세요"}
 		TYPE_FLOAT:
 			if not value_text.strip_edges().is_valid_float():
 				return {"ok": false, "error": "숫자를 입력하세요"}
@@ -277,6 +374,174 @@ func _parse_balance_value(value_text: String, old_value: Variant) -> Dictionary:
 		TYPE_STRING:
 			return {"ok": true, "value": value_text.strip_edges()}
 	return {"ok": false, "error": "지원하지 않는 데이터 타입입니다"}
+
+
+func _parse_delimited_balance_rows(source_text: String) -> Dictionary:
+	var delimiter := "\t" if source_text.get_slice("\n", 0).contains("\t") else ","
+	var records: Array[Array] = []
+	var record: Array[String] = []
+	var field := ""
+	var in_quotes := false
+	var index := 0
+	while index < source_text.length():
+		var character := source_text.substr(index, 1)
+		if character == "\"":
+			if in_quotes and index + 1 < source_text.length() and source_text.substr(index + 1, 1) == "\"":
+				field += "\""
+				index += 2
+				continue
+			in_quotes = not in_quotes
+		elif character == delimiter and not in_quotes:
+			record.append(field)
+			field = ""
+		elif (character == "\n" or character == "\r") and not in_quotes:
+			record.append(field)
+			field = ""
+			if not _delimited_record_is_empty(record):
+				records.append(record)
+			record = []
+			if character == "\r" and index + 1 < source_text.length() and source_text.substr(index + 1, 1) == "\n":
+				index += 1
+		else:
+			field += character
+		index += 1
+	if in_quotes:
+		return {"rows": [], "errors": ["CSV/TSV 따옴표가 닫히지 않았습니다"]}
+	record.append(field)
+	if not _delimited_record_is_empty(record):
+		records.append(record)
+	if records.size() < 2:
+		return {"rows": [], "errors": ["CSV/TSV는 헤더와 한 개 이상의 데이터 행이 필요합니다"]}
+	var headers: Array[String] = []
+	for header_value in records[0]:
+		var header := str(header_value).strip_edges().trim_prefix("﻿")
+		if header.is_empty():
+			return {"rows": [], "errors": ["CSV/TSV 헤더에 빈 컬럼이 있습니다"]}
+		if header in headers:
+			return {"rows": [], "errors": ["CSV/TSV 헤더가 중복됩니다: %s" % header]}
+		headers.append(header)
+	var rows: Array[Dictionary] = []
+	var errors: Array[String] = []
+	for record_index in range(1, records.size()):
+		var values: Array = records[record_index]
+		if values.size() != headers.size():
+			errors.append("%d행: 헤더는 %d개지만 값은 %d개입니다" % [record_index, headers.size(), values.size()])
+			continue
+		var row: Dictionary = {}
+		for column_index in headers.size():
+			row[headers[column_index]] = str(values[column_index]).strip_edges()
+		rows.append(row)
+	return {"rows": rows, "errors": errors}
+
+
+func _delimited_record_is_empty(record: Array[String]) -> bool:
+	for value in record:
+		if not value.strip_edges().is_empty():
+			return false
+	return true
+
+
+func _normalize_added_balance_row(table_name: String, raw_row: Dictionary, row_index: int, errors: Array[String]) -> Dictionary:
+	var defaults := balance_table_new_row(table_name)
+	var normalized: Dictionary = {}
+	for column in balance_table_columns(table_name):
+		var key := str(column.get("key", ""))
+		if not raw_row.has(key):
+			errors.append("신규 %d행: 필수 컬럼 %s이(가) 없습니다" % [row_index + 1, key])
+			continue
+		var parsed := _parse_balance_value(str(raw_row[key]), defaults.get(key))
+		if not bool(parsed.get("ok", false)):
+			errors.append("신규 %d행 %s: %s" % [row_index + 1, key, str(parsed.get("error", "값 형식 오류"))])
+			continue
+		normalized[key] = parsed["value"]
+	return normalized if normalized.size() == defaults.size() else {}
+
+
+func _remove_balance_rows(table_name: String, row_ids: Array, errors: Array[String]) -> void:
+	if table_name in ["SpawnTable", "ShopGacha"]:
+		var indices: Array[int] = []
+		for row_id in row_ids:
+			var row_index := int(row_id)
+			if row_index not in indices:
+				indices.append(row_index)
+		indices.sort()
+		indices.reverse()
+		var target_rows: Array = spawn_rows if table_name == "SpawnTable" else shop_rows
+		for row_index in indices:
+			if row_index < 0 or row_index >= target_rows.size():
+				errors.append("삭제할 행을 찾을 수 없습니다: %s / %d" % [table_name, row_index])
+				continue
+			target_rows.remove_at(row_index)
+		return
+	for row_id in row_ids:
+		var key := str(row_id)
+		match table_name:
+			"Define":
+				if define_values.has(key):
+					define_values.erase(key)
+				else:
+					errors.append("삭제할 Define 행을 찾을 수 없습니다: %s" % key)
+			"Turret":
+				if turrets_by_id.has(key):
+					turrets_by_id.erase(key)
+				else:
+					errors.append("삭제할 Turret 행을 찾을 수 없습니다: %s" % key)
+			"Monster":
+				if monsters_by_id.has(key):
+					monsters_by_id.erase(key)
+				else:
+					errors.append("삭제할 Monster 행을 찾을 수 없습니다: %s" % key)
+
+
+func _append_balance_row(table_name: String, row: Dictionary, errors: Array[String]) -> void:
+	match table_name:
+		"Define":
+			var define_name := str(row.get("name", "")).strip_edges()
+			if define_name.is_empty() or define_values.has(define_name):
+				errors.append("신규 Define name이 비어 있거나 중복됩니다: %s" % define_name)
+				return
+			define_values[define_name] = row.get("value")
+		"Turret":
+			var turret_id := str(row.get("turretId", "")).strip_edges()
+			if turret_id.is_empty() or turrets_by_id.has(turret_id):
+				errors.append("신규 turretId가 비어 있거나 중복됩니다: %s" % turret_id)
+				return
+			var turret_row := row.duplicate(true)
+			turret_row["type"] = str(turret_row.get("type", "")).to_upper()
+			turret_row["prototypeExtensions"] = {
+				"displayName": turret_id,
+				"colorHex": "68d8c1",
+				"tier": _trailing_positive_int(turret_id, 1),
+			}
+			turrets_by_id[turret_id] = turret_row
+		"Monster":
+			var monster_id := str(row.get("monsterId", "")).strip_edges()
+			if monster_id.is_empty() or monsters_by_id.has(monster_id):
+				errors.append("신규 monsterId가 비어 있거나 중복됩니다: %s" % monster_id)
+				return
+			var monster_row := row.duplicate(true)
+			monster_row["type"] = str(monster_row.get("type", "")).to_lower()
+			monster_row["prototypeExtensions"] = {
+				"displayName": monster_id,
+				"colorHex": "d96772",
+			}
+			monsters_by_id[monster_id] = monster_row
+		"SpawnTable":
+			spawn_rows.append(row.duplicate(true))
+		"ShopGacha":
+			shop_rows.append(row.duplicate(true))
+		_:
+			errors.append("지원하지 않는 테이블입니다: %s" % table_name)
+
+
+func _trailing_positive_int(value: String, fallback: int) -> int:
+	var regex := RegEx.new()
+	if regex.compile("([0-9]+)$") != OK:
+		return fallback
+	var result := regex.search(value)
+	if result == null:
+		return fallback
+	return maxi(1, int(result.get_string(1)))
 
 
 func _capture_source_table_snapshot() -> void:

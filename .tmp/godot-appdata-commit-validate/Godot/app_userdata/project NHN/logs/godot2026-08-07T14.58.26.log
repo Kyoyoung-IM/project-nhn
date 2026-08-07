@@ -1,0 +1,80 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+ERROR: Unable to open file: res://.godot/imported/projectile_slow_snowball_v2.png-687b60bd6d15e302e88baec3905e854c.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/projectile_slow_snowball_v2.png-687b60bd6d15e302e88baec3905e854c.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/projectile_slow_snowball_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/projectile_ranged_pea_v2.png-3cb1b30a884fb688af37c23a19a40e4d.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/projectile_ranged_pea_v2.png-3cb1b30a884fb688af37c23a19a40e4d.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/projectile_ranged_pea_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/flamethrower_dot_v2.png-64268f34162dc2fe5b97d5fd1f0a42d9.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/flamethrower_dot_v2.png-64268f34162dc2fe5b97d5fd1f0a42d9.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/flamethrower_dot_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/hit_melee_slash_v2.png-b500cffedb0faadebbfd4fbd9b7b1974.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/hit_melee_slash_v2.png-b500cffedb0faadebbfd4fbd9b7b1974.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/hit_melee_slash_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/hit_stun_lightning_v2.png-e45c6143b187d280db3761e2be2bf196.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/hit_stun_lightning_v2.png-e45c6143b187d280db3761e2be2bf196.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/hit_stun_lightning_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/status_stun_stars_v2.png-199261134da85324db7553367715d441.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/status_stun_stars_v2.png-199261134da85324db7553367715d441.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/status_stun_stars_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/stun_charge_aura_v2.png-b218c5e5c33f454b4845e34f385d9448.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/stun_charge_aura_v2.png-b218c5e5c33f454b4845e34f385d9448.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/stun_charge_aura_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeDatabase" in the current scope.
+   at: GDScript::reload (res://tests/validate_prototype.gd:23)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "database" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:23)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "wave3" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:51)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "wave1_schedule" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:58)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "turret" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:63)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:84)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "SLOW_PROJECTILE_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:97)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "RANGED_PROJECTILE_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:98)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "FLAME_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:99)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "MELEE_SLASH_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:100)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "STUN_LIGHTNING_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:101)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "STUN_STATUS_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:102)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "STUN_CHARGE_AURA_TEXTURE".
+   at: GDScript::reload (res://tests/validate_prototype.gd:103)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerProjectile" in the current scope.
+   at: GDScript::reload (res://tests/validate_prototype.gd:119)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "projectile_trail_probe" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:119)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_turret" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/validate_prototype.gd:134)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (Warning treated as error.)
+   at: GDScript::reload (res://tests/validate_prototype.gd:68)
+ERROR: Failed to load script "res://tests/validate_prototype.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)

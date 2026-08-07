@@ -1,0 +1,1040 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+WARNING: res://scenes/ui/game_hud.tscn:3 - ext_resource, invalid UID: uid://cbwrmjxj22jth - using text path instead: res://assets/ui/day_night_hud_day_frame_v2.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/day_night_hud_day_frame_v2.png-15452e4e27cd99e8336ea0317b781863.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/day_night_hud_day_frame_v2.png-15452e4e27cd99e8336ea0317b781863.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/day_night_hud_day_frame_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:4 - ext_resource, invalid UID: uid://d0cmfsbyv21br - using text path instead: res://assets/ui/day_night_hud_night_frame_v2.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/day_night_hud_night_frame_v2.png-c5e14e60f6ebe3a8dd6e52d1e9c33f37.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/day_night_hud_night_frame_v2.png-c5e14e60f6ebe3a8dd6e52d1e9c33f37.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/day_night_hud_night_frame_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:5 - ext_resource, invalid UID: uid://3qtv4ofuf6mc - using text path instead: res://assets/ui/day_night_sun_icon_v1.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/day_night_sun_icon_v1.png-df53cbeef7d3238f1cb64dc56f7ccf80.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/day_night_sun_icon_v1.png-df53cbeef7d3238f1cb64dc56f7ccf80.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/day_night_sun_icon_v1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:6 - ext_resource, invalid UID: uid://b32wm1l03eblp - using text path instead: res://assets/ui/day_night_moon_icon_v1.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/day_night_moon_icon_v1.png-76df1c84fc82901d13a26a963210538b.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/day_night_moon_icon_v1.png-76df1c84fc82901d13a26a963210538b.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/day_night_moon_icon_v1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:7 - ext_resource, invalid UID: uid://0qwc32huqlj - using text path instead: res://assets/ui/generated/shop_controls_panel_v1.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/shop_controls_panel_v1.png-7a9bbd298c92841e6acf860a1eeeeabd.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/shop_controls_panel_v1.png-7a9bbd298c92841e6acf860a1eeeeabd.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/shop_controls_panel_v1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:8 - ext_resource, invalid UID: uid://dwy4464por041 - using text path instead: res://assets/ui/generated/speed_capsule_v2.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/speed_capsule_v2.png-e055e188fe4182fa3d94de7e7d2fa56f.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/speed_capsule_v2.png-e055e188fe4182fa3d94de7e7d2fa56f.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/speed_capsule_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:9 - ext_resource, invalid UID: uid://ck100su0asnhp - using text path instead: res://assets/ui/generated/pause_button_v2.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/pause_button_v2.png-c1332581a54e45d3613f56801c114c07.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/pause_button_v2.png-c1332581a54e45d3613f56801c114c07.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/pause_button_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:10 - ext_resource, invalid UID: uid://m2jiqpu5qgrk - using text path instead: res://scenes/ui/shop_card.tscn
+   at: load (scene/resources/resource_format_text.cpp:501)
+WARNING: res://scenes/ui/shop_card.tscn:3 - ext_resource, invalid UID: uid://du6fenriobhgq - using text path instead: res://scripts/shop_card.gd
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/melee_t1.png-5ed8fff5ba5ff8471ba1c91f3cc4e584.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/melee_t1.png-5ed8fff5ba5ff8471ba1c91f3cc4e584.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/melee_t1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/melee_t2.png-7c0ca19ab7c4f0ce350174f1c91acb70.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/melee_t2.png-7c0ca19ab7c4f0ce350174f1c91acb70.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/melee_t2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/melee_t3.png-0768781a56b189f939e220358ecffd6b.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/melee_t3.png-0768781a56b189f939e220358ecffd6b.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/melee_t3.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/melee_t4.png-074ba95b4fee1ad8e6fe4ce8ff953b60.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/melee_t4.png-074ba95b4fee1ad8e6fe4ce8ff953b60.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/melee_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/ranged_t1.png-cdff471465a9185550f9fd465de3d0f1.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/ranged_t1.png-cdff471465a9185550f9fd465de3d0f1.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/ranged_t1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/ranged_t2.png-bcf5c4e576c67188ca93994cea6a83bf.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/ranged_t2.png-bcf5c4e576c67188ca93994cea6a83bf.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/ranged_t2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/ranged_t3.png-1091eec96d01efdb8936413fde7a8f74.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/ranged_t3.png-1091eec96d01efdb8936413fde7a8f74.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/ranged_t3.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/ranged_t4.png-be6980f62b267b8806b0bc4201135617.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/ranged_t4.png-be6980f62b267b8806b0bc4201135617.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/ranged_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_t1.png-330275bfdb070fd4b48165a4843f8845.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_t1.png-330275bfdb070fd4b48165a4843f8845.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/dot_t1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_t2.png-607c2f102b982e0e94a198bb01203b6e.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_t2.png-607c2f102b982e0e94a198bb01203b6e.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/dot_t2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_t3.png-310499731875063995d5ab073596b9aa.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_t3.png-310499731875063995d5ab073596b9aa.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/dot_t3.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_t4.png-759c6b4cf8cff0a9dd516f2aca54faf0.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_t4.png-759c6b4cf8cff0a9dd516f2aca54faf0.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/dot_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/slow_t1.png-163ab376846e1f00d0d0bb19d009e540.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/slow_t1.png-163ab376846e1f00d0d0bb19d009e540.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/slow_t1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/slow_t2.png-d351cc38e74bba7692c2fcb8afea4533.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/slow_t2.png-d351cc38e74bba7692c2fcb8afea4533.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/slow_t2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/slow_t3.png-b01cbaa313ae484954f061149a688189.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/slow_t3.png-b01cbaa313ae484954f061149a688189.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/slow_t3.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/slow_t4.png-63ae5046d030a88e25b908be13768c4d.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/slow_t4.png-63ae5046d030a88e25b908be13768c4d.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/slow_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/stun_t1.png-110c3886506afc1b64621680685b97a4.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/stun_t1.png-110c3886506afc1b64621680685b97a4.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/stun_t1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/stun_t2.png-0a52cf87634a9b3d5f9d3c56116f2821.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/stun_t2.png-0a52cf87634a9b3d5f9d3c56116f2821.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/stun_t2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/stun_t3.png-1306654c42f86b60eea638a252125d7f.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/stun_t3.png-1306654c42f86b60eea638a252125d7f.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/stun_t3.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/stun_t4.png-f5636bcb84c2d1349f16cd11fc87936b.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/stun_t4.png-f5636bcb84c2d1349f16cd11fc87936b.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/bodies/stun_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_flame_t1.png-bf434f9e3b1a911fbdb6b60a7faad48d.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_flame_t1.png-bf434f9e3b1a911fbdb6b60a7faad48d.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/effects/dot_flame_t1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_flame_t2.png-8bcb17f9ca6647bd036895b071d9934a.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_flame_t2.png-8bcb17f9ca6647bd036895b071d9934a.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/effects/dot_flame_t2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_flame_t3.png-3386252ce71c2d9feef802c67a48eb64.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_flame_t3.png-3386252ce71c2d9feef802c67a48eb64.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/effects/dot_flame_t3.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/dot_flame_t4.png-6be601a81c93dcf545ca0548984c7c19.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/dot_flame_t4.png-6be601a81c93dcf545ca0548984c7c19.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/effects/dot_flame_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Unable to open file: res://.godot/imported/stun_lightning_t4.png-8b15ca68883a713438fed3996f2138d6.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/stun_lightning_t4.png-8b15ca68883a713438fed3996f2138d6.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/towers/effects/stun_lightning_t4.png.
+   at: _load (core/io/resource_loader.cpp:317)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/melee_t1.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:10)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/melee_t2.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:11)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/melee_t3.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:12)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/melee_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:13)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/ranged_t1.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:16)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/ranged_t2.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:17)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/ranged_t3.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:18)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/ranged_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:19)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/dot_t1.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:22)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/dot_t2.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:23)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/dot_t3.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:24)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/dot_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:25)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/slow_t1.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:28)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/slow_t2.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:29)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/slow_t3.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:30)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/slow_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:31)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/stun_t1.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:34)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/stun_t2.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:35)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/stun_t3.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:36)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/bodies/stun_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:37)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/effects/dot_flame_t1.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:42)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/effects/dot_flame_t2.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:43)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/effects/dot_flame_t3.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:44)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/effects/dot_flame_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:45)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/towers/effects/stun_lightning_t4.png".
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:48)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "STUN_LIGHTNING_TIER_4" constant because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/tower_visual_assets.gd:48)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://scripts/shop_card.gd:0)
+ERROR: Failed to load script "res://scripts/shop_card.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+WARNING: res://scenes/ui/shop_card.tscn:4 - ext_resource, invalid UID: uid://bao4ivugo0cwk - using text path instead: res://assets/ui/generated/shop_card_frame_v1.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/shop_card_frame_v1.png-801b484df73a8df8aa98397d9e895ade.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/shop_card_frame_v1.png-801b484df73a8df8aa98397d9e895ade.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/shop_card_frame_v1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/shop_card.tscn:36 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/shop_card_frame_v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:68 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:83 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:108 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:132 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:154 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:167 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:180 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/shop_card.tscn:193 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Unable to open file: res://.godot/imported/game_clear_title_v2.png-d727c1d2955e53d6285b23eb2a48168d.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/game_clear_title_v2.png-d727c1d2955e53d6285b23eb2a48168d.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/game_clear_title_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/game_clear_overlay.tscn:32 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/game_clear_title_v2.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Unable to open file: res://.godot/imported/game_over_title_v1.png-bfeb768a396c8d5dced223e87138a520.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/game_over_title_v1.png-bfeb768a396c8d5dced223e87138a520.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/game_over_title_v1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/game_over_overlay.tscn:144 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/game_over_title_v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_over_overlay.tscn:161 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_over_overlay.tscn:181 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+WARNING: res://scenes/ui/game_hud.tscn:13 - ext_resource, invalid UID: uid://bibm7rj2pfhdd - using text path instead: res://scenes/ui/options_menu.tscn
+   at: load (scene/resources/resource_format_text.cpp:501)
+WARNING: res://scenes/ui/options_menu.tscn:3 - ext_resource, invalid UID: uid://mmmwluwjh3qx - using text path instead: res://assets/ui/generated/options_panel_v1.png
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Unable to open file: res://.godot/imported/options_panel_v1.png-601aac18ceaaaa7a5b2ba7b0f9a9eb15.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/options_panel_v1.png-601aac18ceaaaa7a5b2ba7b0f9a9eb15.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/ui/generated/options_panel_v1.png.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/options_menu.tscn:4 - ext_resource, invalid UID: uid://d4bssxj634h2e - using text path instead: res://assets/fonts/Jua-Regular.ttf
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/options_menu.tscn:5 - ext_resource, invalid UID: uid://b67axnfhqhoqa - using text path instead: res://scripts/options_menu.gd
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: res://scenes/ui/options_menu.tscn:54 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/options_panel_v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/options_menu.tscn:64 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/options_menu.tscn:84 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/options_menu.tscn:107 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/options_menu.tscn:130 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/options_menu.tscn:153 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/sell_zone_feedback.tscn:45 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/balance_header_cell.tscn:21 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/balance_edit_cell.tscn:37 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/balance_readonly_cell.tscn:21 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/balance_row_delete_button.tscn:45 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeDatabase" in the current scope.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:19)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeDatabase" in the current scope.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:43)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "values" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:107)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "columns" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:125)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "modified" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:186)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "errors" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:215)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "result" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/test_balance_panel.gd:253)
+ERROR: Failed to load script "res://scripts/test_balance_panel.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/test_balance_panel.tscn:245 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:260 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:273 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:284 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:301 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:315 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:327 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:342 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:357 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:372 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:387 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:403 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:417 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:454 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:466 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:481 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:496 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:511 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:534 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:546 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:561 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/test_balance_panel.tscn:575 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+WARNING: res://scenes/ui/game_hud.tscn:16 - ext_resource, invalid UID: uid://d4bssxj634h2e - using text path instead: res://assets/fonts/Jua-Regular.ttf
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+WARNING: res://scenes/ui/game_hud.tscn:17 - ext_resource, invalid UID: uid://d04qwd7rn2ao0 - using text path instead: res://assets/fonts/NotoSansKR.ttf
+   at: load (scene/resources/resource_format_text.cpp:501)
+ERROR: Cannot open file 'res://.godot/imported/NotoSansKR.ttf-3ae954ae8c14792ea34daf89520c1713.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/NotoSansKR.ttf-3ae954ae8c14792ea34daf89520c1713.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/NotoSansKR.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/ui/game_hud.tscn:102 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/day_night_hud_day_frame_v2.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:111 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/day_night_hud_night_frame_v2.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:122 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/day_night_sun_icon_v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:135 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/day_night_moon_icon_v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:148 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:162 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:177 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:197 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:211 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/speed_capsule_v2.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:237 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:249 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/speed_capsule_v2.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:275 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/NotoSansKR.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:287 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/pause_button_v2.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:317 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/ui/generated/shop_controls_panel_v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:329 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:346 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:391 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/ui/game_hud.tscn:404 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Unable to open file: res://.godot/imported/status_stun_stars_v2.png-199261134da85324db7553367715d441.ctex.
+   at: _load_data (scene/resources/compressed_texture.cpp:45)
+ERROR: Failed loading resource: res://.godot/imported/status_stun_stars_v2.png-199261134da85324db7553367715d441.ctex.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/combat_vfx/status_stun_stars_v2.png.
+   at: _load (core/io/resource_loader.cpp:317)
+SCRIPT ERROR: Parse Error: Could not preload resource file "res://assets/combat_vfx/status_stun_stars_v2.png".
+   at: GDScript::reload (res://scripts/monster.gd:17)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "STUN_STATUS_TEXTURE" constant because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/monster.gd:17)
+ERROR: Failed to load script "res://scripts/monster.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/tower_slot.gd:18)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/tower_slot.gd:54)
+ERROR: Failed to load script "res://scripts/tower_slot.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Cannot open file 'res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata'.
+   at: load (core/io/resource_format_binary.cpp:1156)
+ERROR: Failed loading resource: res://.godot/imported/Jua-Regular.ttf-69b81abe04d21f5b162d8c70bc8d894b.fontdata.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: Failed loading resource: res://assets/fonts/Jua-Regular.ttf.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/entities/tower_slot.tscn:90 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/fonts/Jua-Regular.ttf.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeBattlefieldLayout" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:52)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeDatabase" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:57)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:61)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:62)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:63)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeShopCard" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:66)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeBattlefieldWorld" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:97)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeGameClearOverlay" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:153)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTestBalancePanel" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:159)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:168)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:169)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:170)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:176)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:177)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:460)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:488)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:505)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:517)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:565)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:575)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:584)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:584)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:619)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:663)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:663)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:676)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:676)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:704)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:722)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:740)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:740)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:778)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:947)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1221)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1232)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1232)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1258)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1258)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1558)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1566)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerProjectile" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1577)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1587)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1587)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1988)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2027)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeDatabase" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:199)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "layout_errors" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:229)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "fallback_seed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:317)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:359)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:361)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "origin" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:361)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "card" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:414)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:425)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:432)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:454)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:461)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "eligible" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:464)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:466)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "merge_requested" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:478)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:493)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:520)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:520)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "merged_investment" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:525)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:528)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:570)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "eligible" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:570)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:577)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:620)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "eligible" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:625)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:627)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:679)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:679)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:682)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "origin" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:682)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded_turret_id" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:685)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "merged_investment" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:686)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:695)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:707)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "origin" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:707)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "refund_rate" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:725)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:743)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "origin" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:743)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:784)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeBattlefieldWorld" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:800)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeGameClearOverlay" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:886)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeShopCard" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:907)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "card" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:907)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTestBalancePanel" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:919)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "floor_slot_positions" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1185)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerSlot" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1189)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1189)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1238)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1249)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1261)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1264)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1264)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "normal_start_gold_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1344)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "expected_test_shop" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1345)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "full_shop_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1346)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "panel_visible_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1347)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "modal_open_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1350)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "modal_focus_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1351)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "modal_escape_blocked_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1356)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "modal_close_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1363)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "manual_gold_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1368)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "reroll_full_shop_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1370)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "edit_errors" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1372)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "runtime_edit_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1374)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "source_difference_detected_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1375)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "source_difference_cleared_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1379)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1397)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "melee_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1431)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1432)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1433)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "target_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1433)
+SCRIPT ERROR: Parse Error: Identifier "PrototypeMonster" not declared in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1439)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "initial_hp" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1442)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1445)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "selected_target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1445)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1447)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "melee_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1461)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "melee_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1462)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "melee_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1463)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "melee_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1465)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1471)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1472)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1473)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1479)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_cancel_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1482)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_cancel_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1483)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "dot_cancel_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1484)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slow_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1496)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slow_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1497)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slow_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1498)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slow_projectile" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1500)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slow_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1504)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "ranged_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1508)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "ranged_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1509)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "ranged_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1510)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "ranged_projectile" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1512)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "ranged_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1516)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "projectile_cancel_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1523)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "projectile_cancel_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1524)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "projectile_cancel_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1525)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "cancelled_projectile" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1527)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "projectile_floor_cancel_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1531)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "stun_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1537)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "stun_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1538)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "stun_hp_before" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1539)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "stun_charged_before_hit" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1541)
+SCRIPT ERROR: Parse Error: Identifier "PrototypeTower" not declared in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1542)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "stun_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1543)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1549)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1559)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1559)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1567)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1567)
+SCRIPT ERROR: Parse Error: Identifier "PrototypeMonster" not declared in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1571)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTowerProjectile" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1579)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "test_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1601)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1602)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1603)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passing_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1603)
+SCRIPT ERROR: Parse Error: Identifier "PrototypeMonster" not declared in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1608)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster_start_x" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1611)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_remained_fixed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1620)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1624)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "reward_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1624)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1639)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "carryover_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1639)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1668)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "first_boss" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1668)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1669)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "second_boss" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1669)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1685)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1698)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1700)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1704)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "merge_target_slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1716)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "incompatible_slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1717)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "original_target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1718)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1722)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1728)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1728)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1729)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1752)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1754)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1759)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "placed_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1759)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1760)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "origin" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1771)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "same_floor_target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1772)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "other_floor_target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1773)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slot_hidden_at_idle" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1775)
+SCRIPT ERROR: Parse Error: Identifier "PrototypeTowerSlot" not declared in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1777)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slot_visible_during_drag" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1777)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "slot_hidden_after_drag" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1779)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1781)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1784)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "source_slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1797)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "cross_floor_slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1798)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "different_type_slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1799)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "source" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1800)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "cross_floor_target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1801)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "different_type_target" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1802)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "no_automatic_merge" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1803)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1809)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1809)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1810)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upgraded_stats_applied" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1811)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "source_consumed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1818)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1819)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "target_slot" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1830)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeTower" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1841)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "merged_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1841)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "investment_preserved" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1844)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "day_sale_ok" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1850)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "night_tower" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1853)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "night_sale_rejected" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1856)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1857)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "floors" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1870)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "uniform_scale_valid" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1898)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "upper_lane_y" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1911)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1919)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "spawn_test_monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1919)
+SCRIPT ERROR: Parse Error: Identifier "PrototypeMonster" not declared in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1924)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "spawn_reveal_ratio" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1924)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "scaled_spawn_bottom" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1925)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "editable_layout_valid" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1928)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1932)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "base_cost" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1944)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "plus_cost" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1945)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "expected_gold" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1950)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "passed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1951)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "fallback_interval" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1966)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1972)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeMonster" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1976)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "monster" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1976)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "reward_amount" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:1991)
+SCRIPT ERROR: Parse Error: Could not find type "PrototypeRewardCoinPopup" in the current scope.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2002)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "coin_popup" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2002)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "next_wave_entries" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2036)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2185)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "card" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2186)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "card" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2206)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "tower_data" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2210)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "total_wave_count" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/prototype_game.gd:2232)
+ERROR: Failed to load script "res://scripts/prototype_game.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
