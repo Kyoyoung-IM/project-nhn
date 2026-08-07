@@ -25,10 +25,6 @@ const BATTLEFIELD_CAMERA_UNIFORM_SCALE := Vector2(BATTLEFIELD_CAMERA_SCALE, BATT
 const BATTLEFIELD_CAMERA_HORIZONTAL_INSET := REFERENCE_VIEWPORT_SIZE.x * (1.0 - BATTLEFIELD_CAMERA_SCALE) * 0.5
 # 두 층 화면에서는 아래층과 상점 사이의 불필요한 여백을 위층 표시 영역으로 돌린다.
 const BATTLEFIELD_TWO_FLOOR_VERTICAL_OFFSET := 130.0
-# 상점 하단 절반은 낮에 설치 터렛을 판매하는 드롭 영역으로 사용한다.
-const SHOP_AREA_BOTTOM_Y := 1080.0
-const SELL_ZONE_TOP_Y := 925.0
-const SELL_ZONE_RECT := Rect2(24.0, SELL_ZONE_TOP_Y, 1872.0, SHOP_AREA_BOTTOM_Y - SELL_ZONE_TOP_Y)
 # 플레이어가 전투 중 선택할 수 있는 게임 진행 배속이다.
 const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
 # 테스트 환경은 시작 보상 없이 일반 조건을 사용하되 빠른 반복 확인용 추가 배속은 유지한다.
@@ -115,7 +111,6 @@ var automated_test_melee_attack: bool = false
 var automated_test_attack_styles: bool = false
 var automated_test_wave_features: bool = false
 var automated_test_merge: bool = false
-var automated_test_sell: bool = false
 var automated_test_camera_navigation: bool = false
 var automated_test_test_environment: bool = false
 
@@ -157,8 +152,6 @@ var game_over_quit_button: Button
 var game_over_tween: Tween
 var test_mode_badge: Label
 var test_balance_panel: PrototypeTestBalancePanel
-var sell_zone_feedback: Control
-var sell_zone_label: Label
 
 # CanvasLayer는 Node2D 변환을 상속하지 않으므로 별도로 보관해 전장과 같은 중앙 오프셋을 적용한다.
 var interface_canvas: CanvasLayer
@@ -169,7 +162,6 @@ var dragged_tower: PrototypeTower = null
 var dragged_origin_slot: PrototypeTowerSlot = null
 var dragged_target_slot: PrototypeTowerSlot = null
 var drag_pointer_offset := Vector2.ZERO
-var drag_sell_active: bool = false
 
 # 상점 카드 드래그 중 구매 예정 카드, 포인터를 따라가는 더미 터렛, 드롭 대상 슬롯을 추적한다.
 var dragged_shop_card_index: int = -1
@@ -180,7 +172,7 @@ var shop_drag_target_slot: PrototypeTowerSlot = null
 # 명령줄 테스트 플래그를 해석하고, 데이터→UI→슬롯→첫 정비 단계 순서로 초기화한다.
 func _ready() -> void:
 	var user_args := OS.get_cmdline_user_args()
-	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-attack-styles" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-sell" in user_args or "--auto-test-camera-navigation" in user_args or "--auto-test-test-environment" in user_args
+	automated_test_mode = "--auto-test-victory" in user_args or "--auto-test-defeat" in user_args or "--auto-test-economy" in user_args or "--auto-test-drag" in user_args or "--auto-test-shop-drag" in user_args or "--auto-test-shop-merge" in user_args or "--auto-test-wave-shop" in user_args or "--auto-test-melee-attack" in user_args or "--auto-test-attack-styles" in user_args or "--auto-test-wave-features" in user_args or "--auto-test-merge" in user_args or "--auto-test-camera-navigation" in user_args or "--auto-test-test-environment" in user_args
 	automated_test_expects_defeat = "--auto-test-defeat" in user_args
 	automated_test_economy = "--auto-test-economy" in user_args
 	automated_test_drag = "--auto-test-drag" in user_args
@@ -191,7 +183,6 @@ func _ready() -> void:
 	automated_test_attack_styles = "--auto-test-attack-styles" in user_args
 	automated_test_wave_features = "--auto-test-wave-features" in user_args
 	automated_test_merge = "--auto-test-merge" in user_args
-	automated_test_sell = "--auto-test-sell" in user_args
 	automated_test_camera_navigation = "--auto-test-camera-navigation" in user_args
 	automated_test_test_environment = "--auto-test-test-environment" in user_args
 	tower_visual_test_type = _requested_tower_visual_test_type(user_args)
@@ -521,11 +512,9 @@ func _merge_shop_card_with_tower(card_index: int, target_slot: PrototypeTowerSlo
 	if not _can_merge_shop_card_with_tower(tower_data, target):
 		return false
 	var upgraded_turret_id := str(tower_data.get("next_turret_id", "-1"))
-	# 상점 카드로 머지할 때도 기존 터렛 투자금과 새 카드 실구매가를 모두 상위 Tier에 승계한다.
-	var merged_investment := target.invested_gold + tower_cost
 	# 생성 실패 시 기존 점유자를 복원할 수 있도록 새 터렛 생성이 성공하기 전에는 기존 배열을 지우지 않는다.
 	target_slot.clear_occupant()
-	var upgraded_tower := _spawn_tower_in_slot(target_slot, upgraded_turret_id, merged_investment)
+	var upgraded_tower := _spawn_tower_in_slot(target_slot, upgraded_turret_id)
 	if upgraded_tower == null:
 		target_slot.set_occupant(target)
 		return false
@@ -585,14 +574,12 @@ func _begin_tower_drag(tower: PrototypeTower, origin: PrototypeTowerSlot, local_
 	dragged_tower = tower
 	dragged_origin_slot = origin
 	drag_pointer_offset = tower.position - local_pointer
-	drag_sell_active = false
 	selected_shop_card = -1
 	tower.z_index = 20
 	tower.modulate = Color(1.0, 1.0, 1.0, 0.78)
 	# 밤에는 드래그 중 공격 판정이 이동 경로를 따라 바뀌지 않도록 해당 터렛의 공격만 잠시 멈춘다.
 	tower.enabled = false
-	status_label.text = "동일 터렛에 놓아 층간 머지하세요" if phase == Phase.WAVE else "빈 슬롯으로 이동·머지하거나 상점 하단에 놓아 판매하세요"
-	_set_sell_zone_feedback(false, tower)
+	status_label.text = "동일 터렛에 놓아 층간 머지하세요" if phase == Phase.WAVE else "같은 층의 빈 슬롯으로 이동하거나 동일 터렛에 놓아 머지하세요"
 	_update_drag_slot_states(null)
 	_update_shop_cards()
 
@@ -603,14 +590,10 @@ func _update_tower_drag(local_pointer: Vector2) -> void:
 		_cancel_tower_drag()
 		return
 	dragged_tower.position = local_pointer + drag_pointer_offset
-	# 터렛 중심이 상점 하단 절반에 들어오면 슬롯 이동보다 판매 판정을 우선한다.
-	drag_sell_active = _is_in_sell_zone(dragged_tower.position)
-	if drag_sell_active:
+	if not _is_in_battlefield_drop_area(dragged_tower.position):
 		dragged_target_slot = null
-		_update_drag_slot_states(null, false)
-		_set_sell_zone_feedback(true, dragged_tower)
+		_update_drag_slot_states(null)
 		return
-	_set_sell_zone_feedback(false, dragged_tower)
 	dragged_target_slot = _nearest_drag_target(dragged_tower.position)
 	_update_drag_slot_states(dragged_target_slot)
 
@@ -634,17 +617,20 @@ func _nearest_drag_target(local_pointer: Vector2) -> PrototypeTowerSlot:
 	return nearest
 
 
-# 낮의 상점 하단 판매, 층간 머지, 낮의 같은 층 이동 순으로 시도하고 잘못된 위치에서는 복귀시킨다.
+# 상점과 HUD 뒤로 가려진 월드 슬롯이 드롭 대상으로 잡히지 않도록 실제 전장 표시 영역만 허용한다.
+func _is_in_battlefield_drop_area(local_position: Vector2) -> bool:
+	if not is_instance_valid(battlefield_world):
+		return false
+	var viewport_position := battlefield_world.to_global(local_position)
+	var reference_position := viewport_position - position
+	return Rect2(Vector2.ZERO, Vector2(REFERENCE_VIEWPORT_SIZE.x, BATTLEFIELD_ENTITY_VIEW_HEIGHT)).has_point(reference_position)
+
+
+# 층간 머지와 낮의 같은 층 이동을 순서대로 시도하고 잘못된 위치에서는 복귀시킨다.
 func _finish_tower_drag() -> void:
 	if dragged_tower == null or not is_instance_valid(dragged_tower):
 		_cancel_tower_drag()
 		return
-	if drag_sell_active:
-		var refund := _sell_tower(dragged_tower)
-		if refund >= 0:
-			status_label.text = "터렛 판매  +%d G" % refund
-			_clear_tower_drag_visuals()
-			return
 	var merged := _merge_tower(dragged_tower, dragged_target_slot)
 	var moved := false
 	if not merged:
@@ -683,7 +669,6 @@ func _merge_tower(source: PrototypeTower, target_slot: PrototypeTowerSlot) -> bo
 	if origin == null or origin == target_slot:
 		return false
 	var upgraded_turret_id := source.next_turret_id
-	var merged_investment := source.invested_gold + target.invested_gold
 	origin.clear_occupant()
 	target_slot.clear_occupant()
 	tower_slot_by_instance_id.erase(source.get_instance_id())
@@ -692,49 +677,12 @@ func _merge_tower(source: PrototypeTower, target_slot: PrototypeTowerSlot) -> bo
 	towers.erase(target)
 	source.queue_free()
 	target.queue_free()
-	var upgraded_tower := _spawn_tower_in_slot(target_slot, upgraded_turret_id, merged_investment)
+	var upgraded_tower := _spawn_tower_in_slot(target_slot, upgraded_turret_id)
 	if upgraded_tower == null:
 		push_error("Could not create merged turret: %s" % upgraded_turret_id)
 		return false
 	upgraded_tower.play_upgrade_effect()
 	return true
-
-
-# 낮에 설치 터렛을 제거하고 누적 실구매가에 데이터 확장 환급률을 곱한 정수 골드를 지급한다.
-func _sell_tower(tower: PrototypeTower) -> int:
-	if phase != Phase.READY or tower == null or not is_instance_valid(tower):
-		return -1
-	var origin := tower_slot_by_instance_id.get(tower.get_instance_id()) as PrototypeTowerSlot
-	if origin == null:
-		return -1
-	var refund := _tower_sale_price(tower)
-	origin.clear_occupant()
-	tower_slot_by_instance_id.erase(tower.get_instance_id())
-	towers.erase(tower)
-	gold += refund
-	tower.queue_free()
-	_update_interface()
-	_update_shop_cards()
-	return refund
-
-
-# 판매 환급률은 아직 원본 테이블에 없으므로 prototype_define 확장값을 읽고 소수점 이하는 버린다.
-func _tower_sale_price(tower: PrototypeTower) -> int:
-	if tower == null or not is_instance_valid(tower):
-		return 0
-	var refund_rate := database.extension_float("sellRefundRate", 0.5)
-	return floori(float(tower.invested_gold) * refund_rate)
-
-
-# 설치 터렛은 낮에만 판매할 수 있으며 상점 UI의 정확한 하단 절반을 판정 영역으로 사용한다.
-func _is_in_sell_zone(local_position: Vector2) -> bool:
-	if phase != Phase.READY or not is_instance_valid(battlefield_world):
-		return false
-	# 전장 좌표를 고정 UI 기준 좌표로 되돌려 카메라 위치와 관계없이 같은 판매 영역을 사용한다.
-	var viewport_position := battlefield_world.to_global(local_position)
-	var reference_position := viewport_position - position
-	return SELL_ZONE_RECT.has_point(reference_position)
-
 
 # 빈 슬롯 이동은 낮·같은 층에서만 허용하고, 층간 조작은 머지 경로로만 처리한다.
 func _relocate_tower(tower: PrototypeTower, target: PrototypeTowerSlot) -> bool:
@@ -766,19 +714,17 @@ func _clear_tower_drag_visuals() -> void:
 		dragged_tower.enabled = phase == Phase.WAVE
 	for slot in tower_slots:
 		slot.set_drag_state(false, false)
-	_set_sell_zone_feedback(false, dragged_tower)
 	dragged_tower = null
 	dragged_origin_slot = null
 	dragged_target_slot = null
 	drag_pointer_offset = Vector2.ZERO
-	drag_sell_active = false
 
 
 # 드래그 중 낮의 같은 층 빈 슬롯과 낮·밤의 층간 머지 가능 슬롯을 구분해 강조한다.
-func _update_drag_slot_states(target: PrototypeTowerSlot, show_eligible: bool = true) -> void:
+func _update_drag_slot_states(target: PrototypeTowerSlot) -> void:
 	for slot in tower_slots:
 		var eligible := false
-		if show_eligible and dragged_tower != null and slot != dragged_origin_slot:
+		if dragged_tower != null and slot != dragged_origin_slot:
 			eligible = phase == Phase.READY and slot.floor_index == dragged_tower.floor_index and slot.is_empty()
 			if not slot.is_empty():
 				eligible = _can_merge_towers(dragged_tower, slot.occupant as PrototypeTower)
@@ -889,7 +835,6 @@ func _build_interface() -> void:
 	game_over_quit_button = game_over_overlay.get_node("QuitButton") as Button
 	game_over_restart_button.pressed.connect(_on_game_over_restart_pressed)
 	game_over_quit_button.pressed.connect(_on_game_over_quit_pressed)
-	_bind_sell_zone_feedback(layout)
 	_bind_options_menu(layout)
 	_bind_test_balance_panel(layout)
 
@@ -935,24 +880,6 @@ func _on_test_editor_visibility_changed(opened: bool) -> void:
 
 func _is_test_editor_open() -> bool:
 	return test_balance_panel != null and test_balance_panel.is_editor_open()
-
-
-# 판매 안내의 위치·그라데이션·글자 스타일은 sell_zone_feedback.tscn에서 직접 편집한다.
-func _bind_sell_zone_feedback(layout: Control) -> void:
-	sell_zone_feedback = layout.get_node("SellZoneFeedback") as Control
-	sell_zone_label = sell_zone_feedback.get_node("SellLabel") as Label
-
-
-# 드래그 위치가 판매 영역에 들어오거나 나갈 때 오버레이와 안내 문구를 함께 전환한다.
-func _set_sell_zone_feedback(active: bool, tower: PrototypeTower) -> void:
-	if sell_zone_feedback == null or sell_zone_label == null:
-		return
-	sell_zone_feedback.visible = active
-	if active:
-		var refund := _tower_sale_price(tower)
-		sell_zone_label.text = "판매  %d G" % refund
-		status_label.text = "놓으면 판매  +%d G" % refund
-
 
 # ESC 옵션 창의 모든 정적 노드는 options_menu.tscn에서 편집하고 여기서는 신호만 연결한다.
 func _bind_options_menu(layout: Control) -> void:
@@ -1244,9 +1171,7 @@ func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_overr
 		gold -= tower_cost
 		shop_card_available[selected_shop_card] = false
 		selected_shop_card = -1
-	# 자동 테스트의 무상 배치는 투자금 0, 실제 상점 구매는 카드의 실구매가를 기록한다.
-	var invested_gold := tower_cost if use_shop_card else 0
-	var tower := _spawn_tower_in_slot(slot, turret_id, invested_gold)
+	var tower := _spawn_tower_in_slot(slot, turret_id)
 	if tower == null:
 		return null
 	_update_interface()
@@ -1255,7 +1180,7 @@ func _place_tower(slot: PrototypeTowerSlot, use_shop_card: bool, turret_id_overr
 
 
 # 구매·자동 테스트·머지가 공유하도록 한 ID의 터렛을 지정 슬롯에 생성하는 순수 배치 도우미다.
-func _spawn_tower_in_slot(slot: PrototypeTowerSlot, turret_id: String, invested_gold: int = 0) -> PrototypeTower:
+func _spawn_tower_in_slot(slot: PrototypeTowerSlot, turret_id: String) -> PrototypeTower:
 	if slot == null or not slot.is_empty():
 		return null
 	var tower_data := database.get_turret_data(turret_id)
@@ -1263,7 +1188,7 @@ func _spawn_tower_in_slot(slot: PrototypeTowerSlot, turret_id: String, invested_
 		return null
 	var tower := TowerScript.new() as PrototypeTower
 	tower.position = slot.position
-	tower.setup(tower_data, slot.floor_index, invested_gold)
+	tower.setup(tower_data, slot.floor_index)
 	tower.enabled = phase == Phase.WAVE
 	battlefield_world.add_child(tower)
 	towers.append(tower)
@@ -1301,9 +1226,6 @@ func _start_automated_test() -> void:
 		return
 	if automated_test_camera_navigation:
 		_run_camera_navigation_automated_test()
-		return
-	if automated_test_sell:
-		_run_sell_automated_test()
 		return
 	if automated_test_merge:
 		_run_merge_automated_test()
@@ -1766,7 +1688,7 @@ func _run_wave_shop_automated_test() -> void:
 	get_tree().quit(0 if passed else 1)
 
 
-# 같은 층 이동 성공과 다른 층 이동 거부를 헤드리스 환경에서 함께 검증한다.
+# 같은 층 이동 성공, 다른 층 이동 거부와 상점 영역의 잘못된 드롭 복원을 함께 검증한다.
 func _run_drag_automated_test() -> void:
 	var origin := tower_slots[0]
 	var same_floor_target := tower_slots[1]
@@ -1781,13 +1703,18 @@ func _run_drag_automated_test() -> void:
 	var tower := towers[0]
 	var cross_floor_rejected := not _relocate_tower(tower, other_floor_target)
 	var same_floor_moved := _relocate_tower(tower, same_floor_target)
+	var gold_before_invalid_drop := gold
+	_begin_tower_drag(tower, same_floor_target, tower.position)
+	_update_tower_drag(battlefield_world.to_local(position + Vector2(960.0, 1000.0)))
+	_finish_tower_drag()
+	var invalid_shop_drop_restored := same_floor_target.occupant == tower and tower.position == same_floor_target.position and gold == gold_before_invalid_drop
 	var passed := slot_hidden_at_idle and slot_visible_during_drag and slot_hidden_after_drag \
 		and _tower_slot_layout_is_valid() and cross_floor_rejected and same_floor_moved \
-		and origin.is_empty() and same_floor_target.occupant == tower and tower.position == same_floor_target.position
+		and invalid_shop_drop_restored and origin.is_empty()
 	if passed:
-		print("Automated drag test passed: SAME_FLOOR_ONLY")
+		print("Automated drag test passed: SAME_FLOOR_ONLY_INVALID_SHOP_DROP_RESTORED")
 	else:
-		push_error("Automated drag test failed.")
+		push_error("Automated drag test failed: idle=%s active=%s cleared=%s layout=%s cross_floor=%s same_floor=%s invalid_drop=%s origin_empty=%s" % [slot_hidden_at_idle, slot_visible_during_drag, slot_hidden_after_drag, _tower_slot_layout_is_valid(), cross_floor_rejected, same_floor_moved, invalid_shop_drop_restored, origin.is_empty()])
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
@@ -1823,45 +1750,6 @@ func _run_merge_automated_test() -> void:
 		push_error("Automated merge test failed.")
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
-
-
-# 실제 구매 두 번의 투자금이 머지 터렛에 누적되고 낮 판매만 절반 환급되는지 검증한다.
-func _run_sell_automated_test() -> void:
-	var target_slot := tower_slots[0]
-	var card_index := 0
-	var turret_id := "turretMelee1"
-	var tower_cost := int(database.get_turret_data(turret_id).get("base_price", -1))
-	var starting_gold := gold
-	shop_turret_ids[card_index] = turret_id
-	shop_card_available[card_index] = true
-	var first_purchase := _purchase_shop_card_to_slot(card_index, target_slot)
-	shop_turret_ids[card_index] = turret_id
-	shop_card_available[card_index] = true
-	var second_purchase_merged := _purchase_shop_card_to_slot(card_index, target_slot)
-	var merged_tower := target_slot.occupant as PrototypeTower
-	var expected_investment := tower_cost * 2
-	var expected_refund := floori(float(expected_investment) * database.extension_float("sellRefundRate", 0.5))
-	var investment_preserved := merged_tower != null and merged_tower.turret_id == "turretMelee2" and merged_tower.invested_gold == expected_investment
-	# 판매 판정 함수는 전장 로컬 좌표를 받으므로 현재 카메라 오프셋을 반영해 기준 화면 좌표를 변환한다.
-	var sell_inside_local := battlefield_world.to_local(position + Vector2(960.0, SELL_ZONE_TOP_Y + 1.0))
-	var sell_outside_local := battlefield_world.to_local(position + Vector2(960.0, SELL_ZONE_TOP_Y - 1.0))
-	var threshold_detected := _is_in_sell_zone(sell_inside_local) and not _is_in_sell_zone(sell_outside_local)
-	var actual_refund := _sell_tower(merged_tower)
-	var day_sale_ok := actual_refund == expected_refund and target_slot.is_empty() and gold == starting_gold - expected_investment + expected_refund
-
-	# 밤에는 같은 API를 호출해도 터렛과 골드가 그대로 남아야 한다.
-	var night_tower := _spawn_tower_in_slot(target_slot, turret_id, tower_cost)
-	var gold_before_night_attempt := gold
-	_set_phase(Phase.WAVE)
-	var night_sale_rejected := _sell_tower(night_tower) == -1 and target_slot.occupant == night_tower and gold == gold_before_night_attempt
-	var passed := first_purchase and second_purchase_merged and investment_preserved and threshold_detected and day_sale_ok and night_sale_rejected
-	if passed:
-		print("Automated sell test passed: DAY_LOWER_SHOP_HALF_CUMULATIVE_REFUND")
-	else:
-		push_error("Automated sell test failed: first=%s merge=%s investment=%s threshold=%s day=%s night=%s" % [first_purchase, second_purchase_merged, investment_preserved, threshold_detected, day_sale_ok, night_sale_rejected])
-	Engine.time_scale = 1.0
-	get_tree().quit(0 if passed else 1)
-
 
 # 편집용 씬에 층별 슬롯이 빠짐없이 있고 같은 층의 두 슬롯이 완전히 겹치지 않는지 검증한다.
 func _tower_slot_layout_is_valid() -> bool:

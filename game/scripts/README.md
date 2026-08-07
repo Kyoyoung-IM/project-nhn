@@ -38,7 +38,6 @@ JSON은 문법상 주석을 지원하지 않는다. 데이터 컬럼과 프로�
 
 - `--auto-test-merge`: 낮 단계에서 같은 층의 동일 ID·Tier 터렛만 수동 머지되고, 층간·밤·다른 종류 머지가 거부되는지 검사한다.
 - `--auto-test-shop-merge`: 밤에도 상점 카드의 동일 ID·Tier 구매 머지만 성공하고, 호환되지 않는 점유 슬롯에서는 결제되지 않는지 검사한다.
-- `--auto-test-sell`: 실제 구매·머지 누적 금액의 50%가 낮 상점 하단 드롭에서만 환급되는지 검사한다.
 - `--tower-visual-test=DOT`: 테스트 환경에서 선택한 `MELEE/RANGED/DOT/SLOW/STUN` 한 종류의 Tier 1~4를 B1에 즉시 나란히 배치한다. Web에서는 `?tower_visual_test=DOT` 형식을 사용한다.
 - 머지 결과는 `nextTurretId`의 행을 다시 로드하므로 공격력, 공격 주기, 사거리와 CC를 포함한 상위 Tier 스탯이 한 번에 교체된다.
 

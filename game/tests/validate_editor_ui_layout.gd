@@ -63,9 +63,8 @@ func _run() -> void:
 		_fail("second ESC did not resume and close the options menu")
 		return
 
-	var sell_feedback := hud.get_node_or_null("Layout/SellZoneFeedback") as Control
-	if sell_feedback == null or sell_feedback.get_node_or_null("Gradient") == null or sell_feedback.get_node_or_null("SellLabel") == null:
-		_fail("editable sell feedback scene is incomplete")
+	if hud.get_node_or_null("Layout/SellZoneFeedback") != null:
+		_fail("removed sell feedback must not remain in the HUD")
 		return
 	var test_panel := hud.get_node_or_null("Layout/TestBalancePanel") as Control
 	if test_panel == null or test_panel.get_node_or_null("SidePanel/WaveSpinBox") == null or test_panel.get_node_or_null("EditorOverlay/TableScroll") == null or test_panel.get_node_or_null("EditorOverlay/AddRowButton") == null or test_panel.get_node_or_null("EditorOverlay/ParseInput") == null or test_panel.get_node_or_null("EditorOverlay/ParseButton") == null:

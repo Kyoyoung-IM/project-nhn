@@ -39,9 +39,6 @@ func _init() -> void:
 	if not is_equal_approx(database.define_float("spawnOrderInterval", -1.0), 0.5):
 		_fail("spawnOrderInterval must match the updated source value 0.5 seconds")
 		return
-	if not is_equal_approx(database.extension_float("sellRefundRate", -1.0), 0.5):
-		_fail("prototype sellRefundRate must remain 0.5 until the source field is supplied")
-		return
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
 		return
