@@ -49,10 +49,6 @@ var cc_value: float = 0.0
 var tower_color := Color("68d8c1")
 var floor_index: int = 0
 
-# 이 터렛을 만들기 위해 실제로 지불한 골드 총액이다.
-# 머지할 때 두 재료의 값을 합쳐 상위 Tier에 넘기므로 판매가는 원본 구매 이력을 보존한다.
-var invested_gold: int = 0
-
 # 공격 재사용 대기시간과 기절 포탑의 충전 상태다.
 var cooldown_sec: float = 0.0
 var enabled: bool = true
@@ -75,7 +71,7 @@ var visual_elapsed_sec: float = 0.0
 
 
 # 로더가 만든 내부 설정을 복사하고 해당 층의 터렛 그룹에 등록한다.
-func setup(config: Dictionary, assigned_floor_index: int, assigned_invested_gold: int = 0) -> void:
+func setup(config: Dictionary, assigned_floor_index: int) -> void:
 	turret_id = str(config.get("id", ""))
 	display_name = str(config.get("display_name", turret_id))
 	turret_type = str(config.get("type", "RANGED"))
@@ -88,14 +84,13 @@ func setup(config: Dictionary, assigned_floor_index: int, assigned_invested_gold
 	cc_value = float(config.get("cc_value", 0.0))
 	tower_color = Color(str(config.get("color_hex", "68d8c1")))
 	floor_index = assigned_floor_index
-	invested_gold = maxi(0, assigned_invested_gold)
 	cooldown_sec = 0.0
 	_refresh_visual_nodes()
 	add_to_group("prototype_towers")
 	queue_redraw()
 
 
-# 테스트 밸런스 편집에서 ID·Tier·투자금·현재 쿨다운은 보존하고 전투 수치만 즉시 갱신한다.
+# 테스트 밸런스 편집에서 ID·Tier·현재 쿨다운은 보존하고 전투 수치만 즉시 갱신한다.
 func apply_runtime_balance(config: Dictionary) -> void:
 	damage = float(config.get("damage", damage))
 	attack_interval_sec = maxf(0.001, float(config.get("attack_interval_sec", attack_interval_sec)))

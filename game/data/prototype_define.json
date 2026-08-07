@@ -2,7 +2,7 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / define",
-    "note": "Read-only source snapshot verified 2026-08-05; source values are unchanged from 2026-08-04. sellRefundRate=0.5 remains a local placeholder; see Design Request/20260804 REQUEST.md."
+    "note": "Read-only source snapshot verified 2026-08-05; source values are unchanged from 2026-08-04."
   },
   "values": {
     "prepareTimeSec": 20.0,
@@ -17,7 +17,6 @@
   },
   "prototypeExtensions": {
     "shopCardCount": 5,
-    "rngSeed": 20260803,
-    "sellRefundRate": 0.5
+    "rngSeed": 20260803
   }
 }

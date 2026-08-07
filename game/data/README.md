@@ -15,7 +15,7 @@
 
 - 터렛: `displayName`, `colorHex`, `tier`
 - 몬스터: `displayName`, `colorHex`
-- Define: `shopCardCount`, `rngSeed`, `sellRefundRate` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용하며, `sellRefundRate=0.5`는 기획 확정 전 임시값)
+- Define: `shopCardCount`, `rngSeed` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용)
 
 2026-08-05 읽기 전용 원본의 다섯 시트(`define`, `turret`, `monster`, `spawntable`, `shopGacha`)를 다시 대조했다. 원본 행 순서를 유지해 변경된 터렛 피해·가격·CC 수치와 몬스터 체력·이동 속도를 반영했고, `wave4`의 `boss1` 수를 4기에서 1기로 갱신했다. `totalWaveCount=4`, `rerollPlusCost=5`, `spawnOrderInterval=0.5`, 고유한 `wave3.spawnOrder`와 상점 확률은 유지된다.
 

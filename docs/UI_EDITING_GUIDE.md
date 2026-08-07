@@ -9,7 +9,6 @@
 - 일시정지·옵션 창: `res://scenes/ui/options_menu.tscn`
 - 게임 클리어 화면: `res://scenes/ui/game_clear_overlay.tscn`
 - 게임 오버 화면: `res://scenes/ui/game_over_overlay.tscn`
-- 타워 판매 드래그 안내: `res://scenes/ui/sell_zone_feedback.tscn`
 - 테스트 옵션 및 데이터 편집 모달: `res://scenes/ui/test_balance_panel.tscn`
 - 데이터 편집 표 전체 간격: `res://scenes/ui/balance_table_grid.tscn`
 - 데이터 표 머리글 셀: `res://scenes/ui/balance_header_cell.tscn`

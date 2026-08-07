@@ -587,8 +587,6 @@ func _validate_define() -> void:
 		validation_errors.append("prototype shopCardCount must remain 5")
 	if define_float("spawnOrderInterval", 0.0) <= 0.0:
 		validation_errors.append("spawnOrderInterval must be positive")
-	if extension_float("sellRefundRate", -1.0) < 0.0 or extension_float("sellRefundRate", -1.0) > 1.0:
-		validation_errors.append("prototype sellRefundRate must be between 0 and 1")
 
 
 # 머지 트리, 몬스터 참조, 스폰 순서, 상점 확률 합계, 웨이브 누락을 검사한다.
