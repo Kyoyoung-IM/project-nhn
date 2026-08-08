@@ -103,8 +103,9 @@ func _run() -> void:
 		_fail("editable game-clear overlay is missing")
 		return
 	var game_clear_title := game_clear_overlay.get_node_or_null("TitleImage") as TextureRect
-	if game_clear_title == null or game_clear_title.texture == null:
-		_fail("game-clear title artwork is incomplete")
+	var game_clear_restart := game_clear_overlay.get_node_or_null("RestartButton") as Button
+	if game_clear_title == null or game_clear_title.texture == null or game_clear_restart == null:
+		_fail("game-clear title or restart control is incomplete")
 		return
 	if game_clear_overlay.visible:
 		_fail("game-clear overlay must be hidden before victory")
@@ -119,6 +120,11 @@ func _run() -> void:
 		return
 	if not status_label.text.is_empty():
 		_fail("legacy victory text is still visible behind the game-clear artwork")
+		return
+	game_clear_restart.pressed.emit()
+	await process_frame
+	if game_clear_overlay.visible or int(game.get("phase")) != 0:
+		_fail("game-clear restart did not return to the ready phase")
 		return
 
 	var game_over_overlay := hud.get_node_or_null("Layout/GameOverOverlay") as Control
