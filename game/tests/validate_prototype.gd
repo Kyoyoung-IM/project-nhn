@@ -16,6 +16,12 @@ const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
 # 읽기 전용 데이터 테이블의 대표 오브젝트 ID다. 원본 오탈자 spped1도 그대로 보존한다.
 const EXPECTED_TURRET_IDS := ["turretMelee1", "turretDot1", "turretStun1", "turretSlow1", "turretRanged1"]
 const EXPECTED_MONSTER_IDS := ["normal1", "spped1", "tank1", "boss1"]
+const EXPECTED_MONSTER_BALANCE := {
+	"normal1": [105, 4], "normal2": [2835, 4],
+	"spped1": [315, 4], "spped2": [2126, 4],
+	"tank1": [945, 4], "tank2": [5670, 4],
+	"boss1": [3780, 50],
+}
 
 
 # 모든 테이블의 구문·참조를 검사하고 필수 프로토타입 오브젝트를 조회한다.
@@ -38,6 +44,9 @@ func _init() -> void:
 		return
 	if not is_equal_approx(database.define_float("spawnOrderInterval", -1.0), 0.5):
 		_fail("spawnOrderInterval must match the updated source value 0.5 seconds")
+		return
+	if not is_equal_approx(database.define_float("waveTimeSec", -1.0), 80.0):
+		_fail("waveTimeSec must match the updated source value 80 seconds")
 		return
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
@@ -84,6 +93,13 @@ func _init() -> void:
 		var monster := database.get_monster_data(monster_id)
 		if monster.is_empty() or float(monster.get("max_hp", 0.0)) <= 0.0:
 			_fail("missing prototype monster object: %s" % monster_id)
+			return
+	for monster_id in EXPECTED_MONSTER_BALANCE:
+		var monster := database.get_monster_data(monster_id)
+		var expected: Array = EXPECTED_MONSTER_BALANCE[monster_id]
+		if not is_equal_approx(float(monster.get("max_hp", 0.0)), float(expected[0])) \
+				or int(monster.get("reward_gold", 0)) != int(expected[1]):
+			_fail("monster balance must match the latest read-only source: %s" % monster_id)
 			return
 	# 타입별 실제 스프라이트가 유효하고 종횡비 보존 배율·발판 접지 크기가 일치해야 한다.
 	if not is_equal_approx(MonsterScript.MONSTER_VISUAL_SCALE, 1.6):
