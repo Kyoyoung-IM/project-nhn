@@ -206,6 +206,16 @@ func _init() -> void:
 			if attack_bounds.size.x <= 0.0 or attack_bounds.size.y <= 0.0 or attack_bounds.end.x > TowerVisualAssetsScript.ATTACK_FRAME_SIZE.x or attack_bounds.end.y > TowerVisualAssetsScript.ATTACK_FRAME_SIZE.y:
 				_fail("tower attack frame bounds are outside frame 1: %s tier %d" % [turret_type, tier])
 				return
+	# RANGED Tier 2·3의 두 idle 프레임은 같은 Tier 실루엣이어야 한다. 두 시트의 오른쪽
+	# 프레임이 서로 뒤바뀌어 공격 종료 때 다른 Tier로 보였던 회귀를 폭 차이로 차단한다.
+	var idle_frame_size := Vector2i(TowerVisualAssetsScript.IDLE_FRAME_SIZE)
+	for tier in [2, 3]:
+		var ranged_idle_image := TowerVisualAssetsScript.idle_texture("RANGED", tier).get_image()
+		var first_idle_bounds := _image_alpha_bounds(ranged_idle_image, Rect2i(Vector2i.ZERO, idle_frame_size))
+		var second_idle_bounds := _image_alpha_bounds(ranged_idle_image, Rect2i(Vector2i(idle_frame_size.x, 0), idle_frame_size))
+		if absi(first_idle_bounds.size.x - second_idle_bounds.size.x) > 4:
+			_fail("ranged idle frames must not mix tiers: tier %d" % tier)
+			return
 	# Sprite2D의 행 우선 프레임 번호가 실제 재생에서도 좌상→우상→좌하→우하(0→1→2→3)
 	# 순서를 유지하고, 끝나면 다시 대기 애니메이션을 표시해야 한다.
 	var animation_probe := TowerScript.new() as PrototypeTower
@@ -253,6 +263,24 @@ func _texture_has_opaque_coverage(texture: Texture2D, minimum_ratio: float) -> b
 				opaque_pixel_count += 1
 	var total_pixel_count := image.get_width() * image.get_height()
 	return total_pixel_count > 0 and float(opaque_pixel_count) / float(total_pixel_count) >= minimum_ratio
+
+
+func _image_alpha_bounds(image: Image, region: Rect2i) -> Rect2i:
+	var min_x := region.size.x
+	var min_y := region.size.y
+	var max_x := -1
+	var max_y := -1
+	for y in range(region.position.y, region.end.y):
+		for x in range(region.position.x, region.end.x):
+			if image.get_pixel(x, y).a <= 0.01:
+				continue
+			min_x = mini(min_x, x - region.position.x)
+			min_y = mini(min_y, y - region.position.y)
+			max_x = maxi(max_x, x - region.position.x)
+			max_y = maxi(max_y, y - region.position.y)
+	if max_x < min_x or max_y < min_y:
+		return Rect2i()
+	return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
 
 func _fail(message: String) -> void:
