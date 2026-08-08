@@ -2,12 +2,12 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / turret",
-    "note": "Read-only source snapshot updated 2026-08-07. Source row order is preserved; displayName, colorHex and tier are local visual prototype extensions; this branch uses indestructible towers."
+    "note": "Read-only source snapshot updated 2026-08-08. Source row order is preserved; displayName, colorHex and tier are local visual prototype extensions; this branch uses indestructible towers."
   },
   "rows": [
     {
       "turretId": "turretMelee1", "type": "MELEE", "nextTurretId": "turretMelee2", "isShop": true,
-      "basePrice": 10, "damage": 60.0, "attackspeed": 0.5, "range": 0.2, "rangeValue": 0.0,
+      "basePrice": 20, "damage": 60.0, "attackspeed": 0.5, "range": 0.2, "rangeValue": 0.0,
       "ccDuration": 0.0, "ccValue": 0.0, "vfxResource": "vfx_turretMelee1", "turretResource": "resource_turretMelee1",
       "prototypeExtensions": {"displayName": "근접 포탑", "colorHex": "ff9f68", "tier": 1}
     },
@@ -31,7 +31,7 @@
     },
     {
       "turretId": "turretDot1", "type": "DOT", "nextTurretId": "turretDot2", "isShop": true,
-      "basePrice": 10, "damage": 20.0, "attackspeed": 0.5, "range": 0.2, "rangeValue": 1.5,
+      "basePrice": 20, "damage": 20.0, "attackspeed": 0.5, "range": 0.2, "rangeValue": 1.5,
       "ccDuration": 10.0, "ccValue": "50%", "vfxResource": "vfx_turretDot1", "turretResource": "resource_turretDot1",
       "prototypeExtensions": {"displayName": "지속 포탑", "colorHex": "c47cff", "tier": 1}
     },
@@ -55,7 +55,7 @@
     },
     {
       "turretId": "turretStun1", "type": "STUN", "nextTurretId": "turretStun2", "isShop": true,
-      "basePrice": 10, "damage": 30.0, "attackspeed": 1.25, "range": 2.0, "rangeValue": 2.2,
+      "basePrice": 20, "damage": 30.0, "attackspeed": 1.25, "range": 2.0, "rangeValue": 2.2,
       "ccDuration": 2.0, "ccValue": "100%", "vfxResource": "vfx_turretStun1", "turretResource": "resource_turretStun1",
       "prototypeExtensions": {"displayName": "기절 포탑", "colorHex": "79b8ff", "tier": 1}
     },
@@ -79,7 +79,7 @@
     },
     {
       "turretId": "turretSlow1", "type": "SLOW", "nextTurretId": "turretSlow2", "isShop": true,
-      "basePrice": 10, "damage": 20.0, "attackspeed": 1.0, "range": 2.0, "rangeValue": 1.2,
+      "basePrice": 20, "damage": 20.0, "attackspeed": 1.0, "range": 2.0, "rangeValue": 1.2,
       "ccDuration": 4.0, "ccValue": "40%", "vfxResource": "vfx_turretSlow1", "turretResource": "resource_turretSlow1",
       "prototypeExtensions": {"displayName": "둔화 포탑", "colorHex": "72e0d1", "tier": 1}
     },
@@ -103,7 +103,7 @@
     },
     {
       "turretId": "turretRanged1", "type": "RANGED", "nextTurretId": "turretRanged2", "isShop": true,
-      "basePrice": 10, "damage": 40.0, "attackspeed": 0.5, "range": 2.0, "rangeValue": 0.0,
+      "basePrice": 20, "damage": 40.0, "attackspeed": 0.5, "range": 2.0, "rangeValue": 0.0,
       "ccDuration": 0.0, "ccValue": 0.0, "vfxResource": "vfx_turretRanged1", "turretResource": "resource_turretRanged1",
       "prototypeExtensions": {"displayName": "원거리 포탑", "colorHex": "ffe17a", "tier": 1}
     },

@@ -2,21 +2,14 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / spawntable",
-    "note": "Read-only source snapshot updated 2026-08-07. totalWaveCount is 4, source row order is preserved, and wave4 boss1 value is 1."
+    "note": "Read-only source snapshot updated 2026-08-08. totalWaveCount is 4 and the six source rows are preserved in source order."
   },
   "rows": [
-    {"waveGroup": "wave1", "monsterId": "normal1", "spawnOrder": 1, "value": 15},
-    {"waveGroup": "wave1", "monsterId": "spped1", "spawnOrder": 2, "value": 5},
-    {"waveGroup": "wave1", "monsterId": "tank1", "spawnOrder": 3, "value": 2},
-
-    {"waveGroup": "wave2", "monsterId": "tank1", "spawnOrder": 1, "value": 4},
-    {"waveGroup": "wave2", "monsterId": "normal1", "spawnOrder": 2, "value": 8},
-    {"waveGroup": "wave2", "monsterId": "spped1", "spawnOrder": 3, "value": 20},
-
-    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 8},
-    {"waveGroup": "wave3", "monsterId": "normal1", "spawnOrder": 3, "value": 30},
-    {"waveGroup": "wave3", "monsterId": "spped1", "spawnOrder": 2, "value": 15},
-
-    {"waveGroup": "wave4", "monsterId": "boss1", "spawnOrder": 1, "value": 1}
+    {"waveGroup": "wave1", "monsterId": "normal1", "spawnOrder": 1, "value": 100},
+    {"waveGroup": "wave2", "monsterId": "spped1", "spawnOrder": 1, "value": 200},
+    {"waveGroup": "wave3", "monsterId": "tank1", "spawnOrder": 1, "value": 300},
+    {"waveGroup": "wave4", "monsterId": "normal2", "spawnOrder": 1, "value": 300},
+    {"waveGroup": "wave4", "monsterId": "spped2", "spawnOrder": 1, "value": 300},
+    {"waveGroup": "wave4", "monsterId": "tank2", "spawnOrder": 1, "value": 300}
   ]
 }

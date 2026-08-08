@@ -31,7 +31,7 @@
 | 타워 애니메이션 | 기능 브랜치 임시 빌드 검증 완료 | `agent/tower-idle-attack-animation-20260808`에서 5종 Tier 1~4의 대기·공격 애니메이션을 Web에 연결하고, RANGED Tier 2·3 idle 오른쪽 프레임의 교차 혼입을 수정해 회귀 검사를 추가. 최신 PCK `16,686,048` bytes와 원거리 4개 Tier Web 표시·콘솔 확인 완료 | 임시 플레이 피드백 후 PR·병합·정식 Pages 배포 여부 결정 |
 | 몬스터 그래픽·피격 | 병합·배포 완료 | PR #57 merge commit `2caa99f`에서 보스 제외 몬스터의 원본 픽셀 크기 차이를 반영하고 체력바를 머리 위 4px로 축소. 피격·사망·접지 전용 검사와 공개 Pages 확인 완료 | 공개 플레이에서 타입별 크기 차이와 체력바 가독성 체감 확인 |
 | 전장 배경·접지 경로 | 병합·배포 완료 | PR #59 merge commit `1ad6a5e`에서 적이 각 층의 화면 오른쪽 밖 X `1980`에서 왼쪽 밖 X `-60`까지 이동하도록 경로를 확장하고 고정 전체 뷰 좌표 검사를 반영. 자동 승리·패배와 공개 Web 확인 완료 | 공개 플레이에서 길어진 층별 이동 시간과 전투 밀도 체감 확인 |
-| 데이터테이블 | 병합 완료 | PR #45 merge commit `f7ee996` 병합, 최신 Turret·Monster·SpawnTable 반영 및 정적 무결성 검사 통과 | PR #46 Web Release Pages 배포 확인 |
+| 데이터테이블 | 최신화 완료·게시 준비 | `agent/data-table-balance-20260808`에서 2026-08-08 최신 Turret·Monster·SpawnTable과 동일 `spawnOrder` 그룹 호환을 반영하고 정적 무결성 검사 통과 | 커밋·PR·merge commit 병합 후 Web Release Pages 배포 |
 | 프로젝트 관리 지침 | 완료 | PR #23·#24에서 문서 전용 배포 제외, Pages 직렬화, 임의 취소·같은 SHA 재실행 금지와 10분 상한 대응 지침 반영 | 이후 배포는 한 작업만 완료 확인 담당 |
 | Pages 배포 | 완료 | PR #62 병합 SHA `0f26ad7`의 실행 `31249479166` 성공. 공개 HTML의 `index-0f26ad7d0ccb.pck` 참조, 16,686,048-byte PCK와 로컬·원격 SHA-256 `7B6692BA794DD2594690C6E0A44BC58E71227D67FFBCA299561D6EC21EF8D244` 일치 및 공개 브라우저 오류 없음 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |

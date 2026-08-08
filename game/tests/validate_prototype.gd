@@ -42,19 +42,22 @@ func _init() -> void:
 	if database.get_wave_monster_ids("wave1").is_empty():
 		_fail("wave1 must contain SpawnTable rows")
 		return
-	if database.get_wave_monster_ids("wave3").size() != 53:
-		_fail("wave3 must preserve all source rows and expand to 53 monsters")
+	if database.get_wave_monster_ids("wave1").size() != 100:
+		_fail("wave1 must expand the latest source row to 100 monsters")
 		return
-	var wave3 := database.get_wave_monster_ids("wave3")
-	if wave3[0] != "tank1" or wave3[4] != "tank1" or wave3[8] != "spped1":
-		_fail("wave3 must follow the updated unique spawnOrder values")
+	if database.get_wave_monster_ids("wave2").size() != 200 or database.get_wave_monster_ids("wave2")[0] != "spped1":
+		_fail("wave2 must preserve the latest spped1 source row")
 		return
-	if database.get_wave_monster_ids("wave2")[0] != "tank1":
-		_fail("waves without duplicate spawnOrder must remain ordered by spawnOrder")
+	if database.get_wave_monster_ids("wave3").size() != 300 or database.get_wave_monster_ids("wave3")[0] != "tank1":
+		_fail("wave3 must preserve the latest tank1 source row")
+		return
+	var wave4 := database.get_wave_monster_ids("wave4")
+	if wave4.size() != 900 or wave4[0] != "normal2" or wave4[300] != "spped2" or wave4[600] != "tank2":
+		_fail("wave4 must preserve equal spawnOrder rows in source order")
 		return
 	var wave1_schedule := database.get_wave_spawn_entries("wave1")
-	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[14].get("delay_after_sec", -1.0)), 0.5):
-		_fail("spawn entries must use source values 0.4 seconds inside an order and 0.5 seconds between orders")
+	if not is_equal_approx(float(wave1_schedule[0].get("delay_after_sec", -1.0)), 0.4) or not is_equal_approx(float(wave1_schedule[99].get("delay_after_sec", -1.0)), 0.4):
+		_fail("spawn entries must use the source 0.4 second interval inside the only order")
 		return
 	for turret_id in EXPECTED_TURRET_IDS:
 		var turret := database.get_turret_data(turret_id)
