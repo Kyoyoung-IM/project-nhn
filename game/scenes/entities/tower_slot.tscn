@@ -4,38 +4,38 @@
 [ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
 
 [sub_resource type="RectangleShape2D" id="ShapeSlot"]
-size = Vector2(82, 52)
+size = Vector2(164, 104)
 
 [sub_resource type="StyleBoxFlat" id="StyleShadow"]
 bg_color = Color(0.04, 0.1, 0.03, 0.5)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleFill"]
 bg_color = Color(0.48, 0.78, 0.22, 1)
-border_width_left = 5
-border_width_top = 5
-border_width_right = 5
-border_width_bottom = 5
+border_width_left = 10
+border_width_top = 10
+border_width_right = 10
+border_width_bottom = 10
 border_color = Color(0.12, 0.22, 0.08, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleBorder"]
 bg_color = Color(0, 0, 0, 0)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
 border_color = Color(0.7, 1, 0.38, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
 
 [node name="TowerSlot" type="Area2D"]
 script = ExtResource("1_script")
@@ -52,43 +52,43 @@ mouse_filter = 2
 
 [node name="Shadow" type="Panel" parent="Visual"]
 layout_mode = 0
-offset_left = -43.0
-offset_top = -20.0
-offset_right = 43.0
-offset_bottom = 30.0
+offset_left = -86.0
+offset_top = -40.0
+offset_right = 86.0
+offset_bottom = 60.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleShadow")
 
 [node name="Fill" type="Panel" parent="Visual"]
 layout_mode = 0
-offset_left = -43.0
-offset_top = -27.0
-offset_right = 43.0
-offset_bottom = 25.0
+offset_left = -86.0
+offset_top = -54.0
+offset_right = 86.0
+offset_bottom = 50.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleFill")
 
 [node name="Border" type="Panel" parent="Visual"]
 layout_mode = 0
-offset_left = -37.0
-offset_top = -21.0
-offset_right = 37.0
-offset_bottom = 19.0
+offset_left = -74.0
+offset_top = -42.0
+offset_right = 74.0
+offset_bottom = 38.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBorder")
 
 [node name="PlusLabel" type="Label" parent="Visual"]
 layout_mode = 0
-offset_left = -37.0
-offset_top = -24.0
-offset_right = 37.0
-offset_bottom = 22.0
+offset_left = -74.0
+offset_top = -48.0
+offset_right = 74.0
+offset_bottom = 44.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.9, 1, 0.66, 1)
 theme_override_colors/font_outline_color = Color(0.1, 0.2, 0.07, 1)
-theme_override_constants/outline_size = 5
+theme_override_constants/outline_size = 10
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 38
+theme_override_font_sizes/font_size = 76
 text = "+"
 horizontal_alignment = 1
 vertical_alignment = 1

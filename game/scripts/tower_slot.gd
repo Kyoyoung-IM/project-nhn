@@ -7,7 +7,7 @@ extends Area2D
 # 프로토타입 게임 컨트롤러가 구매한 터렛을 배치할 때 받는 신호다.
 signal pressed(slot: PrototypeTowerSlot)
 
-# 슬롯 표시는 평상시 30%, 배치·이동 드래그 중 유효한 위치는 60% 불투명도로 강조한다.
+# 빈 슬롯은 평상시 30%, 점유 슬롯은 0%로 표시하며 드래그 중 유효한 위치는 60%로 강조한다.
 const BASE_SLOT_OPACITY := 0.30
 const HIGHLIGHT_SLOT_OPACITY := 0.60
 
@@ -102,12 +102,13 @@ func _update_visual() -> void:
 		return
 	# Area2D.self_modulate는 자식 Control에 전파되지 않으므로 실제 표시 루트의 알파를 갱신한다.
 	var highlighted := drag_eligible or drag_targeted
-	visual.modulate.a = HIGHLIGHT_SLOT_OPACITY if highlighted else BASE_SLOT_OPACITY
+	visual.modulate.a = HIGHLIGHT_SLOT_OPACITY if highlighted else BASE_SLOT_OPACITY if is_empty() else 0.0
+	# Web에서 점유 해제 직후 빈 슬롯이 즉시 복원되도록 렌더 노드는 유지하고 알파만 0%로 숨긴다.
 	visual.visible = true
 	var fill_style := fill_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
 	fill_style.bg_color = eligible_fill_color if drag_eligible else base_fill_color
 	fill_panel.add_theme_stylebox_override("panel", fill_style)
 	var border_style := border_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
 	border_style.border_color = targeted_border_color if drag_targeted else eligible_border_color if drag_eligible else hover_border_color if hovered and interaction_enabled else base_border_color
-	border_style.set_border_width_all(5 if drag_targeted else 3)
+	border_style.set_border_width_all(10 if drag_targeted else 6)
 	border_panel.add_theme_stylebox_override("panel", border_style)
