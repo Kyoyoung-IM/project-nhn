@@ -2,12 +2,12 @@
   "meta": {
     "status": "PLACEHOLDER",
     "source": "Google Sheets: 1DNYhAyOK-8hTO4hKY_9cGGzvM-DoM99ttiObfkve59s / define",
-    "note": "Read-only source snapshot verified 2026-08-05; source values are unchanged from 2026-08-04."
+    "note": "Read-only source snapshot updated 2026-08-09."
   },
   "values": {
     "prepareTimeSec": 20.0,
     "totalWaveCount": 4.0,
-    "waveTimeSec": 50.0,
+    "waveTimeSec": 80.0,
     "initialGold": 100.0,
     "rerollCost": 10.0,
     "rerollPlusCost": 5.0,

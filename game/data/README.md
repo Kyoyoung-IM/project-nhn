@@ -17,7 +17,7 @@
 - 몬스터: `displayName`, `colorHex`
 - Define: `shopCardCount`, `rngSeed` (`rngSeed`는 자동 테스트와 `--shop-seed=<숫자>` 디버그 재현에만 사용)
 
-2026-08-08 읽기 전용 원본의 다섯 시트(`define`, `turret`, `monster`, `spawntable`, `shopGacha`)를 다시 대조했다. Tier 1 터렛 5종의 가격을 20으로, 몬스터 체력·보상 골드를 최신 값으로 갱신하고 SpawnTable을 원본의 6행 구성으로 반영했다. `Define`, `ShopGacha`와 `totalWaveCount=4`는 유지된다.
+2026-08-09 읽기 전용 원본의 다섯 시트(`define`, `turret`, `monster`, `spawntable`, `shopGacha`)를 다시 대조했다. `waveTimeSec`을 80초로 변경하고 몬스터 체력·보상 골드를 최신 값으로 갱신했다. `Turret`, `SpawnTable`, `ShopGacha`와 `totalWaveCount=4`는 유지된다.
 
 `failAllowedMonster`는 원본 컬럼 호환을 위해 보존하지만 현재 게임 오버 판정에는 사용하지 않는다.
 
