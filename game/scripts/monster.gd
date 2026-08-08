@@ -521,10 +521,20 @@ func receive_turret_hit(amount: float, source_type: String, cc_duration: float, 
 			if source_tier >= 2:
 				_spread_dot_to_adjacent(amount, cc_duration, cc_value, source_tier)
 		"STUN":
-			stun_remaining_sec = maxf(stun_remaining_sec, cc_duration * boss_factor)
+			apply_stun(cc_duration)
 		"SLOW":
 			slow_remaining_sec = maxf(slow_remaining_sec, cc_duration * boss_factor)
 			slow_multiplier = minf(slow_multiplier, clampf(1.0 - cc_value * boss_factor, 0.2, 1.0))
+	_update_status_visuals()
+	_queue_status_redraw()
+
+
+# 확률형·범위형 STUN도 보스 지속시간 보정과 상태 표시를 동일하게 사용한다.
+func apply_stun(duration: float) -> void:
+	if move_state == MoveState.DEAD:
+		return
+	var boss_factor := 0.5 if monster_type == "BOSS" else 1.0
+	stun_remaining_sec = maxf(stun_remaining_sec, duration * boss_factor)
 	_update_status_visuals()
 	_queue_status_redraw()
 

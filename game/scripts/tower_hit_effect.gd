@@ -12,6 +12,15 @@ const STUN_CLOUD_REGION := Rect2(0.0, 0.0, 270.0, 135.0)
 const STUN_BOLT_REGION := Rect2(0.0, 115.0, 270.0, 275.0)
 const STUN_CLOUD_HEAD_GAP := 12.0
 const STUN_CLOUD_BOLT_OVERLAP := 10.0
+const STUN_TIER_ONE_CLOUD_SHADER := """
+shader_type canvas_item;
+void fragment() {
+	vec4 source = texture(TEXTURE, UV);
+	float luminance = dot(source.rgb, vec3(0.299, 0.587, 0.114));
+	vec3 white_cloud = mix(vec3(0.22, 0.29, 0.38), vec3(1.0), smoothstep(0.12, 0.72, luminance));
+	COLOR = vec4(white_cloud, source.a) * COLOR;
+}
+"""
 
 var effect_type: String = "MELEE"
 var remaining_sec: float = 0.0
@@ -70,6 +79,12 @@ func _configure_effect_sprite() -> void:
 		stun_cloud_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		stun_cloud_sprite.position.y = cloud_bottom_y - stun_cloud_draw_size.y * 0.5
 		stun_cloud_sprite.scale = stun_cloud_draw_size / stun_cloud_sprite.texture.get_size()
+		if tier == 1:
+			var cloud_shader := Shader.new()
+			cloud_shader.code = STUN_TIER_ONE_CLOUD_SHADER
+			var cloud_material := ShaderMaterial.new()
+			cloud_material.shader = cloud_shader
+			stun_cloud_sprite.material = cloud_material
 		add_child(stun_cloud_sprite)
 	else:
 		effect_sprite.texture = MELEE_SLASH_TEXTURE

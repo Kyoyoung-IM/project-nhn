@@ -14,6 +14,7 @@ const TowerFlamethrowerScript := preload("res://scripts/tower_flamethrower.gd")
 const DotFireballProjectileScript := preload("res://scripts/dot_fireball_projectile.gd")
 const DotDeathExplosionScript := preload("res://scripts/dot_death_explosion.gd")
 const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
+const StunLaneLightningEffectScript := preload("res://scripts/stun_lane_lightning_effect.gd")
 
 # 읽기 전용 데이터 테이블의 대표 오브젝트 ID다. 원본 오탈자 spped1도 그대로 보존한다.
 const EXPECTED_TURRET_IDS := ["turretMelee1", "turretDot1", "turretStun1", "turretSlow1", "turretRanged1"]
@@ -136,8 +137,9 @@ func _init() -> void:
 		DotDeathExplosionScript.EXPLOSION_TEXTURE,
 		TowerHitEffectScript.MELEE_SLASH_TEXTURE,
 		TowerHitEffectScript.STUN_LIGHTNING_TEXTURE,
+		StunLaneLightningEffectScript.BLUE_TEXTURE,
+		StunLaneLightningEffectScript.PURPLE_TEXTURE,
 		MonsterScript.STUN_STATUS_TEXTURE,
-		TowerScript.STUN_CHARGE_AURA_TEXTURE,
 	]
 	for combat_vfx_texture in combat_vfx_textures:
 		if combat_vfx_texture == null or combat_vfx_texture.get_width() <= 0 or combat_vfx_texture.get_height() <= 0:
