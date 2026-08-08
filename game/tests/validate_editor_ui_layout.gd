@@ -54,6 +54,10 @@ func _run() -> void:
 	if options_menu == null or options_menu.get_node_or_null("PanelArt") == null or options_menu.get_node_or_null("ContinueButton") == null or options_menu.get_node_or_null("TestModeButton") == null or options_menu.get_node_or_null("ResetButton") == null or options_menu.get_node_or_null("QuitButton") == null:
 		_fail("editable options menu scene is incomplete")
 		return
+	var options_dimmer := options_menu.get_node_or_null("Dimmer") as ColorRect
+	if options_dimmer == null or options_dimmer.position != Vector2.ZERO or options_dimmer.size != options_menu.size or not is_equal_approx(options_dimmer.color.a, 128.0 / 255.0):
+		_fail("options menu dimmer must cover the full screen with one uniform rectangular color")
+		return
 	var escape_event := InputEventKey.new()
 	escape_event.keycode = KEY_ESCAPE
 	escape_event.pressed = true
