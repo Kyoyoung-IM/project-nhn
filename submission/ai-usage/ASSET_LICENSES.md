@@ -20,6 +20,25 @@
 - 변경 사항: 원본 픽셀은 수정하지 않고 런타임에서 512×512 프레임 단위로 분할해 종횡비를 유지한 균일 배율로 재생함
 - 출처·라이선스: 사용자 제공, 세부 출처와 배포 이용 조건 미제공. 외부 공개·제출 전에 팀이 사용 권한을 확인해야 함
 
+## Enemy Robot Hit Animation Images
+
+- 종류: 일반·속도·탱크·보스 몬스터용 피격 이미지 4종
+- 제공자: 프로젝트 사용자
+- 제공일: 2026-08-07
+- 저장 위치: `game/assets/enemy/hit animation/normal1_hit.png`, `game/assets/enemy/hit animation/spped1_hit.png`, `game/assets/enemy/hit animation/tank1_hit.png`, `game/assets/enemy/hit animation/boss1_hit.png`
+- 사용 범위: 게임 런타임의 몬스터 직접 피해 피드백
+- 출처·라이선스: 사용자 제공, 세부 출처와 배포 이용 조건 미제공. 외부 공개·제출 전에 팀이 사용 권한을 확인해야 함
+
+## Current Tower Animation and UI Image Sets
+
+- 종류: 타워 5종 Tier 1~4 본체·대기·공격 이미지와 현재 공통 UI PNG 세트
+- 제공자: 프로젝트 사용자
+- 제공일: 2026-08-07~2026-08-08
+- 저장 위치: `game/assets/towers/charactor/`, `game/assets/ui/images/`
+- 사용 범위: 설치 타워·상점 카드·공격 애니메이션과 타이틀·HUD·상점·옵션 UI
+- 변경 사항: 런타임에서 프레임 분할, 종횡비 보존 배율과 9-패치 배치만 적용함
+- 출처·라이선스: 사용자 제공, 세부 출처와 배포 이용 조건 미제공. 외부 공개·제출 전에 팀이 사용 권한을 확인해야 함
+
 ## 2026-08-07 런타임 에셋 정리
 
 - 현재 게임에는 사용자 제공 `bg.png`·`bg_night.png`, 전투 VFX v2, UI의 최종 버전과 새 타워 캐릭터·공격 스프라이트를 사용한다.
