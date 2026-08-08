@@ -1638,12 +1638,12 @@ func _run_drag_automated_test() -> void:
 	var origin := tower_slots[0]
 	var same_floor_target := tower_slots[1]
 	var other_floor_target := tower_slots[5]
-	# 평상시 0%, 조작 중 30%, 조작 종료 후 0%로 복원되는 슬롯 표시 규칙을 직접 확인한다.
-	var slot_hidden_at_idle := not same_floor_target.visual.visible and is_zero_approx(same_floor_target.visual.modulate.a)
+	# 평상시 30%, 조작 중 유효 위치 60%, 조작 종료 후 30%로 복원되는 슬롯 표시 규칙을 직접 확인한다.
+	var slot_base_at_idle := same_floor_target.visual.visible and is_equal_approx(same_floor_target.visual.modulate.a, PrototypeTowerSlot.BASE_SLOT_OPACITY)
 	same_floor_target.set_drag_state(true, false)
-	var slot_visible_during_drag := same_floor_target.visual.visible and is_equal_approx(same_floor_target.visual.modulate.a, PrototypeTowerSlot.ACTIVE_SLOT_OPACITY)
+	var slot_highlighted_during_drag := same_floor_target.visual.visible and is_equal_approx(same_floor_target.visual.modulate.a, PrototypeTowerSlot.HIGHLIGHT_SLOT_OPACITY)
 	same_floor_target.set_drag_state(false, false)
-	var slot_hidden_after_drag := not same_floor_target.visual.visible and is_zero_approx(same_floor_target.visual.modulate.a)
+	var slot_base_after_drag := same_floor_target.visual.visible and is_equal_approx(same_floor_target.visual.modulate.a, PrototypeTowerSlot.BASE_SLOT_OPACITY)
 	_place_tower(origin, false, "turretMelee1")
 	var tower := towers[0]
 	var cross_floor_rejected := not _relocate_tower(tower, other_floor_target)
@@ -1653,13 +1653,13 @@ func _run_drag_automated_test() -> void:
 	_update_tower_drag(battlefield_world.to_local(position + Vector2(960.0, 1000.0)))
 	_finish_tower_drag()
 	var invalid_shop_drop_restored := same_floor_target.occupant == tower and tower.position == same_floor_target.position and gold == gold_before_invalid_drop
-	var passed := slot_hidden_at_idle and slot_visible_during_drag and slot_hidden_after_drag \
+	var passed := slot_base_at_idle and slot_highlighted_during_drag and slot_base_after_drag \
 		and _tower_slot_layout_is_valid() and cross_floor_rejected and same_floor_moved \
 		and invalid_shop_drop_restored and origin.is_empty()
 	if passed:
 		print("Automated drag test passed: SAME_FLOOR_ONLY_INVALID_SHOP_DROP_RESTORED")
 	else:
-		push_error("Automated drag test failed: idle=%s active=%s cleared=%s layout=%s cross_floor=%s same_floor=%s invalid_drop=%s origin_empty=%s" % [slot_hidden_at_idle, slot_visible_during_drag, slot_hidden_after_drag, _tower_slot_layout_is_valid(), cross_floor_rejected, same_floor_moved, invalid_shop_drop_restored, origin.is_empty()])
+		push_error("Automated drag test failed: idle=%s highlighted=%s restored=%s layout=%s cross_floor=%s same_floor=%s invalid_drop=%s origin_empty=%s" % [slot_base_at_idle, slot_highlighted_during_drag, slot_base_after_drag, _tower_slot_layout_is_valid(), cross_floor_rejected, same_floor_moved, invalid_shop_drop_restored, origin.is_empty()])
 	Engine.time_scale = 1.0
 	get_tree().quit(0 if passed else 1)
 
