@@ -36,8 +36,8 @@ func _init() -> void:
 	if database.define_float("prepareTimeSec", -1.0) < 0.0:
 		_fail("prepareTimeSec must not be negative")
 		return
-	if database.define_int("rerollPlusCost", -1) < 0:
-		_fail("rerollPlusCost must not be negative")
+	if database.define_int("rerollPlusCost", -1) != 0:
+		_fail("rerollPlusCost must match the updated source value 0")
 		return
 	if database.define_int("totalWaveCount", -1) != 4:
 		_fail("totalWaveCount must match the updated source value 4")

@@ -10,7 +10,7 @@
     "waveTimeSec": 80.0,
     "initialGold": 100.0,
     "rerollCost": 10.0,
-    "rerollPlusCost": 5.0,
+    "rerollPlusCost": 0.0,
     "failAllowedMonster": 0.0,
     "monsterSpawnInterval": 0.4,
     "spawnOrderInterval": 0.5
