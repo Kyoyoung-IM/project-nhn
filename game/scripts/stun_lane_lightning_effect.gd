@@ -8,6 +8,7 @@ const LANE_LEFT_X := -1797.0
 const LANE_RIGHT_X := 3717.0
 const BOLT_COUNT := 10
 const BOLT_DRAW_SIZE := Vector2(245.0, 430.0)
+const BOLT_SEGMENT_INSET_RATIO := 0.14
 const BOLT_STAGGER_SEC := 0.025
 const BOLT_VISIBLE_SEC := 0.34
 
@@ -16,8 +17,9 @@ var total_duration_sec: float = 0.0
 var bolt_sprites: Array[Sprite2D] = []
 
 
-func setup(attack_tier: int, lane_y: float) -> void:
+func setup(attack_tier: int, lane_y: float, random_seed: int = 0) -> void:
 	var texture := PURPLE_TEXTURE if attack_tier >= 4 else BLUE_TEXTURE
+	var bolt_x_positions := _randomized_bolt_x_positions(random_seed)
 	total_duration_sec = BOLT_VISIBLE_SEC + BOLT_STAGGER_SEC * float(BOLT_COUNT - 1)
 	z_index = 44
 	for bolt_index in BOLT_COUNT:
@@ -25,13 +27,37 @@ func setup(attack_tier: int, lane_y: float) -> void:
 		bolt.name = "LaneBolt%d" % (bolt_index + 1)
 		bolt.texture = texture
 		bolt.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		var ratio := float(bolt_index) / float(BOLT_COUNT - 1)
-		bolt.position = Vector2(lerpf(LANE_LEFT_X, LANE_RIGHT_X, ratio), lane_y - BOLT_DRAW_SIZE.y * 0.5)
+		bolt.position = Vector2(bolt_x_positions[bolt_index], lane_y - BOLT_DRAW_SIZE.y * 0.5)
 		bolt.scale = BOLT_DRAW_SIZE / texture.get_size()
 		bolt.modulate.a = 0.0
 		add_child(bolt)
 		bolt_sprites.append(bolt)
 	add_to_group("stun_lane_lightning_effects")
+
+
+# 라인을 같은 폭의 구간으로 나눠 각 구간 안에서 한 번씩 무작위 추출한 뒤 낙하 순서도 섞는다.
+# 완전 독립 난수의 한쪽 몰림은 피하면서 매 공격마다 다른 위치·순서를 만든다.
+func _randomized_bolt_x_positions(random_seed: int = 0) -> PackedFloat32Array:
+	var rng := RandomNumberGenerator.new()
+	if random_seed == 0:
+		# 같은 프레임에 Tier 3·4가 함께 발동해도 인스턴스별로 다른 배열을 보장한다.
+		rng.seed = int(Time.get_ticks_usec()) ^ int(get_instance_id())
+	else:
+		rng.seed = random_seed
+	var positions := PackedFloat32Array()
+	var usable_left := LANE_LEFT_X + BOLT_DRAW_SIZE.x * 0.5
+	var usable_right := LANE_RIGHT_X - BOLT_DRAW_SIZE.x * 0.5
+	var segment_width := (usable_right - usable_left) / float(BOLT_COUNT)
+	for segment_index in BOLT_COUNT:
+		var segment_start := usable_left + segment_width * float(segment_index)
+		var inset := segment_width * BOLT_SEGMENT_INSET_RATIO
+		positions.append(rng.randf_range(segment_start + inset, segment_start + segment_width - inset))
+	for index in range(BOLT_COUNT - 1, 0, -1):
+		var swap_index := rng.randi_range(0, index)
+		var temporary := positions[index]
+		positions[index] = positions[swap_index]
+		positions[swap_index] = temporary
+	return positions
 
 
 func _process(delta: float) -> void:

@@ -74,6 +74,7 @@ func _validate_tier_three_lane_attack_and_chance() -> bool:
 		and is_equal_approx(other_floor.hp, 100.0) and lane_effect != null \
 		and lane_effect.bolt_sprites.size() == lane_effect.BOLT_COUNT \
 		and lane_effect.bolt_sprites[0].texture == BLUE_TEXTURE \
+		and _lane_bolts_cover_randomized_segments(lane_effect) \
 		and is_equal_approx(TowerScript.stun_chance_for_tier(3), 0.20) \
 		and TowerScript.stun_roll_succeeds(0.20, 0.1999) \
 		and not TowerScript.stun_roll_succeeds(0.20, 0.20)
@@ -109,6 +110,27 @@ func _fire_once(tower: PrototypeTower) -> void:
 func _single_lane_effect() -> PrototypeStunLaneLightningEffect:
 	var effects := get_nodes_in_group("stun_lane_lightning_effects")
 	return effects[0] as PrototypeStunLaneLightningEffect if effects.size() == 1 else null
+
+
+func _lane_bolts_cover_randomized_segments(effect: PrototypeStunLaneLightningEffect) -> bool:
+	var seeded_positions := effect._randomized_bolt_x_positions(13579)
+	if seeded_positions != effect._randomized_bolt_x_positions(13579) \
+			or seeded_positions == effect._randomized_bolt_x_positions(24680):
+		return false
+	var positions := PackedFloat32Array()
+	for bolt in effect.bolt_sprites:
+		positions.append(bolt.position.x)
+	positions.sort()
+	var usable_left := effect.LANE_LEFT_X + effect.BOLT_DRAW_SIZE.x * 0.5
+	var usable_right := effect.LANE_RIGHT_X - effect.BOLT_DRAW_SIZE.x * 0.5
+	var segment_width := (usable_right - usable_left) / float(effect.BOLT_COUNT)
+	for segment_index in effect.BOLT_COUNT:
+		var segment_start := usable_left + segment_width * float(segment_index)
+		var inset := segment_width * effect.BOLT_SEGMENT_INSET_RATIO
+		if positions[segment_index] < segment_start + inset \
+				or positions[segment_index] > segment_start + segment_width - inset:
+			return false
+	return true
 
 
 func _create_arena() -> Node2D:
