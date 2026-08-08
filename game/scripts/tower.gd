@@ -58,6 +58,7 @@ var upgrade_effect_remaining_sec: float = 0.0
 # 대기 본체와 2x2 공격 시트는 독립 노드로 두고 공격 순간에 표시를 교대한다.
 var body_sprite: Sprite2D
 var attack_sprite: Sprite2D
+var stun_charge_sprite: Sprite2D
 var body_base_position := Vector2.ZERO
 var idle_animation_elapsed_sec: float = 0.0
 var idle_visual_requested: bool = false
@@ -110,6 +111,14 @@ func _refresh_visual_nodes(request_animation_visuals: bool = true) -> void:
 		attack_sprite.name = "AttackSprite"
 		attack_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		add_child(attack_sprite)
+	if stun_charge_sprite == null:
+		stun_charge_sprite = Sprite2D.new()
+		stun_charge_sprite.name = "StunChargeSprite"
+		stun_charge_sprite.texture = STUN_CHARGE_AURA_TEXTURE
+		stun_charge_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		stun_charge_sprite.z_index = 2
+		stun_charge_sprite.visible = false
+		add_child(stun_charge_sprite)
 
 	body_sprite.texture = TowerVisualAssetsScript.body_texture(turret_type, tier)
 	body_sprite.hframes = 1
@@ -222,6 +231,7 @@ func reset_for_wave() -> void:
 	cooldown_sec = 0.0
 	stun_charge_remaining_sec = 0.0
 	stun_charge_target = null
+	_update_stun_charge_visual()
 	idle_animation_elapsed_sec = 0.0
 	if body_sprite != null:
 		body_sprite.frame = 0
@@ -249,7 +259,7 @@ func _process(delta: float) -> void:
 		return
 	if stun_charge_remaining_sec > 0.0:
 		stun_charge_remaining_sec = maxf(0.0, stun_charge_remaining_sec - delta)
-		_queue_effect_redraw()
+		_update_stun_charge_visual()
 		if stun_charge_remaining_sec <= 0.0:
 			_finish_stun_attack()
 		return
@@ -271,7 +281,7 @@ func _process(delta: float) -> void:
 		"STUN":
 			stun_charge_target = target
 			stun_charge_remaining_sec = STUN_CHARGE_DURATION_SEC
-			_queue_effect_redraw()
+			_update_stun_charge_visual()
 		_:
 			_spawn_projectile(target)
 	cooldown_sec = attack_interval_sec
@@ -341,6 +351,7 @@ func _spawn_flamethrower(target: PrototypeMonster) -> void:
 func _finish_stun_attack() -> void:
 	var target := stun_charge_target as PrototypeMonster
 	stun_charge_target = null
+	_update_stun_charge_visual()
 	if not _target_is_attackable(target):
 		return
 	_apply_hitscan_attack(target, "STUN")
@@ -397,21 +408,24 @@ func _select_target() -> PrototypeMonster:
 	return selected
 
 
-# 타워 이미지는 자식 Sprite2D가 그리며, 여기서는 STUN 충전과 머지 피드백만 그린다.
+# Web에서도 동적 draw 콜백 없이 STUN 충전 이미지를 표시한다.
+func _update_stun_charge_visual() -> void:
+	if stun_charge_sprite == null:
+		return
+	stun_charge_sprite.visible = stun_charge_remaining_sec > 0.0
+	if not stun_charge_sprite.visible:
+		return
+	var charge_progress := 1.0 - stun_charge_remaining_sec / STUN_CHARGE_DURATION_SEC
+	var charge_size := Vector2.ONE * lerpf(108.0, 144.0, charge_progress)
+	stun_charge_sprite.position = body_sprite.position if body_sprite != null else Vector2(0.0, -100.0)
+	stun_charge_sprite.scale = charge_size / stun_charge_sprite.texture.get_size()
+	stun_charge_sprite.modulate.a = 0.70 + sin(charge_progress * TAU * 2.0) * 0.16
+
+
+# 타워 이미지는 자식 Sprite2D가 그리며, 여기서는 머지 피드백만 그린다.
 func _draw() -> void:
 	if OS.has_feature("web"):
 		return
-	if stun_charge_remaining_sec > 0.0:
-		var charge_progress := 1.0 - stun_charge_remaining_sec / STUN_CHARGE_DURATION_SEC
-		var charge_center := body_sprite.position if body_sprite != null else Vector2(0.0, -100.0)
-		var charge_size := Vector2.ONE * lerpf(108.0, 144.0, charge_progress)
-		var charge_alpha := 0.70 + sin(charge_progress * TAU * 2.0) * 0.16
-		draw_texture_rect(
-			STUN_CHARGE_AURA_TEXTURE,
-			Rect2(charge_center - charge_size * 0.5, charge_size),
-			false,
-			Color(1.0, 1.0, 1.0, charge_alpha)
-		)
 	# 머지 직후 바깥으로 퍼지는 링과 방사형 빛 점을 그려 승급 순간을 강조한다.
 	if upgrade_effect_remaining_sec > 0.0:
 		var effect_progress := 1.0 - upgrade_effect_remaining_sec / UPGRADE_EFFECT_DURATION_SEC
