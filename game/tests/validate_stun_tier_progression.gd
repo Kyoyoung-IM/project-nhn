@@ -75,6 +75,7 @@ func _validate_tier_three_lane_attack_and_chance() -> bool:
 		and lane_effect.bolt_sprites.size() == lane_effect.BOLT_COUNT \
 		and lane_effect.bolt_sprites[0].texture == BLUE_TEXTURE \
 		and _lane_bolts_cover_randomized_segments(lane_effect) \
+		and _lane_bolts_touch_ground(lane_effect) \
 		and is_equal_approx(TowerScript.stun_chance_for_tier(3), 0.20) \
 		and TowerScript.stun_roll_succeeds(0.20, 0.1999) \
 		and not TowerScript.stun_roll_succeeds(0.20, 0.20)
@@ -129,6 +130,15 @@ func _lane_bolts_cover_randomized_segments(effect: PrototypeStunLaneLightningEff
 		var inset := segment_width * effect.BOLT_SEGMENT_INSET_RATIO
 		if positions[segment_index] < segment_start + inset \
 				or positions[segment_index] > segment_start + segment_width - inset:
+			return false
+	return true
+
+
+func _lane_bolts_touch_ground(effect: PrototypeStunLaneLightningEffect) -> bool:
+	for bolt in effect.bolt_sprites:
+		var visible_bottom_from_center := effect.bolt_visible_bounds.end.y - bolt.texture.get_height() * 0.5
+		var visible_bottom_y := bolt.position.y + visible_bottom_from_center * bolt.scale.y
+		if not is_equal_approx(visible_bottom_y, effect.lane_ground_y):
 			return false
 	return true
 

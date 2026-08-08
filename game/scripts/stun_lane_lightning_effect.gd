@@ -4,6 +4,8 @@ extends Node2D
 # 같은 층 전체에 한 장의 낙뢰 PNG를 반복 배치해 Tier 3·4 라인 공격을 표시한다.
 const BLUE_TEXTURE := preload("res://assets/combat_vfx/stun_lane_lightning_blue_v1.png")
 const PURPLE_TEXTURE := preload("res://assets/combat_vfx/stun_lane_lightning_purple_v1.png")
+const BLUE_VISIBLE_BOUNDS := Rect2(218.0, 63.0, 595.0, 1388.0)
+const PURPLE_VISIBLE_BOUNDS := Rect2(313.0, 64.0, 451.0, 1398.0)
 const LANE_LEFT_X := -1797.0
 const LANE_RIGHT_X := 3717.0
 const BOLT_COUNT := 10
@@ -15,10 +17,14 @@ const BOLT_VISIBLE_SEC := 0.34
 var elapsed_sec: float = 0.0
 var total_duration_sec: float = 0.0
 var bolt_sprites: Array[Sprite2D] = []
+var bolt_visible_bounds := Rect2()
+var lane_ground_y: float = 0.0
 
 
 func setup(attack_tier: int, lane_y: float, random_seed: int = 0) -> void:
 	var texture := PURPLE_TEXTURE if attack_tier >= 4 else BLUE_TEXTURE
+	bolt_visible_bounds = PURPLE_VISIBLE_BOUNDS if attack_tier >= 4 else BLUE_VISIBLE_BOUNDS
+	lane_ground_y = lane_y
 	var bolt_x_positions := _randomized_bolt_x_positions(random_seed)
 	total_duration_sec = BOLT_VISIBLE_SEC + BOLT_STAGGER_SEC * float(BOLT_COUNT - 1)
 	z_index = 44
@@ -27,8 +33,8 @@ func setup(attack_tier: int, lane_y: float, random_seed: int = 0) -> void:
 		bolt.name = "LaneBolt%d" % (bolt_index + 1)
 		bolt.texture = texture
 		bolt.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		bolt.position = Vector2(bolt_x_positions[bolt_index], lane_y - BOLT_DRAW_SIZE.y * 0.5)
-		bolt.scale = BOLT_DRAW_SIZE / texture.get_size()
+		bolt.position.x = bolt_x_positions[bolt_index]
+		_set_bolt_scale_and_ground_anchor(bolt, 1.0)
 		bolt.modulate.a = 0.0
 		add_child(bolt)
 		bolt_sprites.append(bolt)
@@ -60,6 +66,13 @@ func _randomized_bolt_x_positions(random_seed: int = 0) -> PackedFloat32Array:
 	return positions
 
 
+# 이미지 캔버스의 투명 하단 여백을 제외한 실제 충돌 섬광 최하단을 접지선에 고정한다.
+func _set_bolt_scale_and_ground_anchor(bolt: Sprite2D, height_scale: float) -> void:
+	bolt.scale = Vector2(BOLT_DRAW_SIZE.x, BOLT_DRAW_SIZE.y * height_scale) / bolt.texture.get_size()
+	var visible_bottom_from_center := bolt_visible_bounds.end.y - bolt.texture.get_height() * 0.5
+	bolt.position.y = lane_ground_y - visible_bottom_from_center * bolt.scale.y
+
+
 func _process(delta: float) -> void:
 	elapsed_sec += delta
 	for bolt_index in bolt_sprites.size():
@@ -70,6 +83,6 @@ func _process(delta: float) -> void:
 			continue
 		bolt.modulate.a = 1.0 - clampf((local_progress - 0.62) / 0.38, 0.0, 1.0)
 		var height_scale := lerpf(0.86, 1.0, minf(local_progress / 0.16, 1.0))
-		bolt.scale = Vector2(BOLT_DRAW_SIZE.x, BOLT_DRAW_SIZE.y * height_scale) / bolt.texture.get_size()
+		_set_bolt_scale_and_ground_anchor(bolt, height_scale)
 	if elapsed_sec >= total_duration_sec:
 		queue_free()
