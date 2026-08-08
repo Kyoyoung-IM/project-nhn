@@ -74,6 +74,7 @@ func _validate_tier_three_lane_attack_and_chance() -> bool:
 		and is_equal_approx(other_floor.hp, 100.0) and lane_effect != null \
 		and lane_effect.bolt_sprites.size() == lane_effect.BOLT_COUNT \
 		and lane_effect.bolt_sprites[0].texture == BLUE_TEXTURE \
+		and is_equal_approx(lane_effect.lane_ground_y, tower.position.y + TowerScript.BODY_BOTTOM_Y) \
 		and _lane_bolts_cover_randomized_segments(lane_effect) \
 		and _lane_bolts_touch_ground(lane_effect) \
 		and is_equal_approx(TowerScript.stun_chance_for_tier(3), 0.20) \
@@ -136,7 +137,7 @@ func _lane_bolts_cover_randomized_segments(effect: PrototypeStunLaneLightningEff
 
 func _lane_bolts_touch_ground(effect: PrototypeStunLaneLightningEffect) -> bool:
 	for bolt in effect.bolt_sprites:
-		var visible_bottom_from_center := effect.bolt_visible_bounds.end.y - bolt.texture.get_height() * 0.5
+		var visible_bottom_from_center := (effect.bolt_visible_bottom_ratio - 0.5) * bolt.texture.get_height()
 		var visible_bottom_y := bolt.position.y + visible_bottom_from_center * bolt.scale.y
 		if not is_equal_approx(visible_bottom_y, effect.lane_ground_y):
 			return false
@@ -152,7 +153,8 @@ func _create_arena() -> Node2D:
 func _create_tower(arena: Node2D, tower_tier: int) -> PrototypeTower:
 	var tower := TowerScript.new() as PrototypeTower
 	arena.add_child(tower)
-	tower.position = Vector2(100.0, 0.0)
+	# 실제 슬롯처럼 접지선보다 100px 위에 터렛 원점을 둔다.
+	tower.position = Vector2(100.0, -TowerScript.BODY_BOTTOM_Y)
 	tower.setup({
 		"id": "turretStun%d" % tower_tier,
 		"display_name": "기절 포탑",

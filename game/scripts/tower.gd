@@ -472,7 +472,7 @@ func _finish_stun_attack() -> void:
 		if floor_target.move_state != PrototypeMonster.MoveState.DEAD \
 				and stun_roll_succeeds(stun_chance, stun_rng.randf()):
 			floor_target.apply_stun(cc_duration)
-	_spawn_stun_lane_lightning(floor_targets[0])
+	_spawn_stun_lane_lightning()
 
 
 static func stun_chance_for_tier(tier_value: int) -> float:
@@ -487,11 +487,12 @@ static func stun_roll_succeeds(chance: float, roll: float) -> bool:
 	return roll < clampf(chance, 0.0, 1.0)
 
 
-func _spawn_stun_lane_lightning(reference_target: PrototypeMonster) -> void:
+func _spawn_stun_lane_lightning() -> void:
 	var effect := StunLaneLightningEffectScript.new()
 	get_parent().add_child(effect)
 	effect.position = Vector2.ZERO
-	var lane_y := reference_target.position.y + reference_target.body_bottom_offset_y
+	# 몬스터 종류·스케일·이동 프레임에 의존하지 않고 설치 슬롯의 확정 접지선을 사용한다.
+	var lane_y := position.y + BODY_BOTTOM_Y
 	effect.setup(tier, lane_y)
 
 
