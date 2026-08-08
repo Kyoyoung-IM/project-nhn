@@ -32,6 +32,25 @@ func _run() -> void:
 	if shop_ui == null:
 		_fail("editable ShopUI node is missing")
 		return
+	var action_icon := hud.get_node_or_null("Layout/TopControls/ActionBackplate/ActionIcon") as TextureRect
+	var speed_icon_left := hud.get_node_or_null("Layout/TopControls/SpeedBackplate/SpeedIconLeft") as TextureRect
+	var speed_icon_middle := hud.get_node_or_null("Layout/TopControls/SpeedBackplate/SpeedIcon") as TextureRect
+	var speed_icon_right := hud.get_node_or_null("Layout/TopControls/SpeedBackplate/SpeedIconRight") as TextureRect
+	var speed_icon_two_left := hud.get_node_or_null("Layout/TopControls/SpeedBackplate/SpeedIconTwoLeft") as TextureRect
+	var speed_icon_two_right := hud.get_node_or_null("Layout/TopControls/SpeedBackplate/SpeedIconTwoRight") as TextureRect
+	var pause_icon := hud.get_node_or_null("Layout/TopControls/PauseBackplate/PauseIcon") as TextureRect
+	var reroll_button := shop_ui.get_node_or_null("RerollButton") as Button
+	if action_icon == null or not action_icon.size.is_equal_approx(Vector2(28.0, 33.6)) \
+		or speed_icon_left == null or not speed_icon_left.size.is_equal_approx(Vector2(23.8, 30.8)) \
+		or speed_icon_middle == null or not speed_icon_middle.size.is_equal_approx(Vector2(23.8, 30.8)) \
+		or speed_icon_right == null or not speed_icon_right.size.is_equal_approx(Vector2(23.8, 30.8)) \
+		or speed_icon_two_left == null or not speed_icon_two_left.size.is_equal_approx(Vector2(23.8, 30.8)) \
+		or speed_icon_two_right == null or not speed_icon_two_right.size.is_equal_approx(Vector2(23.8, 30.8)) \
+		or not is_equal_approx(speed_icon_two_right.position.x - speed_icon_two_left.position.x - speed_icon_two_left.size.x, 4.0) \
+		or pause_icon == null or not pause_icon.size.is_equal_approx(Vector2(23.8, 36.4)) \
+		or reroll_button == null or reroll_button.icon_max_width != 36:
+		_fail("HUD pictograms are not stored at 70% of their previous editable size")
+		return
 	for card_number in range(1, 6):
 		var card := shop_ui.get_node_or_null("ShopCard%d" % card_number) as Button
 		if card == null or card.get_node_or_null("Frame") == null or card.get_node_or_null("PriceRow/PriceLabel") == null or card.get_node_or_null("PriceRow/CoinIcon") == null:

@@ -192,10 +192,10 @@ patch_margin_bottom = 25
 
 [node name="ActionIcon" type="TextureRect" parent="Layout/TopControls/ActionBackplate" unique_id=1214095155]
 layout_mode = 0
-offset_left = 34.0
-offset_top = 16.0
-offset_right = 74.0
-offset_bottom = 64.0
+offset_left = 40.0
+offset_top = 23.2
+offset_right = 68.0
+offset_bottom = 56.8
 mouse_filter = 2
 texture = ExtResource("10_play")
 expand_mode = 1
@@ -243,10 +243,54 @@ patch_margin_bottom = 25
 
 [node name="SpeedIcon" type="TextureRect" parent="Layout/TopControls/SpeedBackplate" unique_id=1183625390]
 layout_mode = 0
-offset_left = 28.0
-offset_top = 18.0
-offset_right = 62.0
-offset_bottom = 62.0
+offset_left = 78.1
+offset_top = 24.6
+offset_right = 101.9
+offset_bottom = 55.4
+mouse_filter = 2
+texture = ExtResource("10_play")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpeedIconLeft" type="TextureRect" parent="Layout/TopControls/SpeedBackplate"]
+layout_mode = 0
+offset_left = 46.1
+offset_top = 24.6
+offset_right = 69.9
+offset_bottom = 55.4
+mouse_filter = 2
+texture = ExtResource("10_play")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpeedIconRight" type="TextureRect" parent="Layout/TopControls/SpeedBackplate"]
+layout_mode = 0
+offset_left = 110.1
+offset_top = 24.6
+offset_right = 133.9
+offset_bottom = 55.4
+mouse_filter = 2
+texture = ExtResource("10_play")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpeedIconTwoLeft" type="TextureRect" parent="Layout/TopControls/SpeedBackplate"]
+layout_mode = 0
+offset_left = 64.2
+offset_top = 24.6
+offset_right = 88.0
+offset_bottom = 55.4
+mouse_filter = 2
+texture = ExtResource("10_play")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpeedIconTwoRight" type="TextureRect" parent="Layout/TopControls/SpeedBackplate"]
+layout_mode = 0
+offset_left = 92.0
+offset_top = 24.6
+offset_right = 115.8
+offset_bottom = 55.4
 mouse_filter = 2
 texture = ExtResource("10_play")
 expand_mode = 1
@@ -268,7 +312,7 @@ theme_override_styles/focus = SubResource("StyleInputEmpty")
 
 [node name="SpeedLabel" type="Label" parent="Layout/TopControls" unique_id=1816033523]
 layout_mode = 0
-offset_left = 1655.0
+offset_left = 1600.0
 offset_top = 28.0
 offset_right = 1780.0
 offset_bottom = 108.0
@@ -292,10 +336,10 @@ expand_mode = 1
 
 [node name="PauseIcon" type="TextureRect" parent="Layout/TopControls/PauseBackplate" unique_id=1404515912]
 layout_mode = 0
-offset_left = 17.0
-offset_top = 8.0
-offset_right = 51.0
-offset_bottom = 60.0
+offset_left = 22.1
+offset_top = 15.8
+offset_right = 45.9
+offset_bottom = 52.2
 mouse_filter = 2
 texture = ExtResource("9_pause")
 expand_mode = 1
@@ -397,6 +441,7 @@ text = "새로고침
 
 10 G"
 icon = ExtResource("8_refresh")
+icon_max_width = 36
 
 [node name="ShopCard1" parent="Layout/ShopUI" unique_id=413573491 instance=ExtResource("8_card")]
 layout_mode = 0

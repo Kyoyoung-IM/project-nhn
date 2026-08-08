@@ -134,6 +134,11 @@ var pause_button_backplate: Control
 var reroll_button_backplate: CanvasItem
 var action_button_label: Label
 var speed_button_label: Label
+var speed_icon_left: TextureRect
+var speed_icon_middle: TextureRect
+var speed_icon_right: TextureRect
+var speed_icon_two_left: TextureRect
+var speed_icon_two_right: TextureRect
 var day_night_hud: Control
 var day_frame: TextureRect
 var night_frame: TextureRect
@@ -766,6 +771,11 @@ func _build_interface() -> void:
 	speed_button_backplate = top_controls.get_node("SpeedBackplate") as Control
 	speed_button = top_controls.get_node("SpeedButton") as Button
 	speed_button_label = top_controls.get_node("SpeedLabel") as Label
+	speed_icon_left = speed_button_backplate.get_node("SpeedIconLeft") as TextureRect
+	speed_icon_middle = speed_button_backplate.get_node("SpeedIcon") as TextureRect
+	speed_icon_right = speed_button_backplate.get_node("SpeedIconRight") as TextureRect
+	speed_icon_two_left = speed_button_backplate.get_node("SpeedIconTwoLeft") as TextureRect
+	speed_icon_two_right = speed_button_backplate.get_node("SpeedIconTwoRight") as TextureRect
 	pause_button_backplate = top_controls.get_node("PauseBackplate") as Control
 	pause_button = top_controls.get_node("PauseButton") as Button
 
@@ -955,23 +965,46 @@ func _on_speed_button_pressed() -> void:
 	_update_speed_controls()
 
 
-# 현재 단계와 선택값에 맞춰 이미지 삼각형 옆 배속 숫자와 두 버튼의 상태를 갱신한다.
+# 1~3배속은 진행 픽토그램 개수로, 테스트 전용 고배속만 숫자로 표시한다.
 func _update_speed_controls() -> void:
 	if speed_button == null:
 		return
-	speed_button.text = "×%d" % game_speed_multiplier
+	var pictogram_speed := game_speed_multiplier <= 3
+	speed_button.text = _get_speed_display_text()
 	speed_button.visible = phase == Phase.WAVE
 	if speed_button_backplate != null:
 		speed_button_backplate.visible = speed_button.visible
+	if speed_icon_left != null:
+		speed_icon_left.visible = speed_button.visible and pictogram_speed and game_speed_multiplier == 3
+	if speed_icon_middle != null:
+		speed_icon_middle.visible = speed_button.visible and pictogram_speed and game_speed_multiplier != 2
+	if speed_icon_right != null:
+		speed_icon_right.visible = speed_button.visible and pictogram_speed and game_speed_multiplier == 3
+	if speed_icon_two_left != null:
+		speed_icon_two_left.visible = speed_button.visible and pictogram_speed and game_speed_multiplier == 2
+	if speed_icon_two_right != null:
+		speed_icon_two_right.visible = speed_button.visible and pictogram_speed and game_speed_multiplier == 2
 	if speed_button_label != null:
-		speed_button_label.text = speed_button.text
-		speed_button_label.visible = speed_button.visible
+		speed_button_label.text = speed_button.text if not pictogram_speed else ""
+		speed_button_label.visible = speed_button.visible and not pictogram_speed
 	speed_button.disabled = phase != Phase.WAVE or automated_test_mode
 	if pause_button != null:
 		pause_button.visible = true
 		if pause_button_backplate != null:
 			pause_button_backplate.visible = true
 		pause_button.disabled = automated_test_mode
+
+
+func _get_speed_display_text() -> String:
+	match game_speed_multiplier:
+		1:
+			return "▶"
+		2:
+			return "▶▶"
+		3:
+			return "▶▶▶"
+		_:
+			return "×%d" % game_speed_multiplier
 
 
 # 테스트 배지와 옵션 버튼 문구를 현재 모드에 맞춰 동시에 갱신한다.
@@ -1255,11 +1288,14 @@ func _run_test_environment_automated_test() -> void:
 	# 실제 버튼 경로를 열어 테스트 배속이 3→5→10→1로 순환하는지 확인한다.
 	automated_test_mode = false
 	var observed_speed_cycle: Array[int] = []
+	var observed_speed_labels: Array[String] = []
 	for _step in 4:
 		_on_speed_button_pressed()
 		observed_speed_cycle.append(game_speed_multiplier)
+		observed_speed_labels.append(speed_button.text)
 	var speed_values_ok := TEST_GAME_SPEED_MULTIPLIERS == [1, 3, 5, 10] \
 		and observed_speed_cycle == [3, 5, 10, 1] \
+		and observed_speed_labels == ["▶▶▶", "×5", "×10", "▶"] \
 		and is_equal_approx(Engine.time_scale, 1.0)
 	automated_test_mode = true
 	var test_button_ok := options_test_mode_button != null and options_test_mode_button.text == "일반 모드로 돌아가기"
@@ -1483,7 +1519,7 @@ func _run_wave_features_automated_test() -> void:
 	_on_speed_button_pressed()
 	_on_speed_button_pressed()
 	passing_monster._process(0.1)
-	var night_state_ok := not phase_label.visible and wave_label.visible and speed_button.visible and speed_button.text == "×3" and pause_button.visible and not action_button.visible
+	var night_state_ok := not phase_label.visible and wave_label.visible and speed_button.visible and speed_button.text == "▶▶▶" and pause_button.visible and not action_button.visible
 	var triple_speed_applied := game_speed_multiplier == 3 and is_equal_approx(Engine.time_scale, 3.0)
 	var tower_remained_fixed := is_instance_valid(test_tower) and towers.has(test_tower) and passing_monster.position.x < monster_start_x
 	monsters.erase(passing_monster)
