@@ -89,6 +89,7 @@ var body_visible_world_size := Vector2.ZERO
 var body_sprite: Sprite2D
 var hit_sprite: Sprite2D
 var death_sprite: Sprite2D
+var stun_status_sprite: Sprite2D
 var hit_visual_remaining_sec: float = 0.0
 var death_animation_elapsed_sec: float = 0.0
 # 처음 피해를 받기 전에는 체력 바를 숨기고, 첫 유효 피해부터 남은 전투 동안 표시한다.
@@ -137,6 +138,7 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	_configure_body_sprite()
 	_configure_hit_sprite()
 	_configure_death_sprite()
+	_configure_stun_status_sprite()
 	health_bar_visible = false
 	_configure_health_bar_layout()
 	_update_health_bar()
@@ -231,6 +233,19 @@ func _configure_body_sprite() -> void:
 	body_sprite.texture = texture
 	body_sprite.position = -(visible_center - texture_center) * local_texture_scale
 	body_sprite.scale = Vector2.ONE * local_texture_scale
+
+
+func _configure_stun_status_sprite() -> void:
+	if stun_status_sprite == null:
+		stun_status_sprite = Sprite2D.new()
+		stun_status_sprite.name = "StunStatusSprite"
+		stun_status_sprite.texture = STUN_STATUS_TEXTURE
+		stun_status_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		stun_status_sprite.z_index = 2
+		stun_status_sprite.visible = false
+		add_child(stun_status_sprite)
+	stun_status_sprite.scale = STUN_STATUS_DRAW_SIZE / stun_status_sprite.texture.get_size()
+	_update_stun_status_visual()
 
 
 # 피격 이미지는 본체와 같은 원본 픽셀 배율을 사용하고, 자세가 달라도 발끝은 기존
@@ -428,7 +443,21 @@ func _process_status_effects(delta: float) -> void:
 	# 이동은 CanvasItem 변환만 바꾸므로 도형 명령을 다시 만들 필요가 없다. 상태 표시가
 	# 실제로 보이는 동안에만 갱신해 다수 몬스터가 쌓여도 Web 메인 스레드 부하가 증가하지 않게 한다.
 	if status_visual_was_active or stun_remaining_sec > 0.0 or slow_remaining_sec > 0.0 or dot_remaining_sec > 0.0:
+		_update_stun_status_visual()
 		_queue_status_redraw()
+
+
+func _update_stun_status_visual() -> void:
+	if stun_status_sprite == null:
+		return
+	stun_status_sprite.visible = stun_remaining_sec > 0.0 and move_state != MoveState.DEAD
+	if not stun_status_sprite.visible:
+		return
+	var local_half_height := body_bottom_offset_y / MONSTER_VISUAL_SCALE
+	stun_status_sprite.position = Vector2(
+		sin(visual_elapsed_sec * 7.0) * 4.0,
+		-local_half_height - STUN_STATUS_DRAW_SIZE.y * 0.3
+	)
 
 
 # 직접 명중 시 새 재생은 0.25초, 이미 재생 중인 명중은 남은 시간에 0.1초를 더한다.
@@ -498,6 +527,8 @@ func _set_death_visual_active(active: bool) -> void:
 		hit_sprite.visible = false
 	if death_sprite != null:
 		death_sprite.visible = active
+	if stun_status_sprite != null and active:
+		stun_status_sprite.visible = false
 
 
 # Web에서는 피해로 죽는 프레임에 redraw 예약과 queue_free가 겹치면 해제된
@@ -551,14 +582,6 @@ func _draw() -> void:
 		return
 	var local_visible_size := body_visible_world_size / MONSTER_VISUAL_SCALE
 	var local_half_height := body_bottom_offset_y / MONSTER_VISUAL_SCALE
-	if stun_remaining_sec > 0.0:
-		# 생성된 별 헤일로가 실제 기절 시간 동안 머리 위에서 가볍게 흔들리도록 표시한다.
-		var stun_wobble := sin(visual_elapsed_sec * 7.0) * 4.0
-		draw_texture_rect(
-			STUN_STATUS_TEXTURE,
-			Rect2(Vector2(-STUN_STATUS_DRAW_SIZE.x * 0.5 + stun_wobble, -local_half_height - STUN_STATUS_DRAW_SIZE.y * 0.8), STUN_STATUS_DRAW_SIZE),
-			false
-		)
 	if slow_remaining_sec > 0.0:
 		var slow_radius := minf(local_visible_size.x, local_visible_size.y) * 0.42
 		draw_arc(Vector2.ZERO, slow_radius, 0.0, TAU, 32, Color("8fffea"), 2.0)

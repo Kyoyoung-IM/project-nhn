@@ -13,6 +13,8 @@ var effect_type: String = "MELEE"
 var remaining_sec: float = 0.0
 var total_duration_sec: float = MELEE_DURATION_SEC
 var tier: int = 1
+var effect_sprite: Sprite2D
+var base_draw_size := Vector2.ZERO
 
 
 func setup(attack_type: String, attack_tier: int) -> void:
@@ -21,56 +23,42 @@ func setup(attack_type: String, attack_tier: int) -> void:
 	total_duration_sec = STUN_DURATION_SEC if effect_type == "STUN" else MELEE_DURATION_SEC
 	remaining_sec = total_duration_sec
 	z_index = 45
+	_configure_effect_sprite()
 	add_to_group("tower_hit_effects")
-	_queue_effect_redraw()
 
 
 func _process(delta: float) -> void:
 	remaining_sec = maxf(0.0, remaining_sec - delta)
-	_queue_effect_redraw()
+	_update_effect_visual()
 	if remaining_sec <= 0.0:
 		queue_free()
 
 
-func _draw() -> void:
-	if OS.has_feature("web"):
+func _configure_effect_sprite() -> void:
+	effect_sprite = Sprite2D.new()
+	effect_sprite.name = "EffectSprite"
+	effect_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if effect_type == "STUN":
+		effect_sprite.texture = STUN_LIGHTNING_TEXTURE
+		base_draw_size = Vector2(147.0, 213.0) * (1.0 + float(tier - 1) * 0.035)
+		# 효과 노드는 지면 접촉점에 있으므로 낙뢰 하단을 원점에 고정한다.
+		effect_sprite.position.y = -base_draw_size.y * 0.5 + 4.0
+	else:
+		effect_sprite.texture = MELEE_SLASH_TEXTURE
+		base_draw_size = Vector2(123.0, 138.0) * (1.0 + float(tier - 1) * 0.05)
+	effect_sprite.scale = base_draw_size / effect_sprite.texture.get_size()
+	add_child(effect_sprite)
+	_update_effect_visual()
+
+
+func _update_effect_visual() -> void:
+	if effect_sprite == null:
 		return
 	var progress := 1.0 - remaining_sec / total_duration_sec
-	if effect_type == "STUN":
-		_draw_stun_effect(progress)
-	else:
-		_draw_melee_slashes(progress)
-
-
-# 세 줄의 발톱 자국이 빠르게 벌어졌다 사라지며 근접 히트스캔의 피격 위치를 명확히 보여준다.
-func _draw_melee_slashes(progress: float) -> void:
 	var alpha := 1.0 - progress
-	var scale_factor := (0.82 + progress * 0.28) * (1.0 + float(tier - 1) * 0.05)
-	var draw_size := Vector2(123.0, 138.0) * scale_factor
-	draw_texture_rect(
-		MELEE_SLASH_TEXTURE,
-		Rect2(-draw_size * 0.5, draw_size),
-		false,
-		Color(1.0, 1.0, 1.0, alpha)
-		)
-
-
-func _queue_effect_redraw() -> void:
-	if not OS.has_feature("web"):
-		queue_redraw()
-
-
-# 작은 먹구름부터 지면 충돌점까지 이어지는 생성 낙뢰로 기절 타격을 표시한다.
-# 지속되는 헤롱헤롱 별은 몬스터 상태에 직접 그려 실제 기절 시간과 동기화한다.
-func _draw_stun_effect(progress: float) -> void:
-	# Hold the lightning at full opacity before fading so one complete bolt is
-	# visible even when combat is accelerated.
-	var fade_progress := clampf((progress - 0.55) / 0.45, 0.0, 1.0)
-	var lightning_alpha := 1.0 - fade_progress
-	var lightning_size := Vector2(147.0, 213.0) * (1.0 + float(tier - 1) * 0.035)
-	draw_texture_rect(
-		STUN_LIGHTNING_TEXTURE,
-		Rect2(Vector2(-lightning_size.x * 0.5, -lightning_size.y + 4.0), lightning_size),
-		false,
-		Color(1.0, 1.0, 1.0, lightning_alpha)
-	)
+	var scale_factor := 0.82 + progress * 0.28
+	if effect_type == "STUN":
+		alpha = 1.0 - clampf((progress - 0.55) / 0.45, 0.0, 1.0)
+		scale_factor = 1.0
+	effect_sprite.scale = base_draw_size / effect_sprite.texture.get_size() * scale_factor
+	effect_sprite.modulate.a = alpha

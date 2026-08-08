@@ -131,6 +131,71 @@ func _init() -> void:
 	if not _texture_has_opaque_coverage(MonsterScript.STUN_STATUS_TEXTURE, 0.08):
 		_fail("stun status texture lost its visible interior during alpha processing")
 		return
+	# Web에서는 동적 _draw 콜백을 막아도 공격 본체가 사라지지 않도록 독립 CanvasItem
+	# 노드가 텍스처를 직접 소유해야 한다.
+	var projectile_visual_probe := TowerProjectileScript.new() as PrototypeTowerProjectile
+	get_root().add_child(projectile_visual_probe)
+	projectile_visual_probe.source_type = "RANGED"
+	projectile_visual_probe.call("_configure_visual_nodes")
+	if projectile_visual_probe.projectile_sprite == null or projectile_visual_probe.trail_line == null \
+			or projectile_visual_probe.projectile_sprite.texture != TowerProjectileScript.RANGED_PROJECTILE_TEXTURE:
+		_fail("ranged projectile must use Web-safe Sprite2D and Line2D visuals")
+		return
+	projectile_visual_probe.free()
+	var flame_visual_probe := TowerFlamethrowerScript.new() as PrototypeTowerFlamethrower
+	get_root().add_child(flame_visual_probe)
+	flame_visual_probe.call("_configure_flame_sprite")
+	if flame_visual_probe.flame_sprite == null or flame_visual_probe.flame_sprite.texture != TowerFlamethrowerScript.FLAME_TEXTURE:
+		_fail("flamethrower must use a Web-safe Sprite2D visual")
+		return
+	flame_visual_probe.target_distance_px = 270.0
+	flame_visual_probe.elapsed_sec = 0.0
+	flame_visual_probe.call("_update_flame_visual")
+	var flame_bounds: Rect2 = TowerFlamethrowerScript.FLAME_VISIBLE_BOUNDS
+	var flame_texture_half_size := flame_visual_probe.flame_sprite.texture.get_size() * 0.5
+	var visible_center_y := flame_bounds.get_center().y
+	var flame_source_point := flame_visual_probe.flame_sprite.position + (
+		Vector2(flame_bounds.position.x, visible_center_y) - flame_texture_half_size
+	) * flame_visual_probe.flame_sprite.scale
+	var flame_target_point := flame_visual_probe.flame_sprite.position + (
+		Vector2(flame_bounds.end.x, visible_center_y) - flame_texture_half_size
+	) * flame_visual_probe.flame_sprite.scale
+	var expected_flame_end := Vector2(270.0 + TowerFlamethrowerScript.TARGET_CENTER_OVERLAP_PX, 0.0)
+	if not flame_source_point.is_equal_approx(Vector2.ZERO) or not flame_target_point.is_equal_approx(expected_flame_end):
+		_fail("flamethrower opaque bounds must overlap beyond the target center")
+		return
+	if not (flame_source_point.x < 270.0 and flame_target_point.x > 270.0):
+		_fail("flamethrower target center must remain inside the opaque horizontal span")
+		return
+	# 실제 전장처럼 부모가 0.5배 축소돼도 길이가 다시 절반으로 줄지 않아야 한다.
+	var flame_parent_probe := Node2D.new()
+	flame_parent_probe.position = Vector2(20.0, 30.0)
+	flame_parent_probe.scale = Vector2(0.5, 0.5)
+	get_root().add_child(flame_parent_probe)
+	flame_visual_probe.reparent(flame_parent_probe, false)
+	var flame_source_probe := Node2D.new()
+	var flame_target_probe := Node2D.new()
+	flame_parent_probe.add_child(flame_source_probe)
+	flame_parent_probe.add_child(flame_target_probe)
+	flame_source_probe.position = Vector2(40.0, 80.0)
+	flame_target_probe.position = Vector2(310.0, 80.0)
+	flame_visual_probe.source_tower = flame_source_probe
+	flame_visual_probe.target = flame_target_probe
+	flame_visual_probe.call("_update_transform_from_combatants")
+	if not flame_visual_probe.position.is_equal_approx(flame_source_probe.position) \
+			or not is_equal_approx(flame_visual_probe.target_distance_px, 270.0) \
+			or not flame_visual_probe.to_global(Vector2(270.0, 0.0)).is_equal_approx(flame_target_probe.global_position):
+		_fail("flamethrower endpoint must survive the scaled battlefield parent transform")
+		return
+	flame_parent_probe.free()
+	for hit_type in ["MELEE", "STUN"]:
+		var hit_visual_probe := TowerHitEffectScript.new() as PrototypeTowerHitEffect
+		get_root().add_child(hit_visual_probe)
+		hit_visual_probe.setup(hit_type, 1)
+		if hit_visual_probe.effect_sprite == null or hit_visual_probe.effect_sprite.texture == null:
+			_fail("hitscan effect must use a Web-safe Sprite2D visual: %s" % hit_type)
+			return
+		hit_visual_probe.free()
 	# 대기·공격 시트는 런타임에 설치된 타입·Tier만 지연 로드해야 한다. 40장을 정적
 	# preload하면 Web 메모리가 전투 시작 전부터 크게 늘어나 전체 캔버스가 멎을 수 있다.
 	for turret_type in TowerVisualAssetsScript.IDLE_TEXTURE_PATHS:

@@ -29,6 +29,8 @@ var impacted: bool = false
 var travel_direction := Vector2.RIGHT
 var fired_floor_index: int = -1
 var trail_global_points := PackedVector2Array()
+var projectile_sprite: Sprite2D
+var trail_line: Line2D
 
 
 # 발사 시점의 전투층을 저장해 표적이 층 이동을 시작하면 즉시 추적과 피해를 취소한다.
@@ -43,14 +45,14 @@ func setup(target_node: Node2D, attack_type: String, attack_damage: float, durat
 	fired_floor_index = _target_combat_floor()
 	trail_global_points = PackedVector2Array([global_position])
 	z_index = 40
+	_configure_visual_nodes()
 	add_to_group("tower_projectiles")
-	_queue_effect_redraw()
 
 
 func _process(delta: float) -> void:
 	if impacted:
 		impact_remaining_sec = maxf(0.0, impact_remaining_sec - delta)
-		_queue_effect_redraw()
+		_update_impact_visual()
 		if impact_remaining_sec <= 0.0:
 			queue_free()
 		return
@@ -72,7 +74,7 @@ func _process(delta: float) -> void:
 	global_position += travel_direction * speed_px_sec * delta
 	rotation = travel_direction.angle()
 	_record_trail_point(false)
-	_queue_effect_redraw()
+	_update_trail_visual()
 
 
 # 층 전환이 시작된 표적에는 기존 층에서 발사된 투사체가 따라가지 않는다.
@@ -109,49 +111,50 @@ func _apply_impact() -> void:
 	impacted = true
 	impact_remaining_sec = IMPACT_EFFECT_SEC
 	rotation = 0.0
+	trail_line.visible = false
 	if _target_remains_on_fired_floor() and target.has_method("receive_turret_hit"):
 		target.call("receive_turret_hit", damage, source_type, cc_duration, cc_value)
-	_queue_effect_redraw()
+	_update_impact_visual()
 
 
-func _draw() -> void:
-	if OS.has_feature("web"):
-		return
-	if impacted:
-		var progress := 1.0 - impact_remaining_sec / IMPACT_EFFECT_SEC
-		var burst_color := _primary_color()
-		burst_color.a = 1.0 - progress
-		draw_arc(Vector2.ZERO, lerpf(12.0, 36.0, progress), 0.0, TAU, 20, burst_color, 6.0)
-		for spark_index in 6:
-			var spark_direction := Vector2.from_angle(TAU * float(spark_index) / 6.0)
-			draw_circle(spark_direction * lerpf(6.0, 27.0, progress), 4.5 * (1.0 - progress), burst_color)
-		return
-
-	_draw_runtime_trail()
+func _configure_visual_nodes() -> void:
+	projectile_sprite = Sprite2D.new()
+	projectile_sprite.name = "ProjectileSprite"
+	projectile_sprite.texture = _projectile_texture()
+	projectile_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var projectile_size := _projectile_draw_size() * (1.0 + float(tier - 1) * 0.06)
-	draw_texture_rect(_projectile_texture(), Rect2(-projectile_size * 0.5, projectile_size), false)
+	projectile_sprite.scale = projectile_size / projectile_sprite.texture.get_size()
+	add_child(projectile_sprite)
+
+	trail_line = Line2D.new()
+	trail_line.name = "TrailLine"
+	trail_line.width = 9.0
+	trail_line.default_color = _primary_color()
+	trail_line.antialiased = true
+	trail_line.z_index = -1
+	add_child(trail_line)
+	_update_trail_visual()
 
 
-func _queue_effect_redraw() -> void:
-	if not OS.has_feature("web"):
-		queue_redraw()
-
-
-# 오래된 점은 가늘고 투명하게, 현재 투사체에 가까울수록 굵고 선명하게 이어 실제 이동 궤적을 만든다.
-func _draw_runtime_trail() -> void:
-	if trail_global_points.size() < 2:
+# Web에서도 커스텀 draw 콜백을 재생성하지 않고 Line2D의 점만 갱신한다.
+func _update_trail_visual() -> void:
+	if trail_line == null:
 		return
 	var local_points := PackedVector2Array()
-	var point_colors := PackedColorArray()
-	var base_color := _primary_color()
-	for point_index in trail_global_points.size():
-		var normalized_age := float(point_index) / float(trail_global_points.size() - 1)
-		var point_color := base_color
-		point_color.a = lerpf(0.05, 0.62, normalized_age)
-		local_points.append(to_local(trail_global_points[point_index]))
-		point_colors.append(point_color)
-	# 여러 draw_line 호출 대신 한 번의 polyline 명령으로 Web 렌더러의 프레임당 작업량을 제한한다.
-	draw_polyline_colors(local_points, point_colors, 9.0, true)
+	for global_point in trail_global_points:
+		local_points.append(to_local(global_point))
+	trail_line.points = local_points
+
+
+# 명중 순간에는 같은 텍스처를 짧게 확대·페이드해 별도 draw 콜백 없이 충돌을 알린다.
+func _update_impact_visual() -> void:
+	if projectile_sprite == null:
+		return
+	var progress := 1.0 - impact_remaining_sec / IMPACT_EFFECT_SEC
+	var base_size := _projectile_draw_size() * (1.0 + float(tier - 1) * 0.06)
+	var impact_size := base_size * lerpf(1.0, 1.75, progress)
+	projectile_sprite.scale = impact_size / projectile_sprite.texture.get_size()
+	projectile_sprite.modulate.a = 1.0 - progress
 
 
 # 트레일이 분리된 정사각형 투사체 이미지를 기존 화면 효과보다 약 50% 크게 표시한다.
