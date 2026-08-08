@@ -5,7 +5,7 @@
 - `prototype_game.gd`: 게임 단계, 웨이브, 경제, 상점, 오브젝트 생성, 드래그 이동·머지, HUD
 - `battlefield_layout.gd`: 편집용 전장 Marker2D를 몬스터 경로와 타워 슬롯 좌표로 변환하고 구조를 검증
 - `prototype_database.gd`: JSON 로딩, 원본 컬럼 매핑, ID·확률·머지 트리 검증
-- `tower.gd`: 불파괴 터렛의 표적 선택, 공격, Tier별 정지·공격 스프라이트와 머지 승급 효과
+- `tower.gd`: 불파괴 터렛의 표적 선택, 공격, Tier별 대기·공격 애니메이션과 머지 승급 효과
 - `monster.gd`: 비공격형 몬스터 이동, 상태 이상, 최심부 도달
 - `tower_slot.gd`: 3개 층 × 5개 배치 슬롯의 입력과 점유 상태
 - `shop_card.gd`: 상점 카드의 기본/호버 정보와 타입별 캐릭터 이미지

@@ -20,7 +20,9 @@ const BODY_VISIBLE_AREA_SIDE_BY_TIER := [132.0, 154.0, 178.0, 205.0]
 const BODY_BOTTOM_Y := 100.0
 # STUN은 다리가 지면에 닿는 타워가 아니라 공중부양형이므로 접지선 위에 여백을 둔다.
 const STUN_HOVER_HEIGHT := 36.0
-# 공격 시트는 좌상→우상→좌하→우하 순서로 0.08초씩 재생한다.
+# 대기 시트는 좌→우 프레임을 천천히 반복하고, 공격 시트는 좌상→우상→좌하→우하
+# 순서로 0.08초씩 재생한다.
+const IDLE_FRAME_DURATION_SEC := 0.45
 const ATTACK_FRAME_DURATION_SEC := 0.08
 # STUN 공격의 충전 시간은 피해 밸런스와 분리된 시각 전용 PLACEHOLDER 값이다.
 const STUN_CHARGE_DURATION_SEC := 0.38
@@ -53,17 +55,20 @@ var stun_charge_target: Node2D
 const UPGRADE_EFFECT_DURATION_SEC := 0.7
 var upgrade_effect_remaining_sec: float = 0.0
 
-# 정지 본체와 2x2 공격 시트는 독립 노드로 두고 공격 순간에 표시를 교대한다.
+# 대기 본체와 2x2 공격 시트는 독립 노드로 두고 공격 순간에 표시를 교대한다.
 var body_sprite: Sprite2D
 var attack_sprite: Sprite2D
 var body_base_position := Vector2.ZERO
+var idle_animation_elapsed_sec: float = 0.0
+var idle_visual_requested: bool = false
+var idle_visual_ready: bool = false
 var attack_animation_elapsed_sec: float = -1.0
 var attack_visual_requested: bool = false
 var attack_visual_ready: bool = false
 
 
 # 로더가 만든 내부 설정을 복사하고 해당 층의 터렛 그룹에 등록한다.
-func setup(config: Dictionary, assigned_floor_index: int, request_attack_visual: bool = true) -> void:
+func setup(config: Dictionary, assigned_floor_index: int, request_animation_visuals: bool = true) -> void:
 	turret_id = str(config.get("id", ""))
 	display_name = str(config.get("display_name", turret_id))
 	turret_type = str(config.get("type", "RANGED"))
@@ -77,7 +82,7 @@ func setup(config: Dictionary, assigned_floor_index: int, request_attack_visual:
 	tower_color = Color(str(config.get("color_hex", "68d8c1")))
 	floor_index = assigned_floor_index
 	cooldown_sec = 0.0
-	_refresh_visual_nodes(request_attack_visual)
+	_refresh_visual_nodes(request_animation_visuals)
 	add_to_group("prototype_towers")
 	_queue_effect_redraw()
 
@@ -93,8 +98,8 @@ func apply_runtime_balance(config: Dictionary) -> void:
 	_queue_effect_redraw()
 
 
-# 타입·Tier별 정지 본체와 공격 시트를 자식 Sprite2D에 연결한다.
-func _refresh_visual_nodes(request_attack_visual: bool = true) -> void:
+# 타입·Tier별 대기 본체와 공격 시트를 자식 Sprite2D에 연결한다.
+func _refresh_visual_nodes(request_animation_visuals: bool = true) -> void:
 	if body_sprite == null:
 		body_sprite = Sprite2D.new()
 		body_sprite.name = "BodySprite"
@@ -107,6 +112,9 @@ func _refresh_visual_nodes(request_attack_visual: bool = true) -> void:
 		add_child(attack_sprite)
 
 	body_sprite.texture = TowerVisualAssetsScript.body_texture(turret_type, tier)
+	body_sprite.hframes = 1
+	body_sprite.vframes = 1
+	body_sprite.frame = 0
 	var body_bounds: Rect2 = TowerVisualAssetsScript.body_visible_bounds(turret_type, tier)
 	var body_scale := _scale_for_visible_area(body_bounds, body_visible_area_side(turret_type, tier))
 	var target_bottom_y := body_target_bottom_y(turret_type)
@@ -115,15 +123,44 @@ func _refresh_visual_nodes(request_attack_visual: bool = true) -> void:
 	body_sprite.scale = Vector2.ONE * body_scale
 	body_sprite.z_index = 0
 	attack_sprite.texture = null
-	# 단일 스레드 Web 빌드에서는 타입·Tier마다 1024px 공격 시트를 유지할수록
-	# WASM 선형 메모리가 계속 커져 다수 타워 전투 중 memory access out of bounds로
-	# 중단될 수 있다. Web은 정지 본체와 기존 투사체·타격 VFX를 사용하고, 공격 시트는
-	# 메모리 여유가 있는 네이티브 실행에서만 요청한다.
-	attack_visual_requested = request_attack_visual and not OS.has_feature("web")
+	# Web 메모리 급증을 막기 위해 두 시트 모두 화면 표시 크기에 맞춰 512px로 임포트하며,
+	# 실제 배치된 타입·Tier만 한 프레임에 한 장씩 지연 로드한다.
+	idle_animation_elapsed_sec = 0.0
+	idle_visual_requested = request_animation_visuals
+	idle_visual_ready = false
+	attack_visual_requested = request_animation_visuals
 	attack_visual_ready = false
+	if idle_visual_requested:
+		TowerVisualAssetsScript.request_idle_texture(turret_type, tier)
 	if attack_visual_requested:
 		TowerVisualAssetsScript.request_attack_texture(turret_type, tier)
+	_try_bind_idle_texture()
 	_try_bind_attack_texture()
+
+
+# 지연 로드된 2프레임 대기 시트로 정지 플레이스홀더를 교체한다.
+func _try_bind_idle_texture() -> void:
+	if not idle_visual_requested or idle_visual_ready or body_sprite == null:
+		return
+	var idle_texture := TowerVisualAssetsScript.try_get_idle_texture(turret_type, tier)
+	if idle_texture == null:
+		return
+	body_sprite.texture = idle_texture
+	body_sprite.hframes = TowerVisualAssetsScript.IDLE_FRAME_COLUMNS
+	body_sprite.vframes = TowerVisualAssetsScript.IDLE_FRAME_ROWS
+	body_sprite.frame = 0
+	var idle_bounds: Rect2 = TowerVisualAssetsScript.idle_first_frame_visible_bounds(turret_type, tier)
+	var idle_scale := _scale_for_visible_area(idle_bounds, body_visible_area_side(turret_type, tier))
+	body_base_position = _position_visible_bounds_for_size(
+		TowerVisualAssetsScript.IDLE_FRAME_SIZE,
+		idle_bounds,
+		Vector2(0.0, body_target_bottom_y(turret_type)),
+		idle_scale
+	)
+	body_sprite.position = body_base_position
+	body_sprite.scale = Vector2.ONE * idle_scale
+	idle_visual_ready = true
+	idle_animation_elapsed_sec = 0.0
 
 
 # 비동기 로드가 완료된 프레임에서만 공격 시트를 연결해 상점 입력 프레임의 정지를 피한다.
@@ -185,6 +222,9 @@ func reset_for_wave() -> void:
 	cooldown_sec = 0.0
 	stun_charge_remaining_sec = 0.0
 	stun_charge_target = null
+	idle_animation_elapsed_sec = 0.0
+	if body_sprite != null:
+		body_sprite.frame = 0
 	attack_animation_elapsed_sec = -1.0
 	_set_attack_visual_active(false)
 	_queue_effect_redraw()
@@ -197,7 +237,9 @@ func play_upgrade_effect() -> void:
 
 # 공격 간격을 갱신하고 같은 층·사거리 안의 최우선 몬스터를 자동 공격한다.
 func _process(delta: float) -> void:
+	_try_bind_idle_texture()
 	_try_bind_attack_texture()
+	_update_idle_animation(delta)
 	_update_attack_animation(delta)
 	if upgrade_effect_remaining_sec > 0.0:
 		upgrade_effect_remaining_sec = maxf(0.0, upgrade_effect_remaining_sec - delta)
@@ -233,6 +275,20 @@ func _process(delta: float) -> void:
 		_:
 			_spawn_projectile(target)
 	cooldown_sec = attack_interval_sec
+
+
+func _update_idle_animation(delta: float) -> void:
+	if not idle_visual_ready or body_sprite == null:
+		return
+	idle_animation_elapsed_sec = fmod(
+		idle_animation_elapsed_sec + delta,
+		IDLE_FRAME_DURATION_SEC * float(TowerVisualAssetsScript.IDLE_FRAME_COUNT)
+	)
+	body_sprite.frame = clampi(
+		int(floor(idle_animation_elapsed_sec / IDLE_FRAME_DURATION_SEC)),
+		0,
+		TowerVisualAssetsScript.IDLE_FRAME_COUNT - 1
+	)
 
 
 func _play_attack_animation() -> void:
