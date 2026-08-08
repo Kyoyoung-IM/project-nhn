@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/title_screen.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/Jua-Regular.ttf" id="2_font"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/images/btn_2.png" id="4_options"]
 [ext_resource type="Texture2D" path="res://assets/ui/images/frame_2.png" id="5_panel"]
 [ext_resource type="Texture2D" path="res://assets/ui/images/ribbon.png" id="6_ribbon"]
+[ext_resource type="PackedScene" path="res://scenes/ui/title_credits.tscn" id="7_credits"]
 
 [sub_resource type="StyleBoxFlat" id="StyleButtonNormal"]
 bg_color = Color(0, 0, 0, 0)
@@ -57,9 +58,9 @@ mouse_filter = 2
 [node name="GameStartBackplate" type="NinePatchRect" parent="."]
 layout_mode = 0
 offset_left = 790.0
-offset_top = 730.0
+offset_top = 680.0
 offset_right = 1130.0
-offset_bottom = 808.0
+offset_bottom = 758.0
 mouse_filter = 2
 texture = ExtResource("3_start")
 patch_margin_left = 32
@@ -70,9 +71,9 @@ patch_margin_bottom = 25
 [node name="GameStartButton" type="Button" parent="."]
 layout_mode = 0
 offset_left = 790.0
-offset_top = 730.0
+offset_top = 680.0
 offset_right = 1130.0
-offset_bottom = 808.0
+offset_bottom = 758.0
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
@@ -90,9 +91,9 @@ text = "게임 시작"
 [node name="OptionsBackplate" type="NinePatchRect" parent="."]
 layout_mode = 0
 offset_left = 790.0
-offset_top = 842.0
+offset_top = 792.0
 offset_right = 1130.0
-offset_bottom = 920.0
+offset_bottom = 870.0
 mouse_filter = 2
 texture = ExtResource("4_options")
 patch_margin_left = 32
@@ -103,9 +104,9 @@ patch_margin_bottom = 25
 [node name="OptionsButton" type="Button" parent="."]
 layout_mode = 0
 offset_left = 790.0
-offset_top = 842.0
+offset_top = 792.0
 offset_right = 1130.0
-offset_bottom = 920.0
+offset_bottom = 870.0
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
@@ -119,6 +120,39 @@ theme_override_styles/pressed = SubResource("StyleButtonPressed")
 theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/focus = SubResource("StyleButtonHover")
 text = "옵션"
+
+[node name="CreditsBackplate" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 904.0
+offset_right = 1130.0
+offset_bottom = 982.0
+mouse_filter = 2
+texture = ExtResource("4_options")
+patch_margin_left = 32
+patch_margin_top = 25
+patch_margin_right = 32
+patch_margin_bottom = 25
+
+[node name="CreditsButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 904.0
+offset_right = 1130.0
+offset_bottom = 982.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.0901961, 0.0941176, 0.152941, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = SubResource("StyleButtonNormal")
+theme_override_styles/pressed = SubResource("StyleButtonPressed")
+theme_override_styles/hover = SubResource("StyleButtonHover")
+theme_override_styles/focus = SubResource("StyleButtonHover")
+text = "게임 크레딧"
 
 [node name="TitleOptions" type="Control" parent="."]
 visible = false
@@ -223,3 +257,5 @@ theme_override_styles/pressed = SubResource("StyleButtonPressed")
 theme_override_styles/hover = SubResource("StyleButtonHover")
 theme_override_styles/focus = SubResource("StyleButtonHover")
 text = "돌아가기"
+
+[node name="TitleCredits" parent="." instance=ExtResource("7_credits")]

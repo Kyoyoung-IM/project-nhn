@@ -9,10 +9,14 @@ const TOWER_VISUAL_TEST_PREFIX := "--tower-visual-test="
 
 @onready var game_start_button: Button = $GameStartButton
 @onready var options_button: Button = $OptionsButton
+@onready var credits_button: Button = $CreditsButton
 @onready var game_start_backplate: CanvasItem = $GameStartBackplate
 @onready var options_backplate: CanvasItem = $OptionsBackplate
+@onready var credits_backplate: CanvasItem = $CreditsBackplate
 @onready var options_overlay: Control = $TitleOptions
 @onready var options_back_button: Button = $TitleOptions/BackButton
+@onready var credits_overlay: Control = $TitleCredits
+@onready var credits_back_button: Button = $TitleCredits/BackButton
 
 
 func _ready() -> void:
@@ -21,14 +25,21 @@ func _ready() -> void:
 		return
 	game_start_button.pressed.connect(_on_game_start_pressed)
 	options_button.pressed.connect(_on_options_pressed)
+	credits_button.pressed.connect(_on_credits_pressed)
 	options_back_button.pressed.connect(_close_options)
+	credits_back_button.pressed.connect(_close_credits)
 	game_start_button.grab_focus()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not options_overlay.visible or not event.pressed or event.echo or event.keycode != KEY_ESCAPE:
+	if not event.pressed or event.echo or event.keycode != KEY_ESCAPE:
 		return
-	_close_options()
+	if options_overlay.visible:
+		_close_options()
+	elif credits_overlay.visible:
+		_close_credits()
+	else:
+		return
 	get_viewport().set_input_as_handled()
 
 
@@ -42,10 +53,22 @@ func _on_options_pressed() -> void:
 	options_back_button.grab_focus()
 
 
+func _on_credits_pressed() -> void:
+	_set_main_buttons_visible(false)
+	credits_overlay.visible = true
+	credits_back_button.grab_focus()
+
+
 func _close_options() -> void:
 	options_overlay.visible = false
 	_set_main_buttons_visible(true)
 	options_button.grab_focus()
+
+
+func _close_credits() -> void:
+	credits_overlay.visible = false
+	_set_main_buttons_visible(true)
+	credits_button.grab_focus()
 
 
 func _set_main_buttons_visible(visible: bool) -> void:
@@ -53,6 +76,8 @@ func _set_main_buttons_visible(visible: bool) -> void:
 	game_start_button.visible = visible
 	options_backplate.visible = visible
 	options_button.visible = visible
+	credits_backplate.visible = visible
+	credits_button.visible = visible
 
 
 func _open_game() -> void:
