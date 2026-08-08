@@ -16,6 +16,9 @@ enum MoveState { SPAWNING, WALKING, DESCENDING, STUNNED, EXIT, DEAD }
 const MONSTER_VISUAL_SCALE := 1.6
 const STUN_STATUS_TEXTURE := preload("res://assets/combat_vfx/status_stun_stars_v2.png")
 const STUN_STATUS_DRAW_SIZE := Vector2(126.0, 84.0)
+const BURN_FLAME_COUNT := 5
+const CHILL_SHARD_COUNT := 6
+const STATUS_RING_POINT_COUNT := 32
 # 일반형의 기존 표시 크기를 보존하는 원본 픽셀 공통 배율이다. SPEED와 TANK에도
 # 같은 값을 적용해 불투명 그림의 절대 픽셀 크기 차이가 화면 크기 차이로 이어지게 한다.
 const REGULAR_TEXTURE_SCALE := 0.654589271
@@ -90,6 +93,11 @@ var body_sprite: Sprite2D
 var hit_sprite: Sprite2D
 var death_sprite: Sprite2D
 var stun_status_sprite: Sprite2D
+var burn_status_root: Node2D
+var burn_flames: Array[Polygon2D] = []
+var chill_status_root: Node2D
+var chill_aura_line: Line2D
+var chill_shards: Array[Polygon2D] = []
 var hit_visual_remaining_sec: float = 0.0
 var death_animation_elapsed_sec: float = 0.0
 # 처음 피해를 받기 전에는 체력 바를 숨기고, 첫 유효 피해부터 남은 전투 동안 표시한다.
@@ -138,6 +146,8 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	_configure_body_sprite()
 	_configure_hit_sprite()
 	_configure_death_sprite()
+	_configure_burn_status_visual()
+	_configure_chill_status_visual()
 	_configure_stun_status_sprite()
 	health_bar_visible = false
 	_configure_health_bar_layout()
@@ -246,6 +256,74 @@ func _configure_stun_status_sprite() -> void:
 		add_child(stun_status_sprite)
 	stun_status_sprite.scale = STUN_STATUS_DRAW_SIZE / stun_status_sprite.texture.get_size()
 	_update_stun_status_visual()
+
+
+# 화상은 별도 비트맵 없이 다섯 겹의 불꽃 폴리곤을 적 발치에 붙인다. Sprite2D와 같은
+# CanvasItem 자식이라 Web에서도 커스텀 draw 콜백 재생성 없이 위치·배율만 애니메이션한다.
+func _configure_burn_status_visual() -> void:
+	if burn_status_root == null:
+		burn_status_root = Node2D.new()
+		burn_status_root.name = "BurnStatusRoot"
+		burn_status_root.z_index = 1
+		burn_status_root.visible = false
+		add_child(burn_status_root)
+		for flame_index in BURN_FLAME_COUNT:
+			var flame := Polygon2D.new()
+			flame.name = "Flame%d" % (flame_index + 1)
+			flame.polygon = PackedVector2Array([
+				Vector2(-8.0, 0.0),
+				Vector2(-6.0, -13.0),
+				Vector2(-2.0, -24.0),
+				Vector2(1.0, -42.0),
+				Vector2(7.0, -23.0),
+				Vector2(9.0, -9.0),
+				Vector2(7.0, 0.0),
+			])
+			flame.color = Color("ff6b2c") if flame_index % 2 == 0 else Color("ffd45a")
+			burn_status_root.add_child(flame)
+			burn_flames.append(flame)
+	_update_burn_status_visual()
+
+
+# 감속은 몸 둘레의 냉기 고리와 여섯 빙정을 조합한다. 고리의 점은 설정 시 한 번만 만들고
+# 활성 중에는 자식 변환과 투명도만 바꿔 Web 메인 스레드의 도형 재생성 비용을 피한다.
+func _configure_chill_status_visual() -> void:
+	if chill_status_root == null:
+		chill_status_root = Node2D.new()
+		chill_status_root.name = "ChillStatusRoot"
+		chill_status_root.z_index = 1
+		chill_status_root.visible = false
+		add_child(chill_status_root)
+
+		chill_aura_line = Line2D.new()
+		chill_aura_line.name = "ChillAura"
+		chill_aura_line.width = 2.5
+		chill_aura_line.default_color = Color("83edff")
+		chill_aura_line.antialiased = true
+		chill_status_root.add_child(chill_aura_line)
+
+		for shard_index in CHILL_SHARD_COUNT:
+			var shard := Polygon2D.new()
+			shard.name = "IceShard%d" % (shard_index + 1)
+			shard.polygon = PackedVector2Array([
+				Vector2(0.0, -8.0),
+				Vector2(4.0, 0.0),
+				Vector2(0.0, 8.0),
+				Vector2(-4.0, 0.0),
+			])
+			shard.color = Color("d6fbff") if shard_index % 2 == 0 else Color("6fd9ff")
+			chill_status_root.add_child(shard)
+			chill_shards.append(shard)
+
+	var local_visible_size := body_visible_world_size / MONSTER_VISUAL_SCALE
+	var radius_x := clampf(local_visible_size.x * 0.55, 30.0, 105.0)
+	var radius_y := clampf(local_visible_size.y * 0.40, 22.0, 78.0)
+	var ring_points := PackedVector2Array()
+	for point_index in STATUS_RING_POINT_COUNT + 1:
+		var angle := TAU * float(point_index) / float(STATUS_RING_POINT_COUNT)
+		ring_points.append(Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
+	chill_aura_line.points = ring_points
+	_update_chill_status_visual()
 
 
 # 피격 이미지는 본체와 같은 원본 픽셀 배율을 사용하고, 자세가 달라도 발끝은 기존
@@ -419,6 +497,7 @@ func receive_turret_hit(amount: float, source_type: String, cc_duration: float, 
 		"SLOW":
 			slow_remaining_sec = maxf(slow_remaining_sec, cc_duration * boss_factor)
 			slow_multiplier = minf(slow_multiplier, clampf(1.0 - cc_value * boss_factor, 0.2, 1.0))
+	_update_status_visuals()
 	_queue_status_redraw()
 
 
@@ -443,8 +522,56 @@ func _process_status_effects(delta: float) -> void:
 	# 이동은 CanvasItem 변환만 바꾸므로 도형 명령을 다시 만들 필요가 없다. 상태 표시가
 	# 실제로 보이는 동안에만 갱신해 다수 몬스터가 쌓여도 Web 메인 스레드 부하가 증가하지 않게 한다.
 	if status_visual_was_active or stun_remaining_sec > 0.0 or slow_remaining_sec > 0.0 or dot_remaining_sec > 0.0:
-		_update_stun_status_visual()
+		_update_status_visuals()
 		_queue_status_redraw()
+
+
+func _update_status_visuals() -> void:
+	_update_burn_status_visual()
+	_update_chill_status_visual()
+	_update_stun_status_visual()
+
+
+func _update_burn_status_visual() -> void:
+	if burn_status_root == null:
+		return
+	burn_status_root.visible = dot_remaining_sec > 0.0 and move_state != MoveState.DEAD
+	if not burn_status_root.visible:
+		return
+	var local_visible_size := body_visible_world_size / MONSTER_VISUAL_SCALE
+	var local_half_height := body_bottom_offset_y / MONSTER_VISUAL_SCALE
+	var spread := clampf(local_visible_size.x * 0.42, 28.0, 82.0)
+	var height_scale := clampf(local_visible_size.y * 0.011, 0.78, 1.55)
+	for flame_index in burn_flames.size():
+		var flame := burn_flames[flame_index]
+		var lane := float(flame_index) / float(maxi(1, burn_flames.size() - 1)) - 0.5
+		var phase := visual_elapsed_sec * (6.2 + float(flame_index) * 0.35) + float(flame_index) * 1.7
+		flame.position = Vector2(lane * spread * 2.0, local_half_height - 2.0 + sin(phase) * 2.0)
+		flame.rotation = sin(phase * 0.7) * 0.12
+		var pulse := 0.88 + sin(phase) * 0.12
+		flame.scale = Vector2(height_scale * (0.76 + float(flame_index % 3) * 0.11), height_scale * pulse)
+		flame.modulate.a = 0.72 + sin(phase + 0.8) * 0.18
+
+
+func _update_chill_status_visual() -> void:
+	if chill_status_root == null:
+		return
+	chill_status_root.visible = slow_remaining_sec > 0.0 and move_state != MoveState.DEAD
+	if not chill_status_root.visible:
+		return
+	var local_visible_size := body_visible_world_size / MONSTER_VISUAL_SCALE
+	var radius_x := clampf(local_visible_size.x * 0.55, 30.0, 105.0)
+	var radius_y := clampf(local_visible_size.y * 0.40, 22.0, 78.0)
+	var pulse := 0.96 + sin(visual_elapsed_sec * 4.5) * 0.04
+	chill_aura_line.scale = Vector2.ONE * pulse
+	chill_aura_line.modulate.a = 0.58 + sin(visual_elapsed_sec * 4.5) * 0.14
+	for shard_index in chill_shards.size():
+		var shard := chill_shards[shard_index]
+		var angle := visual_elapsed_sec * 1.65 + TAU * float(shard_index) / float(chill_shards.size())
+		shard.position = Vector2(cos(angle) * radius_x, sin(angle) * radius_y)
+		shard.rotation = angle * 1.8
+		shard.scale = Vector2.ONE * (0.82 + sin(angle * 2.0) * 0.14)
+		shard.modulate.a = 0.72 + sin(angle + 0.6) * 0.18
 
 
 func _update_stun_status_visual() -> void:
@@ -529,6 +656,10 @@ func _set_death_visual_active(active: bool) -> void:
 		death_sprite.visible = active
 	if stun_status_sprite != null and active:
 		stun_status_sprite.visible = false
+	if burn_status_root != null and active:
+		burn_status_root.visible = false
+	if chill_status_root != null and active:
+		chill_status_root.visible = false
 
 
 # Web에서는 피해로 죽는 프레임에 redraw 예약과 queue_free가 겹치면 해제된
@@ -573,20 +704,6 @@ func _reach_deepest_floor() -> void:
 	move_state = MoveState.EXIT
 	reached_deepest_floor.emit(self)
 	queue_free()
-
-
-# 본체 스프라이트는 고정 자식 노드가 담당한다. 여기서는 지속시간에 따라 바뀌는 상태
-# 연출만 다시 그려 Web 전투 중 텍스처 드로우 명령이 반복 재생성되지 않게 한다.
-func _draw() -> void:
-	if OS.has_feature("web"):
-		return
-	var local_visible_size := body_visible_world_size / MONSTER_VISUAL_SCALE
-	var local_half_height := body_bottom_offset_y / MONSTER_VISUAL_SCALE
-	if slow_remaining_sec > 0.0:
-		var slow_radius := minf(local_visible_size.x, local_visible_size.y) * 0.42
-		draw_arc(Vector2.ZERO, slow_radius, 0.0, TAU, 32, Color("8fffea"), 2.0)
-	if dot_remaining_sec > 0.0:
-		draw_circle(Vector2(0.0, local_half_height - 4.0), 4.0, Color("d99aff"))
 
 
 func _configure_health_bar_layout() -> void:

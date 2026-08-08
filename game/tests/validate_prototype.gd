@@ -191,10 +191,23 @@ func _init() -> void:
 	for hit_type in ["MELEE", "STUN"]:
 		var hit_visual_probe := TowerHitEffectScript.new() as PrototypeTowerHitEffect
 		get_root().add_child(hit_visual_probe)
-		hit_visual_probe.setup(hit_type, 1)
+		hit_visual_probe.setup(hit_type, 1, 144.0)
 		if hit_visual_probe.effect_sprite == null or hit_visual_probe.effect_sprite.texture == null:
 			_fail("hitscan effect must use a Web-safe Sprite2D visual: %s" % hit_type)
 			return
+		if hit_type == "STUN":
+			if hit_visual_probe.stun_cloud_sprite == null \
+					or hit_visual_probe.stun_cloud_sprite.texture == null:
+				_fail("stun hit effect must split the cloud from the grounded lightning")
+				return
+			var cloud_bottom := hit_visual_probe.stun_cloud_sprite.position.y \
+				+ hit_visual_probe.stun_cloud_draw_size.y * 0.5
+			var bolt_bottom := hit_visual_probe.effect_sprite.position.y \
+				+ hit_visual_probe.base_draw_size.y * 0.5
+			if cloud_bottom > -144.0 - TowerHitEffectScript.STUN_CLOUD_HEAD_GAP \
+					or not is_equal_approx(bolt_bottom, 4.0):
+				_fail("stun cloud must stay above the target head and lightning must touch the floor")
+				return
 		hit_visual_probe.free()
 	# 대기·공격 시트는 런타임에 설치된 타입·Tier만 지연 로드해야 한다. 40장을 정적
 	# preload하면 Web 메모리가 전투 시작 전부터 크게 늘어나 전체 캔버스가 멎을 수 있다.

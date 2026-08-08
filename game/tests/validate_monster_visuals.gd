@@ -90,6 +90,15 @@ func _init() -> void:
 			monster.free()
 			_fail("monster death visual must start hidden and use one uniformly scaled sprite sheet: %s" % monster_type)
 			return
+		if monster.burn_status_root == null or monster.burn_status_root.visible \
+				or monster.burn_flames.size() != MonsterScript.BURN_FLAME_COUNT \
+				or monster.chill_status_root == null or monster.chill_status_root.visible \
+				or monster.chill_aura_line == null \
+				or monster.chill_shards.size() != MonsterScript.CHILL_SHARD_COUNT \
+				or monster.stun_status_sprite == null or monster.stun_status_sprite.visible:
+			monster.free()
+			_fail("monster status visuals must start hidden and use persistent CanvasItem children: %s" % monster_type)
+			return
 		var death_local_bottom := monster.death_sprite.position.y \
 			+ (MonsterScript._death_floor_y_for_type(monster_type) - MonsterScript.DEATH_FRAME_SIZE.y * 0.5) \
 			* monster.death_sprite.scale.y
@@ -120,6 +129,21 @@ func _init() -> void:
 			return
 		monster._process_hit_visual(MonsterScript.HIT_VISUAL_DURATION_SEC + MonsterScript.HIT_VISUAL_STACK_SEC)
 		monster.receive_turret_hit(1.0, "DOT", 2.0, 0.5)
+		if not monster.burn_status_root.visible or monster.chill_status_root.visible \
+				or monster.stun_status_sprite.visible:
+			monster.free()
+			_fail("DOT hit did not immediately show only the burn status visual: %s" % monster_type)
+			return
+		monster.receive_turret_hit(0.0, "SLOW", 4.0, 0.4)
+		if not monster.chill_status_root.visible:
+			monster.free()
+			_fail("SLOW hit did not immediately show the chill status visual: %s" % monster_type)
+			return
+		monster.receive_turret_hit(0.0, "STUN", 2.0, 1.0)
+		if not monster.stun_status_sprite.visible:
+			monster.free()
+			_fail("STUN hit did not immediately show the existing stun status visual: %s" % monster_type)
+			return
 		monster._process_hit_visual(MonsterScript.HIT_VISUAL_DURATION_SEC)
 		monster._process_status_effects(1.0)
 		if not monster.body_sprite.visible or monster.hit_sprite.visible or monster.hit_visual_remaining_sec > 0.0:
@@ -135,6 +159,9 @@ func _init() -> void:
 				or monster.body_sprite.visible \
 				or monster.hit_sprite.visible \
 				or not monster.death_sprite.visible \
+				or monster.burn_status_root.visible \
+				or monster.chill_status_root.visible \
+				or monster.stun_status_sprite.visible \
 				or monster.is_queued_for_deletion():
 			monster.free()
 			_fail("fatal damage did not start the delayed death animation: %s" % monster_type)
