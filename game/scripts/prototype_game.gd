@@ -24,6 +24,8 @@ const BATTLEFIELD_OVERVIEW_SCALE := 0.37
 const BATTLEFIELD_OVERVIEW_UNIFORM_SCALE := Vector2(BATTLEFIELD_OVERVIEW_SCALE, BATTLEFIELD_OVERVIEW_SCALE)
 const BATTLEFIELD_OVERVIEW_HORIZONTAL_INSET := REFERENCE_VIEWPORT_SIZE.x * (1.0 - BATTLEFIELD_OVERVIEW_SCALE) * 0.5
 const BATTLEFIELD_OVERVIEW_GROUND_SCREEN_Y := 170.0
+# 슬롯 중심 간격 240px의 절반까지 드롭을 허용해 조작 여유를 넓히되 이웃 슬롯 판정은 겹치지 않게 한다.
+const TOWER_SLOT_DROP_RADIUS := 120.0
 # 플레이어가 전투 중 선택할 수 있는 게임 진행 배속이다.
 const GAME_SPEED_MULTIPLIERS := [1, 2, 3]
 # 테스트 환경은 시작 보상 없이 일반 조건을 사용하되 빠른 반복 확인용 추가 배속은 유지한다.
@@ -425,7 +427,7 @@ func _update_shop_card_drag(local_pointer: Vector2) -> void:
 # 층 제한 없이 포인터 반경 안에서 빈 슬롯 또는 상점 머지 가능한 점유 슬롯을 찾는다.
 func _nearest_shop_drop_target(local_pointer: Vector2, tower_data: Dictionary) -> PrototypeTowerSlot:
 	var nearest: PrototypeTowerSlot = null
-	var nearest_distance := 70.0
+	var nearest_distance := TOWER_SLOT_DROP_RADIUS
 	for slot in tower_slots:
 		var eligible := slot.is_empty()
 		if not eligible:
@@ -576,7 +578,7 @@ func _update_tower_drag(local_pointer: Vector2) -> void:
 # 포인터 위치에서 낮의 같은 층 빈 슬롯 또는 낮·밤의 층간 머지 가능 슬롯을 드롭 대상으로 반환한다.
 func _nearest_drag_target(local_pointer: Vector2) -> PrototypeTowerSlot:
 	var nearest: PrototypeTowerSlot = null
-	var nearest_distance := 70.0
+	var nearest_distance := TOWER_SLOT_DROP_RADIUS
 	for slot in tower_slots:
 		if slot == dragged_origin_slot:
 			continue
