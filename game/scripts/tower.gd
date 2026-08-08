@@ -364,12 +364,13 @@ func _apply_hitscan_attack(target: PrototypeMonster, attack_type: String) -> voi
 	target.receive_turret_hit(damage, attack_type, cc_duration, cc_value)
 	var hit_effect := TowerHitEffectScript.new() as PrototypeTowerHitEffect
 	get_parent().add_child(hit_effect)
-	# The lightning texture includes a ground impact. Anchor STUN at the target's
-	# floor contact instead of its body center so the whole bolt stays legible.
-	hit_effect.global_position = target.global_position
+	# 같은 전장 부모의 로컬 좌표를 사용해 전장 축소율이 접지 오프셋에 중복 적용되지 않게 한다.
+	hit_effect.position = target.position
+	var target_height_world := 0.0
 	if attack_type == "STUN":
-		hit_effect.global_position.y += target.body_bottom_offset_y
-	hit_effect.setup(attack_type, tier)
+		hit_effect.position.y += target.body_bottom_offset_y
+		target_height_world = target.body_visible_world_size.y
+	hit_effect.setup(attack_type, tier, target_height_world)
 
 
 func projectile_muzzle_global_position() -> Vector2:
