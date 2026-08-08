@@ -1,5 +1,17 @@
 # 외부 에셋 및 라이선스
 
+## STUN Tier 3·4 Line Lightning VFX v1
+
+- 종류: 구름 없는 청색·보라색 세로 낙뢰 독립 이펙트 2종
+- 제작 도구: OpenAI 내장 이미지 생성 도구
+- 제작일: 2026-08-09
+- 저장 위치: `game/assets/combat_vfx/stun_lane_lightning_blue_v1.png`, `game/assets/combat_vfx/stun_lane_lightning_purple_v1.png`
+- 사용 범위: STUN Tier 3·4의 같은 층 전체 낙뢰 연출
+- 생성 방식: 기존 프로젝트의 STUN 낙뢰와 사용자 제공 Tier 4 STUN 타워를 각각 화풍·색상 참고자료로 사용해 새 독립 에셋을 생성함
+- 후처리: 단색 녹색 크로마키 배경을 로컬 `remove_chroma_key.py`로 제거해 투명 PNG로 변환함
+- 제약: 구름·캐릭터·배경·UI·문자·로고·워터마크를 포함하지 않고, 상단 원형 전기 코어에서 낙뢰가 시작되도록 구성함
+- 외부 이미지·에셋 직접 포함: 없음
+
 ## Enemy Robot Sprite Set
 
 - 종류: 일반·속도·탱크·보스 몬스터용 투명 로봇 스프라이트 4종

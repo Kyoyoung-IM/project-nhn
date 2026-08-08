@@ -12,6 +12,7 @@
 - `../tests/validate_prototype.gd`: 데이터 테이블 헤드리스 검증
 - `../tests/validate_melee_tier_progression.gd`: 근접 포탑 Tier 1~4 공격 규칙 헤드리스 검증
 - `../tests/validate_ranged_tier_progression.gd`: 원거리 포탑 Tier 1~4 단발·연발·레이저 규칙 헤드리스 검증
+- `../tests/validate_stun_tier_progression.gd`: 기절 포탑 Tier 1~4 단일·범위·라인·확률 규칙 헤드리스 검증
 - `../tests/validate_dot_tier_progression.gd`: 지속 포탑 Tier 1~4 화염구·전이·중첩·폭발 규칙 헤드리스 검증
 - `../tests/validate_balance_table_editing.gd`: 테스트 데이터 CSV·TSV·JSON 파싱과 행 추가·삭제 트랜잭션 검증
 - `../tests/validate_balance_editor_ui.gd`: 데이터 편집 모달의 행 추가·삭제·파싱·적용·원본 복원 흐름 검증
@@ -47,4 +48,4 @@ JSON은 문법상 주석을 지원하지 않는다. 데이터 컬럼과 프로�
 
 - `--auto-test-battlefield-overview`: 지상과 B1~B3 접지선이 한 화면에 들어오고, 휠·위/아래 방향키 입력 후에도 고정 전체 뷰가 유지되는지 검사한다.
 - `--auto-test-wave-features`: 일반 몬스터 처치 후 밤 유지, `waveTimeSec` 종료 시 잔존 적을 유지한 다음 웨이브 즉시 시작, 마지막 보스 웨이브와 누적 잔존 적 전멸 후 승리를 검사한다.
-- `--auto-test-attack-styles`: MELEE 할퀴기 히트스캔, DOT 화염·화상, SLOW 눈덩이·둔화, RANGED 콩알, STUN 충전·낙뢰·기절 분기를 검사한다.
+- `--auto-test-attack-styles`: MELEE 할퀴기 히트스캔, DOT 화염·화상, SLOW 눈덩이·둔화, RANGED 콩알, STUN 선딜·낙뢰·기절 분기를 검사한다.

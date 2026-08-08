@@ -12,7 +12,7 @@ const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
 const MeleeExecutionEffectScript := preload("res://scripts/melee_execution_effect.gd")
 const RangedLaserEffectScript := preload("res://scripts/ranged_laser_effect.gd")
 const DotFireballProjectileScript := preload("res://scripts/dot_fireball_projectile.gd")
-const STUN_CHARGE_AURA_TEXTURE := preload("res://assets/combat_vfx/stun_charge_aura_v2.png")
+const StunLaneLightningEffectScript := preload("res://scripts/stun_lane_lightning_effect.gd")
 
 # Tier가 높아질수록 본체가 조금씩 커져 머지 결과를 실루엣만으로도 구분할 수 있다.
 # 이 값은 기존 더미 도형의 반경과 무관한 실제 스프라이트 표시 크기다.
@@ -29,6 +29,8 @@ const IDLE_FRAME_DURATION_SEC := 0.45
 const ATTACK_FRAME_DURATION_SEC := 0.08
 # STUN 공격의 충전 시간은 피해 밸런스와 분리된 시각 전용 PLACEHOLDER 값이다.
 const STUN_CHARGE_DURATION_SEC := 0.38
+const STUN_TIER_THREE_CHANCE := 0.20
+const STUN_TIER_FOUR_CHANCE := 0.50
 # 기획에 수치가 없는 Tier 3 근접 넉백의 시각·전투용 PLACEHOLDER 거리다.
 const MELEE_KNOCKBACK_DISTANCE_PX := 80.0
 const MELEE_EXECUTION_HP_RATIO := 0.20
@@ -58,6 +60,7 @@ var cooldown_sec: float = 0.0
 var enabled: bool = true
 var stun_charge_remaining_sec: float = 0.0
 var stun_charge_target: Node2D
+var stun_rng := RandomNumberGenerator.new()
 var ranged_burst_shots_remaining: int = 0
 var ranged_burst_interval_remaining_sec: float = 0.0
 var ranged_burst_target: PrototypeMonster
@@ -69,7 +72,6 @@ var upgrade_effect_remaining_sec: float = 0.0
 # 대기 본체와 2x2 공격 시트는 독립 노드로 두고 공격 순간에 표시를 교대한다.
 var body_sprite: Sprite2D
 var attack_sprite: Sprite2D
-var stun_charge_sprite: Sprite2D
 var body_base_position := Vector2.ZERO
 var idle_animation_elapsed_sec: float = 0.0
 var idle_visual_requested: bool = false
@@ -93,6 +95,7 @@ func setup(config: Dictionary, assigned_floor_index: int, request_animation_visu
 	cc_value = float(config.get("cc_value", 0.0))
 	tower_color = Color(str(config.get("color_hex", "68d8c1")))
 	floor_index = assigned_floor_index
+	stun_rng.randomize()
 	cooldown_sec = 0.0
 	ranged_burst_shots_remaining = 0
 	ranged_burst_interval_remaining_sec = 0.0
@@ -125,15 +128,6 @@ func _refresh_visual_nodes(request_animation_visuals: bool = true) -> void:
 		attack_sprite.name = "AttackSprite"
 		attack_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		add_child(attack_sprite)
-	if stun_charge_sprite == null:
-		stun_charge_sprite = Sprite2D.new()
-		stun_charge_sprite.name = "StunChargeSprite"
-		stun_charge_sprite.texture = STUN_CHARGE_AURA_TEXTURE
-		stun_charge_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		stun_charge_sprite.z_index = 2
-		stun_charge_sprite.visible = false
-		add_child(stun_charge_sprite)
-
 	body_sprite.texture = TowerVisualAssetsScript.body_texture(turret_type, tier)
 	body_sprite.hframes = 1
 	body_sprite.vframes = 1
@@ -248,7 +242,6 @@ func reset_for_wave() -> void:
 	ranged_burst_shots_remaining = 0
 	ranged_burst_interval_remaining_sec = 0.0
 	ranged_burst_target = null
-	_update_stun_charge_visual()
 	idle_animation_elapsed_sec = 0.0
 	if body_sprite != null:
 		body_sprite.frame = 0
@@ -277,7 +270,6 @@ func _process(delta: float) -> void:
 	_process_ranged_burst(delta)
 	if stun_charge_remaining_sec > 0.0:
 		stun_charge_remaining_sec = maxf(0.0, stun_charge_remaining_sec - delta)
-		_update_stun_charge_visual()
 		if stun_charge_remaining_sec <= 0.0:
 			_finish_stun_attack()
 		return
@@ -295,6 +287,11 @@ func _process(delta: float) -> void:
 		return
 
 	var target := _select_target()
+	if turret_type == "STUN" and tier >= 3:
+		var floor_targets := _select_targets_on_floor()
+		if floor_targets.is_empty():
+			return
+		target = floor_targets[0]
 	if target == null:
 		return
 
@@ -310,7 +307,6 @@ func _process(delta: float) -> void:
 		"STUN":
 			stun_charge_target = target
 			stun_charge_remaining_sec = STUN_CHARGE_DURATION_SEC
-			_update_stun_charge_visual()
 		"RANGED":
 			_start_ranged_projectile_attack(target)
 		_:
@@ -455,14 +451,49 @@ func _spawn_dot_fireball(target: PrototypeMonster) -> void:
 	fireball.setup(target, damage, cc_duration, cc_value, tier)
 
 
-# STUN 충전이 끝났을 때 표적이 여전히 같은 층·사거리 안에 있으면 낙뢰 히트스캔을 실행한다.
+# STUN의 짧은 선딜이 끝나면 Tier별 단일·범위·라인 판정을 실행한다.
 func _finish_stun_attack() -> void:
 	var target := stun_charge_target as PrototypeMonster
 	stun_charge_target = null
-	_update_stun_charge_visual()
-	if not _target_is_attackable(target):
+	if tier == 1:
+		if _target_is_attackable(target):
+			_apply_hitscan_attack(target, "STUN")
 		return
-	_apply_hitscan_attack(target, "STUN")
+	if tier == 2:
+		for range_target in _select_targets_in_range():
+			_apply_hitscan_attack(range_target, "STUN")
+		return
+	var floor_targets := _select_targets_on_floor()
+	if floor_targets.is_empty():
+		return
+	var stun_chance := stun_chance_for_tier(tier)
+	for floor_target in floor_targets:
+		floor_target.take_damage(damage)
+		if floor_target.move_state != PrototypeMonster.MoveState.DEAD \
+				and stun_roll_succeeds(stun_chance, stun_rng.randf()):
+			floor_target.apply_stun(cc_duration)
+	_spawn_stun_lane_lightning()
+
+
+static func stun_chance_for_tier(tier_value: int) -> float:
+	if tier_value >= 4:
+		return STUN_TIER_FOUR_CHANCE
+	if tier_value >= 3:
+		return STUN_TIER_THREE_CHANCE
+	return 1.0
+
+
+static func stun_roll_succeeds(chance: float, roll: float) -> bool:
+	return roll < clampf(chance, 0.0, 1.0)
+
+
+func _spawn_stun_lane_lightning() -> void:
+	var effect := StunLaneLightningEffectScript.new()
+	get_parent().add_child(effect)
+	effect.position = Vector2.ZERO
+	# 몬스터 종류·스케일·이동 프레임에 의존하지 않고 설치 슬롯의 확정 접지선을 사용한다.
+	var lane_y := position.y + BODY_BOTTOM_Y
+	effect.setup(tier, lane_y)
 
 
 # Tier 1은 기존 단일 표적 히트스캔을 유지하고, Tier 2부터 같은 층·수평 사거리 안의
@@ -557,6 +588,18 @@ func _select_targets_in_range() -> Array[PrototypeMonster]:
 	return targets
 
 
+# Tier 3·4 STUN은 기존 수평 사거리를 대체해 같은 전투층의 모든 생존 적을 선택한다.
+func _select_targets_on_floor() -> Array[PrototypeMonster]:
+	var targets: Array[PrototypeMonster] = []
+	for node in get_tree().get_nodes_in_group("prototype_monsters"):
+		var monster := node as PrototypeMonster
+		if monster == null or not monster.is_in_combat_floor():
+			continue
+		if monster.current_combat_floor() == floor_index:
+			targets.append(monster)
+	return targets
+
+
 # 포탑 외형의 전방인 오른쪽에 있으며 같은 전투층에 남아 있는 모든 적을 반환한다.
 # Tier 3·4 레이저는 기존 사거리 제한을 대체하므로 수평 거리 상한을 적용하지 않는다.
 func _select_ranged_front_targets() -> Array[PrototypeMonster]:
@@ -571,20 +614,6 @@ func _select_ranged_front_targets() -> Array[PrototypeMonster]:
 			continue
 		targets.append(monster)
 	return targets
-
-
-# Web에서도 동적 draw 콜백 없이 STUN 충전 이미지를 표시한다.
-func _update_stun_charge_visual() -> void:
-	if stun_charge_sprite == null:
-		return
-	stun_charge_sprite.visible = stun_charge_remaining_sec > 0.0
-	if not stun_charge_sprite.visible:
-		return
-	var charge_progress := 1.0 - stun_charge_remaining_sec / STUN_CHARGE_DURATION_SEC
-	var charge_size := Vector2.ONE * lerpf(108.0, 144.0, charge_progress)
-	stun_charge_sprite.position = body_sprite.position if body_sprite != null else Vector2(0.0, -100.0)
-	stun_charge_sprite.scale = charge_size / stun_charge_sprite.texture.get_size()
-	stun_charge_sprite.modulate.a = 0.70 + sin(charge_progress * TAU * 2.0) * 0.16
 
 
 # 타워 이미지는 자식 Sprite2D가 그리며, 여기서는 머지 피드백만 그린다.
