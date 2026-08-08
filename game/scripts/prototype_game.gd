@@ -142,6 +142,7 @@ var options_overlay: Control
 var options_menu_open: bool = false
 var options_test_mode_button: Button
 var game_clear_overlay: PrototypeGameClearOverlay
+var game_clear_restart_button: Button
 var game_over_overlay: Control
 var game_over_restart_button: Button
 var game_over_quit_button: Button
@@ -776,11 +777,13 @@ func _build_interface() -> void:
 	status_label = layout.get_node("StatusLabel") as Label
 	gold_gain_base_position = gold_gain_label.position
 	game_clear_overlay = layout.get_node("GameClearOverlay") as PrototypeGameClearOverlay
+	game_clear_restart_button = game_clear_overlay.get_node("RestartButton") as Button
 	game_over_overlay = layout.get_node("GameOverOverlay") as Control
 	game_over_restart_button = game_over_overlay.get_node("RestartButton") as Button
 	game_over_quit_button = game_over_overlay.get_node("QuitButton") as Button
 	game_over_restart_button.pressed.connect(_on_game_over_restart_pressed)
 	game_over_quit_button.pressed.connect(_on_game_over_quit_pressed)
+	game_clear_restart_button.pressed.connect(_on_game_clear_restart_pressed)
 	_bind_options_menu(layout)
 	_bind_test_balance_panel(layout)
 
@@ -887,6 +890,14 @@ func _on_options_quit_pressed() -> void:
 	_set_options_menu_visible(false)
 	Engine.time_scale = 1.0
 	get_tree().quit()
+
+
+# 게임 클리어 화면의 다시하기는 현재 판을 완전히 초기화하고 새 낮 단계에서 재개한다.
+func _on_game_clear_restart_pressed() -> void:
+	if phase != Phase.VICTORY:
+		return
+	Engine.time_scale = 1.0
+	_reset_game()
 
 
 # 게임 오버 화면의 다시 시작은 현재 판을 완전히 초기화하고 새 낮 단계에서 재개한다.
