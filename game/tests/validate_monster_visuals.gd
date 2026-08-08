@@ -83,6 +83,11 @@ func _init() -> void:
 			monster.free()
 			_fail("monster hit visual must start hidden and use one uniformly scaled Sprite2D: %s" % monster_type)
 			return
+		var hit_visible_height := hit_bounds.size.y * monster.hit_sprite.scale.y * MonsterScript.MONSTER_VISUAL_SCALE
+		if monster_type == "SPEED" and not is_equal_approx(hit_visible_height, visible_size.y):
+			monster.free()
+			_fail("speed hit visual height must match its body height")
+			return
 		if monster.death_sprite == null or monster.death_sprite.texture != death_texture \
 				or monster.death_sprite.visible \
 				or not monster.death_sprite.region_enabled \

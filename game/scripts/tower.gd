@@ -9,6 +9,9 @@ const TowerVisualAssetsScript := preload("res://scripts/tower_visual_assets.gd")
 const TowerProjectileScript := preload("res://scripts/tower_projectile.gd")
 const TowerFlamethrowerScript := preload("res://scripts/tower_flamethrower.gd")
 const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
+const MeleeExecutionEffectScript := preload("res://scripts/melee_execution_effect.gd")
+const RangedLaserEffectScript := preload("res://scripts/ranged_laser_effect.gd")
+const DotFireballProjectileScript := preload("res://scripts/dot_fireball_projectile.gd")
 const STUN_CHARGE_AURA_TEXTURE := preload("res://assets/combat_vfx/stun_charge_aura_v2.png")
 
 # Tier가 높아질수록 본체가 조금씩 커져 머지 결과를 실루엣만으로도 구분할 수 있다.
@@ -26,6 +29,11 @@ const IDLE_FRAME_DURATION_SEC := 0.45
 const ATTACK_FRAME_DURATION_SEC := 0.08
 # STUN 공격의 충전 시간은 피해 밸런스와 분리된 시각 전용 PLACEHOLDER 값이다.
 const STUN_CHARGE_DURATION_SEC := 0.38
+# 기획에 수치가 없는 Tier 3 근접 넉백의 시각·전투용 PLACEHOLDER 거리다.
+const MELEE_KNOCKBACK_DISTANCE_PX := 80.0
+const MELEE_EXECUTION_HP_RATIO := 0.20
+# Tier 2의 세 발이 기존 투사체로 분명하게 구분되어 보이도록 두는 짧은 연사 간격이다.
+const RANGED_BURST_SHOT_INTERVAL_SEC := 0.10
 
 # 데이터 식별자와 머지 트리 정보다. 현재 머지 UI가 추가되면 이 값을 그대로 사용한다.
 var turret_id: String = ""
@@ -50,6 +58,9 @@ var cooldown_sec: float = 0.0
 var enabled: bool = true
 var stun_charge_remaining_sec: float = 0.0
 var stun_charge_target: Node2D
+var ranged_burst_shots_remaining: int = 0
+var ranged_burst_interval_remaining_sec: float = 0.0
+var ranged_burst_target: PrototypeMonster
 
 # 머지 직후 상위 Tier가 생성됐음을 보여주는 코드 기반 승급 연출 시간이다.
 const UPGRADE_EFFECT_DURATION_SEC := 0.7
@@ -83,6 +94,9 @@ func setup(config: Dictionary, assigned_floor_index: int, request_animation_visu
 	tower_color = Color(str(config.get("color_hex", "68d8c1")))
 	floor_index = assigned_floor_index
 	cooldown_sec = 0.0
+	ranged_burst_shots_remaining = 0
+	ranged_burst_interval_remaining_sec = 0.0
+	ranged_burst_target = null
 	_refresh_visual_nodes(request_animation_visuals)
 	add_to_group("prototype_towers")
 	_queue_effect_redraw()
@@ -231,6 +245,9 @@ func reset_for_wave() -> void:
 	cooldown_sec = 0.0
 	stun_charge_remaining_sec = 0.0
 	stun_charge_target = null
+	ranged_burst_shots_remaining = 0
+	ranged_burst_interval_remaining_sec = 0.0
+	ranged_burst_target = null
 	_update_stun_charge_visual()
 	idle_animation_elapsed_sec = 0.0
 	if body_sprite != null:
@@ -257,6 +274,7 @@ func _process(delta: float) -> void:
 
 	if not enabled:
 		return
+	_process_ranged_burst(delta)
 	if stun_charge_remaining_sec > 0.0:
 		stun_charge_remaining_sec = maxf(0.0, stun_charge_remaining_sec - delta)
 		_update_stun_charge_visual()
@@ -267,6 +285,14 @@ func _process(delta: float) -> void:
 	cooldown_sec = maxf(0.0, cooldown_sec - delta)
 	if cooldown_sec > 0.0:
 		return
+	if turret_type == "RANGED" and tier >= 3:
+		var laser_targets := _select_ranged_front_targets()
+		if laser_targets.is_empty():
+			return
+		_play_attack_animation()
+		_fire_ranged_laser(laser_targets)
+		cooldown_sec = attack_interval_sec
+		return
 
 	var target := _select_target()
 	if target == null:
@@ -275,13 +301,18 @@ func _process(delta: float) -> void:
 	_play_attack_animation()
 	match turret_type:
 		"MELEE":
-			_apply_hitscan_attack(target, "MELEE")
+			_apply_melee_attack(target)
 		"DOT":
-			_spawn_flamethrower(target)
+			if tier == 1:
+				_spawn_dot_fireball(target)
+			else:
+				_spawn_flamethrower(target)
 		"STUN":
 			stun_charge_target = target
 			stun_charge_remaining_sec = STUN_CHARGE_DURATION_SEC
 			_update_stun_charge_visual()
+		"RANGED":
+			_start_ranged_projectile_attack(target)
 		_:
 			_spawn_projectile(target)
 	cooldown_sec = attack_interval_sec
@@ -340,11 +371,88 @@ func _spawn_projectile(target: PrototypeMonster) -> void:
 	projectile.setup(target, turret_type, damage, cc_duration, cc_value, tier)
 
 
+# Tier 1은 기존 한 발, Tier 2는 같은 투사체를 0.1초 간격으로 세 발 발사한다.
+func _start_ranged_projectile_attack(target: PrototypeMonster) -> void:
+	_spawn_projectile(target)
+	if tier == 2:
+		ranged_burst_target = target
+		ranged_burst_shots_remaining = 2
+		ranged_burst_interval_remaining_sec = RANGED_BURST_SHOT_INTERVAL_SEC
+
+
+func _process_ranged_burst(delta: float) -> void:
+	if ranged_burst_shots_remaining <= 0:
+		return
+	ranged_burst_interval_remaining_sec -= delta
+	while ranged_burst_shots_remaining > 0 and ranged_burst_interval_remaining_sec <= 0.0:
+		var target := ranged_burst_target
+		if not _target_is_attackable(target):
+			target = _select_target()
+			ranged_burst_target = target
+		if target == null:
+			ranged_burst_shots_remaining = 0
+			ranged_burst_target = null
+			return
+		_spawn_projectile(target)
+		ranged_burst_shots_remaining -= 1
+		ranged_burst_interval_remaining_sec += RANGED_BURST_SHOT_INTERVAL_SEC
+	if ranged_burst_shots_remaining <= 0:
+		ranged_burst_target = null
+
+
+# Tier 3은 주 포구 한 줄, Tier 4는 주 포구와 보조 포구 두 줄의 관통 레이저를 표시하고
+# 포탑 오른쪽의 같은 층 모든 적에게 줄 수만큼 즉시 피해를 적용한다.
+func _fire_ranged_laser(targets: Array[PrototypeMonster]) -> void:
+	var source_positions := PackedVector2Array([_ranged_laser_muzzle_parent_position(false)])
+	var hit_count := 1
+	if tier >= 4:
+		source_positions.append(_ranged_laser_muzzle_parent_position(true))
+		hit_count = 2
+	for target in targets:
+		for hit_index in hit_count:
+			if target.move_state == PrototypeMonster.MoveState.DEAD:
+				break
+			target.receive_turret_hit(damage, "RANGED", cc_duration, cc_value)
+
+	var endpoint := source_positions[0] + Vector2.RIGHT * 120.0
+	for target in targets:
+		var target_right := target.position.x + target.body_visible_world_size.x * 0.5
+		if target_right > endpoint.x:
+			endpoint = Vector2(target_right + 18.0, target.position.y - 8.0)
+	var laser_effect := RangedLaserEffectScript.new()
+	get_parent().add_child(laser_effect)
+	laser_effect.position = Vector2.ZERO
+	laser_effect.setup(source_positions, endpoint)
+
+
+# 원거리 스프라이트는 오른쪽을 바라본다. 실제 불투명 경계 안의 정규화 좌표로 포구를
+# 계산해 Tier별 크기와 정지/대기 시트 로딩 여부가 달라도 레이저가 포구에서 시작한다.
+func _ranged_laser_muzzle_parent_position(secondary: bool) -> Vector2:
+	var bounds := TowerVisualAssetsScript.body_visible_bounds("RANGED", tier)
+	var frame_size := body_sprite.texture.get_size() if body_sprite != null and body_sprite.texture != null else Vector2.ONE
+	if idle_visual_ready:
+		bounds = TowerVisualAssetsScript.idle_first_frame_visible_bounds("RANGED", tier)
+		frame_size = TowerVisualAssetsScript.IDLE_FRAME_SIZE
+	var normalized_point := Vector2(0.90, 0.34)
+	if secondary and tier >= 4:
+		normalized_point = Vector2(0.39, 0.51)
+	var texture_point := bounds.position + bounds.size * normalized_point
+	var tower_local_point := body_sprite.position + (texture_point - frame_size * 0.5) * body_sprite.scale
+	return get_parent().to_local(to_global(tower_local_point))
+
+
 # DOT는 일반 투사체 대신 포구에서 표적까지 짧게 뻗는 전용 화염방사를 생성한다.
 func _spawn_flamethrower(target: PrototypeMonster) -> void:
 	var flamethrower := TowerFlamethrowerScript.new() as PrototypeTowerFlamethrower
 	get_parent().add_child(flamethrower)
 	flamethrower.setup(self, target, damage, cc_duration, cc_value, tier)
+
+
+func _spawn_dot_fireball(target: PrototypeMonster) -> void:
+	var fireball := DotFireballProjectileScript.new()
+	get_parent().add_child(fireball)
+	fireball.global_position = projectile_muzzle_global_position()
+	fireball.setup(target, damage, cc_duration, cc_value, tier)
 
 
 # STUN 충전이 끝났을 때 표적이 여전히 같은 층·사거리 안에 있으면 낙뢰 히트스캔을 실행한다.
@@ -357,11 +465,35 @@ func _finish_stun_attack() -> void:
 	_apply_hitscan_attack(target, "STUN")
 
 
+# Tier 1은 기존 단일 표적 히트스캔을 유지하고, Tier 2부터 같은 층·수평 사거리 안의
+# 모든 적을 한 번씩 공격한다. Tier 3은 피해 후 역방향 넉백, Tier 4는 피해 후 남은
+# 체력이 20% 이하인 생존 적을 즉사시킨다.
+func _apply_melee_attack(primary_target: PrototypeMonster) -> void:
+	var targets: Array[PrototypeMonster] = [primary_target]
+	if tier >= 2:
+		targets = _select_targets_in_range()
+	for target in targets:
+		if not _target_is_attackable(target):
+			continue
+		target.receive_turret_hit(damage, "MELEE", cc_duration, cc_value)
+		_spawn_hitscan_effect(target, "MELEE")
+		if tier >= 4 and target.move_state != PrototypeMonster.MoveState.DEAD \
+				and target.hp <= target.max_hp * MELEE_EXECUTION_HP_RATIO:
+			target.take_damage(target.hp)
+			_spawn_melee_execution_effect(target)
+		elif tier >= 3 and target.move_state != PrototypeMonster.MoveState.DEAD:
+			target.apply_knockback(MELEE_KNOCKBACK_DISTANCE_PX)
+
+
 # 히트스캔 타입은 즉시 기존 피해 규칙을 적용하고 표적 위치에 별도 피격 이펙트를 생성한다.
 func _apply_hitscan_attack(target: PrototypeMonster, attack_type: String) -> void:
 	if not _target_is_attackable(target):
 		return
 	target.receive_turret_hit(damage, attack_type, cc_duration, cc_value)
+	_spawn_hitscan_effect(target, attack_type)
+
+
+func _spawn_hitscan_effect(target: PrototypeMonster, attack_type: String) -> void:
 	var hit_effect := TowerHitEffectScript.new() as PrototypeTowerHitEffect
 	get_parent().add_child(hit_effect)
 	# 같은 전장 부모의 로컬 좌표를 사용해 전장 축소율이 접지 오프셋에 중복 적용되지 않게 한다.
@@ -371,6 +503,13 @@ func _apply_hitscan_attack(target: PrototypeMonster, attack_type: String) -> voi
 		hit_effect.position.y += target.body_bottom_offset_y
 		target_height_world = target.body_visible_world_size.y
 	hit_effect.setup(attack_type, tier, target_height_world)
+
+
+func _spawn_melee_execution_effect(target: PrototypeMonster) -> void:
+	var execution_effect := MeleeExecutionEffectScript.new()
+	get_parent().add_child(execution_effect)
+	execution_effect.position = target.position - Vector2(0.0, target.body_bottom_offset_y * 0.35)
+	execution_effect.setup()
 
 
 func projectile_muzzle_global_position() -> Vector2:
@@ -407,6 +546,31 @@ func _select_target() -> PrototypeMonster:
 			best_progress = progress
 			selected = monster
 	return selected
+
+
+func _select_targets_in_range() -> Array[PrototypeMonster]:
+	var targets: Array[PrototypeMonster] = []
+	for node in get_tree().get_nodes_in_group("prototype_monsters"):
+		var monster := node as PrototypeMonster
+		if _target_is_attackable(monster):
+			targets.append(monster)
+	return targets
+
+
+# 포탑 외형의 전방인 오른쪽에 있으며 같은 전투층에 남아 있는 모든 적을 반환한다.
+# Tier 3·4 레이저는 기존 사거리 제한을 대체하므로 수평 거리 상한을 적용하지 않는다.
+func _select_ranged_front_targets() -> Array[PrototypeMonster]:
+	var targets: Array[PrototypeMonster] = []
+	for node in get_tree().get_nodes_in_group("prototype_monsters"):
+		var monster := node as PrototypeMonster
+		if monster == null or not monster.is_in_combat_floor():
+			continue
+		if monster.current_combat_floor() != floor_index:
+			continue
+		if monster.global_position.x <= global_position.x:
+			continue
+		targets.append(monster)
+	return targets
 
 
 # Web에서도 동적 draw 콜백 없이 STUN 충전 이미지를 표시한다.

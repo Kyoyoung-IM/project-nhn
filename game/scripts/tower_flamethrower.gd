@@ -53,7 +53,7 @@ func _process(delta: float) -> void:
 	if not damage_applied and elapsed_sec >= CONTACT_TIME_SEC:
 		damage_applied = true
 		if target.has_method("receive_turret_hit"):
-			target.call("receive_turret_hit", damage, "DOT", cc_duration, cc_value)
+			target.call("receive_turret_hit", damage, "DOT", cc_duration, cc_value, tier)
 	if elapsed_sec >= ATTACK_DURATION_SEC:
 		queue_free()
 		return

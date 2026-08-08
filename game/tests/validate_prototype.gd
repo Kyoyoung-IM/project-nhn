@@ -11,6 +11,8 @@ const BattlefieldWorldScript := preload("res://scripts/battlefield_world.gd")
 const MonsterScript := preload("res://scripts/monster.gd")
 const TowerProjectileScript := preload("res://scripts/tower_projectile.gd")
 const TowerFlamethrowerScript := preload("res://scripts/tower_flamethrower.gd")
+const DotFireballProjectileScript := preload("res://scripts/dot_fireball_projectile.gd")
+const DotDeathExplosionScript := preload("res://scripts/dot_death_explosion.gd")
 const TowerHitEffectScript := preload("res://scripts/tower_hit_effect.gd")
 
 # 읽기 전용 데이터 테이블의 대표 오브젝트 ID다. 원본 오탈자 spped1도 그대로 보존한다.
@@ -130,6 +132,8 @@ func _init() -> void:
 		TowerProjectileScript.SLOW_PROJECTILE_TEXTURE,
 		TowerProjectileScript.RANGED_PROJECTILE_TEXTURE,
 		TowerFlamethrowerScript.FLAME_TEXTURE,
+		DotFireballProjectileScript.FIREBALL_TEXTURE,
+		DotDeathExplosionScript.EXPLOSION_TEXTURE,
 		TowerHitEffectScript.MELEE_SLASH_TEXTURE,
 		TowerHitEffectScript.STUN_LIGHTNING_TEXTURE,
 		MonsterScript.STUN_STATUS_TEXTURE,
@@ -143,6 +147,12 @@ func _init() -> void:
 	# stars must retain enough opaque subject pixels to be visible in combat.
 	if not _texture_has_opaque_coverage(TowerFlamethrowerScript.FLAME_TEXTURE, 0.20):
 		_fail("flamethrower texture lost its visible interior during alpha processing")
+		return
+	if not _texture_has_opaque_coverage(DotFireballProjectileScript.FIREBALL_TEXTURE, 0.12):
+		_fail("DOT fireball texture lost its visible interior during alpha processing")
+		return
+	if not _texture_has_opaque_coverage(DotDeathExplosionScript.EXPLOSION_TEXTURE, 0.28):
+		_fail("DOT death explosion texture lost its visible interior during alpha processing")
 		return
 	if not _texture_has_opaque_coverage(MonsterScript.STUN_STATUS_TEXTURE, 0.08):
 		_fail("stun status texture lost its visible interior during alpha processing")

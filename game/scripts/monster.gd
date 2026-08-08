@@ -15,6 +15,7 @@ enum MoveState { SPAWNING, WALKING, DESCENDING, STUNNED, EXIT, DEAD }
 # 배율과 이 노드 배율을 나눠 적용하며, 접지 오프셋을 함께 적용해 발판 접촉을 유지한다.
 const MONSTER_VISUAL_SCALE := 1.6
 const STUN_STATUS_TEXTURE := preload("res://assets/combat_vfx/status_stun_stars_v2.png")
+const DotDeathExplosionScript := preload("res://scripts/dot_death_explosion.gd")
 const STUN_STATUS_DRAW_SIZE := Vector2(126.0, 84.0)
 const BURN_FLAME_COUNT := 5
 const CHILL_SHARD_COUNT := 6
@@ -31,6 +32,9 @@ const DEATH_FRAME_SIZE := Vector2(512.0, 512.0)
 const DEATH_FRAME_COUNT := 5
 const DEATH_FRAME_DURATION_SEC := 0.12
 const DEATH_ANIMATION_DURATION_SEC := DEATH_FRAME_COUNT * DEATH_FRAME_DURATION_SEC
+const DOT_MAX_STACK_COUNT := 100
+# 인접 전이·사망 폭발 범위는 별도 기획 수치 확정 전 사용하는 한 슬롯 PLACEHOLDER다.
+const DOT_ADJACENCY_RADIUS_PX := 180.0
 
 const MONSTER_TEXTURES := {
 	"NORMAL": preload("res://assets/enemy/normal1.png"),
@@ -111,6 +115,10 @@ var slow_multiplier: float = 1.0
 var dot_remaining_sec: float = 0.0
 var dot_tick_damage: float = 0.0
 var dot_tick_cooldown_sec: float = 0.0
+var dot_stack_count: int = 0
+var dot_damage_per_stack: float = 0.0
+var dot_source_tier: int = 0
+var dot_explosion_damage: float = 0.0
 
 # 현재 웨이포인트와 지상→B1→B2→B3 진행 상태다.
 var path_points := PackedVector2Array()
@@ -158,6 +166,10 @@ func setup(config: Dictionary, movement_path: PackedVector2Array) -> void:
 	dot_remaining_sec = 0.0
 	dot_tick_damage = 0.0
 	dot_tick_cooldown_sec = 0.0
+	dot_stack_count = 0
+	dot_damage_per_stack = 0.0
+	dot_source_tier = 0
+	dot_explosion_damage = 0.0
 	hit_visual_remaining_sec = 0.0
 	death_animation_elapsed_sec = 0.0
 	_set_hit_visual_active(false)
@@ -203,6 +215,18 @@ static func _hit_texture_for_type(type_value: String) -> Texture2D:
 
 static func _hit_visible_bounds_for_type(type_value: String) -> Rect2:
 	return MONSTER_HIT_VISIBLE_BOUNDS.get(type_value, MONSTER_HIT_VISIBLE_BOUNDS["NORMAL"]) as Rect2
+
+
+# 스피드형 피격 원본은 자세 변화만으로 설명하기 어려울 만큼 불투명 그림 높이가 커서
+# 동일 픽셀 배율로 교체하면 피격 순간 본체가 약 34% 커진다. 스피드형에만 기본 그림
+# 높이 비율을 적용해 자세와 종횡비는 보존하면서 화면상의 크기 점프를 없앤다.
+static func _hit_texture_scale_for_type(type_value: String) -> float:
+	var texture_scale := _texture_scale_for_type(type_value)
+	if type_value == "SPEED":
+		var body_height := _visible_bounds_for_type(type_value).size.y
+		var hit_height := _hit_visible_bounds_for_type(type_value).size.y
+		return texture_scale * body_height / maxf(1.0, hit_height)
+	return texture_scale
 
 
 static func _death_texture_for_type(type_value: String) -> Texture2D:
@@ -337,7 +361,7 @@ func _configure_hit_sprite() -> void:
 		add_child(hit_sprite)
 	var texture := _hit_texture_for_type(monster_type)
 	var bounds := _hit_visible_bounds_for_type(monster_type)
-	var local_texture_scale := _texture_scale_for_type(monster_type) / MONSTER_VISUAL_SCALE
+	var local_texture_scale := _hit_texture_scale_for_type(monster_type) / MONSTER_VISUAL_SCALE
 	var texture_center := texture.get_size() * 0.5
 	var visible_center_x := bounds.position.x + bounds.size.x * 0.5
 	var local_body_bottom := body_bottom_offset_y / MONSTER_VISUAL_SCALE
@@ -475,23 +499,27 @@ func take_damage(amount: float, show_hit_visual: bool = true) -> void:
 	_update_health_bar()
 	_queue_status_redraw()
 	if hp <= 0.0:
+		var death_floor_index := current_combat_floor()
+		var should_explode := dot_remaining_sec > 0.0 and dot_stack_count > 0 and dot_source_tier >= 4
 		move_state = MoveState.DEAD
+		if should_explode:
+			_trigger_dot_death_explosion(death_floor_index)
 		_begin_death_animation()
 		defeated.emit(self)
 
 
 # 터렛 타입에 따라 기본 피해와 DOT/STUN/SLOW를 적용한다.
 # BOSS는 명세에 따라 상태 이상 지속시간과 감속량을 50%만 받는다.
-func receive_turret_hit(amount: float, source_type: String, cc_duration: float, cc_value: float) -> void:
+func receive_turret_hit(amount: float, source_type: String, cc_duration: float, cc_value: float, source_tier: int = 1) -> void:
 	take_damage(amount)
 	if move_state == MoveState.DEAD:
 		return
 	var boss_factor := 0.5 if monster_type == "BOSS" else 1.0
 	match source_type:
 		"DOT":
-			dot_remaining_sec = maxf(dot_remaining_sec, cc_duration * boss_factor)
-			dot_tick_damage = maxf(dot_tick_damage, amount * cc_value)
-			dot_tick_cooldown_sec = minf(dot_tick_cooldown_sec, 0.35)
+			_apply_dot_effect(amount, cc_duration, cc_value, source_tier)
+			if source_tier >= 2:
+				_spread_dot_to_adjacent(amount, cc_duration, cc_value, source_tier)
 		"STUN":
 			stun_remaining_sec = maxf(stun_remaining_sec, cc_duration * boss_factor)
 		"SLOW":
@@ -499,6 +527,86 @@ func receive_turret_hit(amount: float, source_type: String, cc_duration: float, 
 			slow_multiplier = minf(slow_multiplier, clampf(1.0 - cc_value * boss_factor, 0.2, 1.0))
 	_update_status_visuals()
 	_queue_status_redraw()
+
+
+func _apply_dot_effect(base_damage: float, duration: float, value: float, source_tier: int) -> void:
+	var boss_factor := 0.5 if monster_type == "BOSS" else 1.0
+	var applied_duration := duration * boss_factor
+	var can_stack := source_tier >= 3
+	if dot_remaining_sec <= 0.0 or dot_stack_count <= 0:
+		dot_stack_count = 1
+	elif can_stack:
+		dot_stack_count = mini(DOT_MAX_STACK_COUNT, dot_stack_count + 1)
+	dot_remaining_sec = maxf(dot_remaining_sec, applied_duration)
+	dot_damage_per_stack = maxf(dot_damage_per_stack, base_damage * value)
+	dot_tick_damage = dot_damage_per_stack * float(dot_stack_count)
+	dot_tick_cooldown_sec = minf(dot_tick_cooldown_sec, 0.35)
+	dot_source_tier = maxi(dot_source_tier, source_tier)
+	dot_explosion_damage = maxf(dot_explosion_damage, base_damage)
+	_update_dot_stack_tint()
+	_update_status_visuals()
+
+
+func _spread_dot_to_adjacent(base_damage: float, duration: float, value: float, source_tier: int) -> void:
+	var combat_floor := current_combat_floor()
+	if combat_floor < 0:
+		return
+	for node in get_tree().get_nodes_in_group("prototype_monsters"):
+		var other := node as PrototypeMonster
+		if other == null or other == self or not other.is_in_combat_floor():
+			continue
+		if other.current_combat_floor() != combat_floor:
+			continue
+		if absf(other.global_position.x - global_position.x) > DOT_ADJACENCY_RADIUS_PX:
+			continue
+		other._apply_dot_effect(base_damage, duration, value, source_tier)
+
+
+func _trigger_dot_death_explosion(death_floor_index: int) -> void:
+	var effect := DotDeathExplosionScript.new()
+	get_parent().add_child(effect)
+	effect.position = position
+	effect.setup()
+	var explosion_targets: Array[PrototypeMonster] = []
+	for node in get_tree().get_nodes_in_group("prototype_monsters"):
+		var other := node as PrototypeMonster
+		if other == null or other == self or not other.is_in_combat_floor():
+			continue
+		if other.current_combat_floor() != death_floor_index:
+			continue
+		if absf(other.global_position.x - global_position.x) <= DOT_ADJACENCY_RADIUS_PX:
+			explosion_targets.append(other)
+	for other in explosion_targets:
+		if other.move_state != MoveState.DEAD:
+			other.take_damage(dot_explosion_damage)
+
+
+func _update_dot_stack_tint() -> void:
+	var stack_progress := 0.0
+	if dot_stack_count > 1:
+		stack_progress = float(dot_stack_count - 1) / float(DOT_MAX_STACK_COUNT - 1)
+	var tint := Color.WHITE.lerp(Color(1.0, 0.22, 0.22, 1.0), stack_progress)
+	if body_sprite != null:
+		body_sprite.modulate = tint
+	if hit_sprite != null:
+		hit_sprite.modulate = tint
+
+
+# 현재 경로 진행 방향의 반대로 밀되, 현재 층의 진입 웨이포인트보다 뒤로 넘어가지는 않는다.
+# 고정 수평 전투층뿐 아니라 향후 기울어진 경로에서도 같은 구간 투영 방식으로 동작한다.
+func apply_knockback(distance_px: float) -> void:
+	if distance_px <= 0.0 or not is_in_combat_floor() or path_index >= path_points.size() - 1:
+		return
+	var segment_start := path_points[path_index]
+	var segment_end := path_points[path_index + 1]
+	var segment := segment_end - segment_start
+	var segment_length := segment.length()
+	if segment_length <= 0.0:
+		return
+	var direction := segment / segment_length
+	var progress_distance := clampf((position - segment_start).dot(direction), 0.0, segment_length)
+	var knocked_progress := maxf(0.0, progress_distance - distance_px)
+	position = segment_start + direction * knocked_progress
 
 
 # 매 프레임 상태 이상 시간을 감소시키고 DOT의 1초 주기 피해를 처리한다.
@@ -519,6 +627,11 @@ func _process_status_effects(delta: float) -> void:
 			dot_tick_cooldown_sec += 1.0
 		if dot_remaining_sec <= 0.0:
 			dot_tick_damage = 0.0
+			dot_stack_count = 0
+			dot_damage_per_stack = 0.0
+			dot_source_tier = 0
+			dot_explosion_damage = 0.0
+			_update_dot_stack_tint()
 	# 이동은 CanvasItem 변환만 바꾸므로 도형 명령을 다시 만들 필요가 없다. 상태 표시가
 	# 실제로 보이는 동안에만 갱신해 다수 몬스터가 쌓여도 Web 메인 스레드 부하가 증가하지 않게 한다.
 	if status_visual_was_active or stun_remaining_sec > 0.0 or slow_remaining_sec > 0.0 or dot_remaining_sec > 0.0:
@@ -618,6 +731,11 @@ func _begin_death_animation() -> void:
 	slow_remaining_sec = 0.0
 	dot_remaining_sec = 0.0
 	dot_tick_damage = 0.0
+	dot_stack_count = 0
+	dot_damage_per_stack = 0.0
+	dot_source_tier = 0
+	dot_explosion_damage = 0.0
+	_update_dot_stack_tint()
 	health_bar_visible = false
 	_update_health_bar()
 	_set_hit_visual_active(false)

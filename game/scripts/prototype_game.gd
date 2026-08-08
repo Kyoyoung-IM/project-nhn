@@ -1373,28 +1373,28 @@ func _run_attack_styles_automated_test() -> void:
 		and not get_tree().get_nodes_in_group("tower_hit_effects").is_empty()
 	_free_attack_test_nodes(melee_tower, melee_monster)
 
-	# DOT는 rangeValue=1.5칸 안의 표적을 선택하고 화염방사가 닿은 뒤에만 기본 피해와 화상을 적용한다.
+	# DOT Tier 1은 rangeValue=1.5칸 안의 표적을 선택하고 생성 화염구가 닿은 뒤에만 기본 피해와 화상을 적용한다.
 	var dot_tower := _create_attack_test_tower("turretDot1", test_origin)
 	var dot_monster := _create_attack_test_monster(test_origin.x + 200.0)
 	var dot_hp_before := dot_monster.hp
 	dot_tower._process(dot_tower.attack_interval_sec)
-	var dot_flamethrower := _latest_attack_test_flamethrower()
-	var dot_waited_for_impact := dot_flamethrower != null and is_equal_approx(dot_monster.hp, dot_hp_before)
-	if dot_flamethrower != null:
-		dot_flamethrower._process(0.21)
+	var dot_fireball := _latest_attack_test_dot_fireball()
+	var dot_waited_for_impact := dot_fireball != null and is_equal_approx(dot_monster.hp, dot_hp_before)
+	if dot_fireball != null:
+		dot_fireball._process(1.0)
 	var dot_ok := dot_waited_for_impact and dot_monster.hp < dot_hp_before and dot_monster.dot_remaining_sec > 0.0
 	_free_attack_test_nodes(dot_tower, dot_monster)
-	# 화염방사가 닿기 전에 표적이 층 이동을 시작하면 추적과 피해가 모두 취소되어야 한다.
+	# 화염구가 닿기 전에 표적이 층 이동을 시작하면 추적과 피해가 모두 취소되어야 한다.
 	var dot_cancel_tower := _create_attack_test_tower("turretDot1", test_origin)
 	var dot_cancel_monster := _create_attack_test_monster(test_origin.x + 200.0)
 	var dot_cancel_hp_before := dot_cancel_monster.hp
 	dot_cancel_tower._process(dot_cancel_tower.attack_interval_sec)
-	var cancelled_flamethrower := _latest_attack_test_flamethrower()
+	var cancelled_fireball := _latest_attack_test_dot_fireball()
 	dot_cancel_monster.floor_transfer_active = true
-	if cancelled_flamethrower != null:
-		cancelled_flamethrower._process(0.21)
-	var dot_floor_cancel_ok := cancelled_flamethrower != null \
-		and cancelled_flamethrower.is_queued_for_deletion() \
+	if cancelled_fireball != null:
+		cancelled_fireball._process(0.05)
+	var dot_floor_cancel_ok := cancelled_fireball != null \
+		and cancelled_fireball.is_queued_for_deletion() \
 		and is_equal_approx(dot_cancel_monster.hp, dot_cancel_hp_before)
 	_free_attack_test_nodes(dot_cancel_tower, dot_cancel_monster)
 
@@ -1488,6 +1488,11 @@ func _latest_attack_test_projectile() -> PrototypeTowerProjectile:
 func _latest_attack_test_flamethrower() -> Node2D:
 	var flamethrowers := get_tree().get_nodes_in_group("tower_flamethrowers")
 	return flamethrowers.back() as Node2D if not flamethrowers.is_empty() else null
+
+
+func _latest_attack_test_dot_fireball() -> Node2D:
+	var fireballs := get_tree().get_nodes_in_group("dot_fireball_projectiles")
+	return fireballs.back() as Node2D if not fireballs.is_empty() else null
 
 
 func _free_attack_test_nodes(tower: PrototypeTower, monster: PrototypeMonster) -> void:
