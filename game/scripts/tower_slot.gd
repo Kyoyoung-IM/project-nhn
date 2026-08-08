@@ -7,8 +7,9 @@ extends Area2D
 # 프로토타입 게임 컨트롤러가 구매한 터렛을 배치할 때 받는 신호다.
 signal pressed(slot: PrototypeTowerSlot)
 
-# 슬롯 표시는 평상시 완전히 숨기고 배치·이동 드래그 중에만 전체 30% 불투명도로 노출한다.
-const ACTIVE_SLOT_OPACITY := 0.30
+# 슬롯 표시는 평상시 30%, 배치·이동 드래그 중 유효한 위치는 60% 불투명도로 강조한다.
+const BASE_SLOT_OPACITY := 0.30
+const HIGHLIGHT_SLOT_OPACITY := 0.60
 
 # 데이터상 위치: floor_index는 B1~B3(0~2), slot_index는 층 안의 0~4다.
 var floor_index: int = 0
@@ -100,12 +101,9 @@ func _update_visual() -> void:
 	if visual == null or fill_panel == null or border_panel == null:
 		return
 	# Area2D.self_modulate는 자식 Control에 전파되지 않으므로 실제 표시 루트의 알파를 갱신한다.
-	var should_show := is_empty() and (drag_eligible or drag_targeted)
-	visual.modulate.a = ACTIVE_SLOT_OPACITY if should_show else 0.0
-	# 0% 알파뿐 아니라 렌더링 자체도 꺼 초기 상태나 조작 종료 시 슬롯이 확실히 숨겨지게 한다.
-	visual.visible = should_show
-	if not visual.visible:
-		return
+	var highlighted := drag_eligible or drag_targeted
+	visual.modulate.a = HIGHLIGHT_SLOT_OPACITY if highlighted else BASE_SLOT_OPACITY
+	visual.visible = true
 	var fill_style := fill_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
 	fill_style.bg_color = eligible_fill_color if drag_eligible else base_fill_color
 	fill_panel.add_theme_stylebox_override("panel", fill_style)
