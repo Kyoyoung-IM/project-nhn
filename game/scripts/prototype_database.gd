@@ -683,13 +683,20 @@ func get_wave_monster_ids(wave_group: String) -> Array[String]:
 	return monster_ids
 
 
-# 최신 테이블의 고유한 spawnOrder를 기준으로 웨이브 행을 오름차순 정렬한다.
+# 최신 테이블의 spawnOrder를 기준으로 웨이브 행을 오름차순 정렬한다. 같은 값은 원본 행 순서를 유지한다.
 func _ordered_spawn_rows(wave_group: String) -> Array[Dictionary]:
 	var matching_rows: Array[Dictionary] = []
 	for row in spawn_rows:
 		if str(row.get("waveGroup", "")) == wave_group:
 			matching_rows.append(row)
-	matching_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["spawnOrder"]) < int(b["spawnOrder"]))
+	matching_rows.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			var a_order := int(a["spawnOrder"])
+			var b_order := int(b["spawnOrder"])
+			if a_order != b_order:
+				return a_order < b_order
+			return spawn_rows.find(a) < spawn_rows.find(b)
+	)
 	return matching_rows
 
 
@@ -874,7 +881,6 @@ func _validate_cross_references() -> void:
 		if bool(turret.get("isShop", false)) and int(turret.get("basePrice", -1)) < 0:
 			validation_errors.append("shop turret must have a non-negative basePrice: %s" % turret_id)
 
-	var spawn_orders_by_wave: Dictionary = {}
 	for row in spawn_rows:
 		var wave_group := str(row.get("waveGroup", ""))
 		var monster_id := str(row.get("monsterId", ""))
@@ -883,12 +889,6 @@ func _validate_cross_references() -> void:
 			validation_errors.append("SpawnTable has an invalid wave or monster reference: %s / %s" % [wave_group, monster_id])
 		if int(row.get("value", 0)) <= 0:
 			validation_errors.append("SpawnTable value must be positive: %s order %d" % [wave_group, order])
-		if not spawn_orders_by_wave.has(wave_group):
-			spawn_orders_by_wave[wave_group] = {}
-		var used_orders: Dictionary = spawn_orders_by_wave[wave_group]
-		if used_orders.has(order):
-			validation_errors.append("SpawnTable has duplicate spawnOrder: %s / %d" % [wave_group, order])
-		used_orders[order] = true
 
 	var probability_sum := 0.0
 	for row in shop_rows:
