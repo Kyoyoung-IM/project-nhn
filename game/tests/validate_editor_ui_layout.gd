@@ -115,6 +115,12 @@ func _run() -> void:
 	if tower_slots.is_empty() or (tower_slots[0] as Node).get_node_or_null("Visual/PlusLabel") == null or (tower_slots[0] as Node).get_node_or_null("CollisionShape2D") == null:
 		_fail("editable tower slot scene is incomplete")
 		return
+	var first_tower_slot := tower_slots[0] as PrototypeTowerSlot
+	var expanded_drop_target := game.call("_nearest_shop_drop_target", first_tower_slot.position + Vector2(0.0, 110.0), {}) as PrototypeTowerSlot
+	var outside_drop_target := game.call("_nearest_shop_drop_target", first_tower_slot.position + Vector2(0.0, 125.0), {}) as PrototypeTowerSlot
+	if expanded_drop_target != first_tower_slot or outside_drop_target != null:
+		_fail("tower slot drop radius must accept the expanded 120px range without extending beyond it")
+		return
 	var monster := MONSTER_SCENE.instantiate() as PrototypeMonster
 	if monster == null or monster.get_node_or_null("HealthBar") == null:
 		_fail("editable monster health bar scene is incomplete")
