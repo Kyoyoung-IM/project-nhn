@@ -31,7 +31,7 @@
 ## 일반 HUD·상점 이미지
 
 - `game_hud.tscn`의 `DayFrame`·`NightFrame`은 `top_1.png`·`top_2.png`, `ActionBackplate`·`SpeedBackplate`·`PauseBackplate`는 `btn_1.png`·`btn_2.png`·`btn_4.png`를 사용한다.
-- 진행·일시정지·새로고침 픽토그램은 각각 `icon3.png`·`icon2.png`·`icon1.png`이며, 골드와 카드 가격은 `coin.png`를 공통 사용한다.
+- 진행·일시정지·새로고침 픽토그램은 각각 `icon3.png`·`icon2.png`·`icon1.png`이며 모두 기존 표시 크기의 70%로 배치한다. 일반 1·2·3배속은 `SpeedBackplate` 안에 진행 픽토그램을 각각 1·2·3개 표시하고, 2배속의 두 픽토그램은 캡슐 중앙에 좁은 간격으로 묶는다. 테스트 환경의 5·10배속만 숫자로 표시한다. 골드와 카드 가격은 `coin.png`를 공통 사용한다.
 - `shop_card.tscn`의 `Frame`은 `frame_1.png`, `PriceRow`는 금화와 가격의 합산 폭을 중앙 정렬하고, 구매 완료·호버 상태는 `dimmed.png`를 사용한다.
 - 늘어나는 프레임과 캡슐은 모서리 형태를 보존하도록 `NinePatchRect`의 패치 여백을 함께 조절한다.
 - 테스트 옵션·데이터테이블 컨트롤과 `game_clear_overlay.tscn`·`game_over_overlay.tscn`은 이번 이미지 교체 대상이 아니다.
