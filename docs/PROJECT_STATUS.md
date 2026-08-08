@@ -12,10 +12,10 @@
 
 ## 기준 상태
 
-- 마지막 갱신: 2026-08-08 18:27 KST
+- 마지막 갱신: 2026-08-08 18:37 KST
 - 기준 저장소: `C:\GameDev\GameProject\project-nhn`
 - 기준 원격 브랜치: `origin/main`
-- 확인된 기준 커밋: `188fd5b` (`Merge pull request #68 from Kyoyoung-IM/agent/occupied-tower-slot-hidden-20260808`)
+- 확인된 기준 커밋: `f62f78b` (`Merge pull request #69 from Kyoyoung-IM/agent/status-occupied-slot-hidden-size2-20260808`)
 - 공모전 사전 과제 제출 마감일: 2026-08-10 (공식 페이지에 마감 시각 미표시)
 - 공개 플레이 URL: https://kyoyoung-im.github.io/project-nhn/
 
@@ -32,7 +32,7 @@
 | 몬스터 그래픽·피격 | 병합·배포 완료 | PR #57 merge commit `2caa99f`에서 보스 제외 몬스터의 원본 픽셀 크기 차이를 반영하고 체력바를 머리 위 4px로 축소. 피격·사망·접지 전용 검사와 공개 Pages 확인 완료 | 공개 플레이에서 타입별 크기 차이와 체력바 가독성 체감 확인 |
 | 전장 배경·접지 경로 | 병합·배포 완료 | PR #59 merge commit `1ad6a5e`에서 적이 각 층의 화면 오른쪽 밖 X `1980`에서 왼쪽 밖 X `-60`까지 이동하도록 경로를 확장하고 고정 전체 뷰 좌표 검사를 반영. 자동 승리·패배와 공개 Web 확인 완료 | 공개 플레이에서 길어진 층별 이동 시간과 전투 밀도 체감 확인 |
 | 데이터테이블 | 병합·배포 완료 | PR #64 merge commit `2d55d43`에 2026-08-08 최신 Turret·Monster·SpawnTable과 동일 `spawnOrder` 그룹 호환을 반영하고 정적 무결성 검사 통과. PR #65 Web Release로 Pages 게시 확인 | 다음 데이터 변경 시 최신 원본 5개 시트 재대조 |
-| 프로젝트 관리 지침 | 완료 | PR #23·#24의 배포 운영 원칙과 PR #67의 GitHub 앱 시험 호출·미발생 403 폴백 반복 보고 금지 지침 반영 | 게시 안내는 실제 실행과 사용자 조치에 영향을 주는 정보만 보고 |
+| 프로젝트 관리 지침 | 직접 병합 반영 | `agent/github-auth-fallback-guideline-20260808`에서 Git 전송·앱·CLI 인증을 분리하고, 앱 `403`과 재로그인 후에도 남은 CLI 무효 상태를 채팅마다 재시도하지 않도록 수정. 두 서비스 경로 실패 시 명시 승인된 `git --no-ff` 직접 병합 예외도 문서화 | 원격 `main`의 merge commit 반영 확인 |
 | Pages 배포 | 완료 | PR #68 병합 SHA `188fd5b`의 실행 `31250557576` 성공. 공개 HTML의 `index-188fd5b462f0.pck` 참조, 16,686,304-byte PCK와 로컬·원격 SHA-256 `B0106B3C44B22E26B2DF03E8DB17A4996E3BA0FCD21ED81DF6186F39097E9799` 일치 및 공개 브라우저 오류 없음 확인 | 다음 기능 병합 후 Web Release 갱신 여부 재확인 |
 | 이미지 생성 지침 | 완료 | 채팅 역할별 이미지 생성 권한과 승인 범위 문서화 | 새 이미지 요청 시 `IMAGE_GENERATION.md` 적용 |
 | 지침 모듈화 | 완료 | 루트 라우팅 정본과 유형별 지침 6개로 분리, OneDrive 파일을 부트스트랩으로 축소 | 작업 유형에 해당하는 지침만 선택해 확인 |
@@ -49,9 +49,10 @@
 
 ## 공통 GitHub·배포 인수인계
 
-- GitHub 서비스 작업은 `C:\Program Files\GitHub CLI\gh.exe`를 기본으로 사용한다.
-- 작업 시작 시 CLI 인증을 한 번만 확인하며, 브라우저 로그인과 CLI 로그인을 구분한다.
-- GitHub 앱 쓰기를 시험 호출하지 않으며, 실제로 발생하지 않은 앱 `403`이나 CLI 폴백을 작업 안내에 반복하지 않는다. 도구 전환은 결과나 사용자 조치에 영향을 준 경우에만 보고한다.
+- Git 전송은 `git`, 저장소·이슈·PR 조회는 GitHub 앱을 기본으로 사용한다. 앱 쓰기는 저장소 권한이 확인된 경우에만 사용하고, Actions 상세 로그 등 앱 미지원 작업에는 `C:\Program Files\GitHub CLI\gh.exe`를 사용한다.
+- CLI 인증은 작업 시작이 아니라 CLI가 꼭 필요한 단계 직전에 한 번만 확인한다. 브라우저 로그인 뒤에도 토큰이 무효이면 채팅마다 재로그인을 반복하지 않고 지속 인증 장애로 취급한다.
+- 2026-08-08 `Kyoyoung-IM/project-nhn` PR 생성에서 GitHub 앱 `403 Resource not accessible by integration`이 실제 발생했고 CLI 토큰도 재로그인 뒤 무효 상태를 유지했다. 앱 권한 또는 CLI 자격 증명이 복구됐다는 확인 전에는 같은 실패 경로를 다른 채팅에서 반복하지 않는다.
+- 두 서비스 경로가 모두 실패한 경우 PR 우회 직접 병합은 사용자의 별도 명시 승인이 있을 때만 최신 `origin/main`에서 `--no-ff` merge commit으로 수행한다.
 - UI 배포는 소스 수정, Web Release 갱신, 로컬 Web 확인, 고유 PCK, 원격 해시와 필요 시 Pages 실화면 확인을 하나의 완료 흐름으로 묶는다.
 - Pages는 정적 호스팅이므로 다른 사용자의 플레이가 배포를 잠그지 않는다. 이미 실행 중인 게임은 배포 교체와 무관하게 계속 동작하고, 배포 실패 시 직전 성공 버전이 계속 제공된다.
 - 2026-08-06 Pages 지연 조사에서 실행 `31104659648`, `31107055816`, `31108448751`, `31109558641`이 Web 아티팩트 업로드 후 Pages 내부 큐에서 제한시간에 도달했다. 이후 `index-b7fd21ea1dea.pck`가 비동기로 게시됐으므로 timeout 직후 새 실행을 만들지 말고 공개 PCK를 재확인한다.
